@@ -375,15 +375,18 @@
   background: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  /* Fully out of the way while scrolling — no peek of the sheet chrome */
   visibility: hidden !important;
   pointer-events: none !important;
+  overflow: hidden !important;
 }
 
+/* Fully off-screen when closed — prevents white sheet "peek" while scrolling */
 #mobileBottomSheet.pointer-events-none #bottomSheetDrawer {
-  transform: translateY(110%) !important;
+  transform: translate3d(0, 100vh, 0) !important;
   box-shadow: none !important;
   pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 #mobileBottomSheet.pointer-events-auto {
@@ -393,8 +396,16 @@
 
 #mobileBottomSheet.pointer-events-auto #bottomSheetDrawer {
   pointer-events: auto !important;
-  /* Do not force transform here — JS controls open position */
+  opacity: 1 !important;
+  visibility: visible !important;
 }
+
+/* FAQ: ensure open state is visible even if inline max-height not set yet */
+.faq-item.faq-open .faq-answer {
+  /* JS sets exact max-height; this is a fallback */
+  overflow: hidden;
+}
+
 
 /* No extra bottom gradient wash above the floating menu button */
 .block.md\:hidden.fixed.bottom-6 {

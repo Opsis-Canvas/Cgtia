@@ -232,7 +232,7 @@
       container.style.backdropFilter = 'none';
       container.style.webkitBackdropFilter = 'none';
       container.style.visibility = 'hidden';
-      drawer.style.transform = 'translateY(110%)';
+      drawer.style.transform = 'translateY(100vh)';
       drawer.style.pointerEvents = 'none';
     }
     if (document.readyState === 'loading') {
@@ -270,7 +270,7 @@
         container.style.visibility = 'hidden';
         container.style.pointerEvents = 'none';
         drawer.style.transition = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
-        drawer.style.transform = 'translateY(110%)';
+        drawer.style.transform = 'translateY(100vh)';
         drawer.style.pointerEvents = 'none';
         document.body.style.overflow = '';
       }
@@ -1387,7 +1387,7 @@ window.payWithPaystackCard = async function () {
       clearPendingPayment();
       // Backup: tell Netlify to record payment + provision portal account (if webhook missed)
       try {
-        fetch("/api/confirm-paystack-client", {
+        fetch("/.netlify/functions/confirm-paystack-client", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ applicationId: email, reference: response.reference || "", source: "client-paystack-callback" })
@@ -1502,6 +1502,127 @@ window.shiftArcRight = function () {
   }
 };
 
+
+
+/* --- FAQ ACCORDION + ASK-US SHEET --- */
+function toggleFaq(btn) {
+  try {
+    if (!btn) return;
+    var item = btn.closest ? btn.closest(".faq-item") : null;
+    if (!item) return;
+    var answer = item.querySelector(".faq-answer");
+    var isOpen = item.classList.contains("faq-open");
+
+    // Close other open items (accordion style)
+    document.querySelectorAll(".faq-item.faq-open").forEach(function (other) {
+      if (other === item) return;
+      other.classList.remove("faq-open");
+      var a = other.querySelector(".faq-answer");
+      if (a) {
+        a.style.maxHeight = "0px";
+      }
+    });
+
+    if (isOpen) {
+      item.classList.remove("faq-open");
+      if (answer) answer.style.maxHeight = "0px";
+    } else {
+      item.classList.add("faq-open");
+      if (answer) {
+        answer.style.maxHeight = answer.scrollHeight + 48 + "px";
+      }
+    }
+  } catch (e) {
+    console.warn("toggleFaq", e);
+  }
+}
+
+function openFaqQuestionBox(topic) {
+  try {
+    var screen = document.getElementById("faqQuestionScreen");
+    var drawer = document.getElementById("faqQuestionDrawer");
+    var ctx = document.getElementById("faqTopicContext");
+    if (!screen || !drawer) return;
+    if (ctx) {
+      ctx.textContent = topic ? ("About: " + topic) : "";
+    }
+    screen.classList.remove("pointer-events-none", "bg-slate-950/0", "backdrop-blur-0");
+    screen.classList.add("pointer-events-auto", "bg-slate-950/40", "backdrop-blur-md");
+    screen.style.pointerEvents = "auto";
+    drawer.style.transform = "translateY(0)";
+    drawer.style.opacity = "1";
+    document.body.style.overflow = "hidden";
+  } catch (e) {
+    console.warn("openFaqQuestionBox", e);
+  }
+}
+
+function closeFaqQuestionBox() {
+  try {
+    var screen = document.getElementById("faqQuestionScreen");
+    var drawer = document.getElementById("faqQuestionDrawer");
+    if (!screen || !drawer) return;
+    screen.classList.add("pointer-events-none", "bg-slate-950/0", "backdrop-blur-0");
+    screen.classList.remove("pointer-events-auto", "bg-slate-950/40", "backdrop-blur-md");
+    screen.style.pointerEvents = "none";
+    drawer.style.transform = "";
+    drawer.style.opacity = "";
+    document.body.style.overflow = "";
+  } catch (e) {
+    console.warn("closeFaqQuestionBox", e);
+  }
+}
+
+function handleFaqQuestionSubmit(event) {
+  try {
+    if (event && event.preventDefault) event.preventDefault();
+    var form = event && event.target ? event.target : document.getElementById("faqQuestionForm");
+    if (!form) return false;
+    // Honeypot
+    var hp = document.getElementById("faqWebsiteField");
+    if (hp && hp.value) return false;
+
+    var textarea = form.querySelector("textarea");
+    var question = textarea ? (textarea.value || "").trim() : "";
+    var methodEl = form.querySelector('input[name="faqContactMethod"]:checked');
+    var method = methodEl ? methodEl.value : "email";
+    var contactInput = form.querySelector('input[type="text"]:not(#faqWebsiteField)');
+    var contact = contactInput ? (contactInput.value || "").trim() : "";
+    var topicEl = document.getElementById("faqTopicContext");
+    var topic = topicEl ? (topicEl.textContent || "").replace(/^About:\s*/, "") : "";
+
+    var waNum = String(window.CGTIA_WHATSAPP_NUMBER || "2349164712004").replace(/\D/g, "");
+    var msg =
+      "Hello CGTIA, I have a question" +
+      (topic ? (" about: " + topic) : "") +
+      "\n\n" +
+      question +
+      "\n\nReply via: " +
+      method +
+      "\nContact: " +
+      contact;
+
+    if (method === "whatsapp") {
+      window.open("https://wa.me/" + waNum + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
+    } else {
+      // Prefer WhatsApp for reliability on mobile; include email preference in text
+      window.open("https://wa.me/" + waNum + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
+    }
+    closeFaqQuestionBox();
+    if (textarea) textarea.value = "";
+    return false;
+  } catch (e) {
+    console.warn("handleFaqQuestionSubmit", e);
+    return false;
+  }
+}
+
+window.toggleFaq = toggleFaq;
+window.openFaqQuestionBox = openFaqQuestionBox;
+window.closeFaqQuestionBox = closeFaqQuestionBox;
+window.handleFaqQuestionSubmit = handleFaqQuestionSubmit;
+
+
 window.toggleMobileBottomSheet = function () {
   var container = document.getElementById("mobileBottomSheet");
   var drawer = document.getElementById("bottomSheetDrawer");
@@ -1525,7 +1646,7 @@ window.toggleMobileBottomSheet = function () {
     container.style.visibility = "hidden";
     container.style.background = "transparent";
     drawer.style.transition = "transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)";
-    drawer.style.transform = "translateY(110%)";
+    drawer.style.transform = "translateY(100vh)";
     drawer.style.pointerEvents = "none";
     document.body.style.overflow = "";
   }
@@ -1822,13 +1943,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function validateToken(token) {
-    var url = (window.location.origin || "") + "/api/validate-fee-link?token=" + encodeURIComponent(token);
+    var url = (window.location.origin || "") + "/.netlify/functions/validate-fee-link?token=" + encodeURIComponent(token);
     var res = await fetch(url, { method: "GET" });
     return res.json();
   }
 
   async function confirmFeePayment(reference, fee, email, fullName, reg) {
-    var res = await fetch("/api/confirm-paystack-client", {
+    var res = await fetch("/.netlify/functions/confirm-paystack-client", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
