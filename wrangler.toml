@@ -1,6 +1,7 @@
+# Cloudflare Pages (static site + functions/) — NOT a standalone Worker
 name = "cgtia-site"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Cloudflare Pages: set build output directory to this folder (static root = project root)
-# Functions live in /functions
+# Critical: publish this folder as Pages assets (fixes "Missing entry-point")
+pages_build_output_dir = "."
