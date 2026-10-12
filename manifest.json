@@ -1,0 +1,22 @@
+{
+  "name": "CGTIA — Caregivers Training & Internship Academy",
+  "short_name": "CGTIA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a1128",
+  "icons": [
+    {
+      "src": "https://cgtia-assets.netlify.app/misc/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cgtia-assets.netlify.app/misc/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

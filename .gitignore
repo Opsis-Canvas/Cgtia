@@ -1,0 +1,9 @@
+node_modules/
+.wrangler/
+.cfignore
+.dev.vars
+.env
+.env.*
+.git/
+*.log
+.DS_Store

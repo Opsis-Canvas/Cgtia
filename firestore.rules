@@ -1,0 +1,367 @@
+rules_version = '2';
+
+/**
+==========================================================
+CGTIA CMS & Client — Unified Firestore Security Rules
+==========================================================
+Your production rules, merged with public site + admin needs:
+promotions, wallOfFame, graduates, siteContent, payments,
+feeDefinitions, feePaymentLinks,
+and resumeToken on applications create.
+==========================================================
+*/
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =======================================================
+    // 1. CORE UNIFIED AUTHENTICATION & ROLE HELPERS
+    // =======================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function myRole() {
+      return isSignedIn() ? myProfile().role : null;
+    }
+
+    function isActive() {
+      // active == false blocks; missing active counts as active
+      return isSignedIn() && myProfile().get('active', true) != false;
+    }
+
+    function roleKey() {
+      return isSignedIn() ? string(myRole()).replace('_', '-') : '';
+    }
+
+    function isAdmin() {
+      // super-admin, super_admin, admin
+      return isSignedIn() && isActive() && (
+          roleKey() == 'super-admin' ||
+          myRole() == 'super-admin' ||
+          myRole() == 'super_admin' ||
+          myRole() == 'admin' ||
+          roleKey() == 'admin'
+        );
+    }
+
+    function hasRole(roles) {
+      return isSignedIn() && isActive() && myRole() in roles;
+    }
+
+    function isStaff() {
+      return isAdmin() || hasRole(['admissions', 'registrar', 'licensing-officer', 'training-officer']);
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
+    /* ---------------- users (Staff & Student Accounts) ---------------- */
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if false || isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAdmin() ||
+        (isSignedIn() && request.auth.uid == uid &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.active == resource.data.active) ||
+        (isOwner(uid) && hasOnlyKeys(['mustChangePassword']) && request.resource.data.mustChangePassword == false);
+    }
+
+    // =======================================================
+    // 2. BACKOFFICE & CORE INSTITUTION COLLECTIONS
+    // =======================================================
+
+    match /students/{studentId} {
+      allow read: if hasRole(['registrar', 'training-officer', 'instructor']) || isAdmin();
+      allow create, update: if hasRole(['registrar', 'training-officer']) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /* One-time profile form invites — staff via console; public form uses Admin SDK functions */
+    match /siteMedia/{mediaId} {
+      allow read: if true;
+      allow write: if isAdmin() || isStaff();
+    }
+
+    match /studentInvites/{inviteId} {
+      allow read, write: if isAdmin() || hasRole(['registrar', 'admissions', 'training-officer']);
+    }
+
+    match /_counters/{id} {
+      allow read, write: if false;
+    }
+
+    match /staff/{staffId} {
+      allow read: if hasRole(['registrar', 'training-officer']) || isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /programs/{programKey} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /courses/{courseId} {
+      allow read: if isSignedIn();
+      allow create, update: if hasRole(['training-officer', 'instructor']) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notifId} {
+      allow read, update: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create, delete: if isAdmin();
+    }
+
+    // =======================================================
+    // 3. PUBLIC FRONTEND FORM INGEST & CLIENT COLLECTIONS
+    // =======================================================
+
+    match /certificates/{certId} {
+      allow read: if true;
+      allow create, update: if hasRole(['registrar', 'training-officer']) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /licensingRequests/{id} {
+      allow read, update, delete: if isAdmin() || isStaff();
+      allow create: if false;
+    }
+    match /licensingInvites/{id} {
+      allow read, write: if isAdmin() || isStaff();
+    }
+    match /licensingPackets/{id} {
+      allow read: if isAdmin() || hasRole(['licensing-officer', 'registrar']);
+      allow write: if false;
+    }
+
+    match /idCards/{cardId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() || isStaff();
+    }
+
+    match /licences/{licenceId} {
+      allow read: if true;
+      allow create, update: if hasRole(['licensing-officer']) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /* applications – public intake + resumeToken for payment recovery */
+    match /applications/{appId} {
+      allow create: if
+        appId == request.resource.data.email.lower()
+        && !exists(/databases/$(database)/documents/applications/$(appId))
+        && request.resource.data.keys().hasOnly([
+          'fullName','phone','email','program','startDate','message',
+          'status','paymentStatus','paymentPlan','installmentsTotal','installmentsPaid',
+          'createdAt','updatedAt','resumeToken'
+        ])
+        && request.resource.data.status == "pending"
+        && request.resource.data.paymentStatus == "unpaid"
+        && request.resource.data.paymentPlan == "full"
+        && request.resource.data.installmentsTotal == 1
+        && request.resource.data.installmentsPaid == 0;
+
+      allow read: if isAdmin() || isStaff()
+        || (isSignedIn() && request.auth.token.email == resource.data.email);
+
+      allow update: if
+        isAdmin()
+        || (
+          !isSignedIn()
+          && appId == request.resource.data.email
+          && resource.data.email == request.resource.data.email
+          && resource.data.paymentStatus == "unpaid"
+          && resource.data.installmentsPaid == 0
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paymentPlan', 'installmentsTotal', 'updatedAt', 'resumeToken'])
+          && request.resource.data.paymentPlan in ['full', 'installment']
+          && request.resource.data.installmentsTotal in [1, 3]
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /licensingApplications/{reqId} {
+      allow create: if request.resource.data.keys().hasAll(
+        ['fullName', 'email', 'phone', 'status', 'paymentStatus', 'createdAt']
+      )
+      && request.resource.data.status == 'pending'
+      && request.resource.data.paymentStatus == 'unpaid';
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /customRequests/{reqId} {
+      allow create: if request.resource.data.keys().hasAll(
+        ['applicantType', 'name', 'email', 'phone', 'status', 'createdAt']
+      )
+      && request.resource.data.applicantType in ['individual', 'school', 'organization']
+      && request.resource.data.status == 'new';
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /customInquiries/{id} {
+      allow read: if isAdmin() || isStaff();
+      allow create: if true;
+      allow update, delete: if isAdmin() || isStaff();
+    }
+
+    match /contactMessages/{msgId} {
+      allow create: if request.resource.data.keys().hasAll(
+        ['message', 'preferredContactMethod', 'contactValue', 'status', 'createdAt']
+      )
+      && request.resource.data.preferredContactMethod in ['email', 'whatsapp']
+      && request.resource.data.status == 'new';
+      allow read, update, delete: if isAdmin();
+    }
+
+    // =======================================================
+    // 4. PUBLIC SITE + ADMIN CMS (merged — was missing)
+    // =======================================================
+
+    /* promotions — e.g. 100k offer; public read for payment UI */
+    match /promotions/{promoId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* wall of fame honorees — public homepage / wall page */
+    match /wallOfFame/{entryId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* graduates showcase */
+    match /graduates/{gradId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* partners list and other site content blobs */
+    match /siteContent/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* payment records (webhook / admin) */
+    match /payments/{payId} {
+      allow read: if isAdmin() || isStaff();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /* Custom fee definitions (graduation, clinicals, etc.) — admin only write */
+    match /feeDefinitions/{feeId} {
+      allow read: if isAdmin() || isStaff();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* Fee payment links (tokenized public links) — admin write; validation via Admin SDK function */
+    match /feePaymentLinks/{linkId} {
+      allow read: if isAdmin() || isStaff();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // =======================================================
+    // 5. TRAINEE / INSTRUCTOR PORTAL
+    // =======================================================
+
+    match /attendance/{recordId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || hasRole(['instructor']) || isAdmin());
+      allow create, update: if hasRole(['instructor']) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /courseProgress/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || hasRole(['instructor']) || isAdmin());
+      allow write: if isOwner(uid);
+    }
+
+    match /exams/{examId} {
+      allow read: if isSignedIn();
+      allow create, update: if hasRole(['instructor']) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /examSubmissions/{submissionId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || hasRole(['instructor']) || isAdmin());
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && !exists(/databases/$(database)/documents/examSubmissions/$(submissionId));
+      allow update, delete: if hasRole(['instructor']) || isAdmin();
+    }
+
+    match /classroomSessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if hasRole(['instructor']) || isAdmin();
+    }
+
+    match /questions/{questionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if hasRole(['instructor']) || isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text']));
+      allow delete: if isAdmin();
+    }
+
+    match /surveys/{surveyId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if hasRole(['instructor']) || isAdmin();
+    }
+
+    match /surveyResponses/{responseId} {
+      allow create: if isSignedIn() && !('userId' in request.resource.data);
+      allow read: if hasRole(['instructor']) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /courseMaterials/{materialId} {
+      allow read: if isSignedIn() && resource.data.trashed != true;
+      allow read: if hasRole(['instructor']) || isAdmin();
+      allow create: if hasRole(['instructor']) || isAdmin();
+      allow update: if hasRole(['instructor']) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /threads/{threadId} {
+      allow read, update: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants;
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/threads/$(threadId)).data.participants;
+        allow create: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/threads/$(threadId)).data.participants
+          && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /gamification/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid);
+    }
+
+    match /promos/{promoId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if hasRole(['instructor']) || isAdmin();
+    }
+
+    // =======================================================
+    // 6. GLOBAL SECURITY BACKSTOP
+    // =======================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
