@@ -1,0 +1,655 @@
+
+    /* Fonts loaded via css/fonts.css (self-hosted) */
+    
+    .font-editorial { font-family: 'Montserrat', system-ui, sans-serif; font-weight: 900; letter-spacing: -0.03em; }
+    .font-sans-clean { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+    .smooth-transition {
+      transition: color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, opacity 0.25s ease, transform 0.3s ease;
+    }
+
+    .mesh-gradient-canvas {
+      background-color: #ffffff;
+      /* Static mesh — animation removed for low-end GPU performance */
+      background-image: 
+        radial-gradient(at 10% 20%, rgba(219, 234, 254, 0.4) 0px, transparent 45%),
+        radial-gradient(at 90% 10%, rgba(241, 245, 249, 0.7) 0px, transparent 40%),
+        radial-gradient(at 80% 80%, rgba(239, 246, 255, 0.4) 0px, transparent 45%);
+      background-size: 100% 100%;
+      background-attachment: scroll;
+    }
+
+    .soft-component-card {
+      /* Solid fill instead of backdrop-filter blur — major GPU win on old devices */
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 
+        inset 0 1px 1px rgba(255, 255, 255, 0.9),
+        0 10px 28px -12px rgba(148, 163, 184, 0.12);
+    }
+
+    .soft-component-card:hover {
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 
+        inset 0 1px 1px rgba(255, 255, 255, 1),
+        0 14px 32px -12px rgba(148, 163, 184, 0.14);
+    }
+
+    .faded-sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(to bottom,
+        rgba(255, 255, 255, 0.96) 0%,
+        rgba(255, 255, 255, 0.8) 60%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+      mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+      border-bottom: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .watermark-text-depth {
+      color: rgba(10, 17, 40, 0.035);
+      letter-spacing: -0.04em;
+      line-height: 0.75;
+      pointer-events: none;
+    }
+
+    /* --- 3D ARC CAROUSEL MECHANICAL INFRASTRUCTURE --- */
+    .arc-viewport-perspective {
+      perspective: 1400px;
+      transform-style: preserve-3d;
+    }
+    
+    .program-arc-track {
+      transform-style: preserve-3d;
+      position: relative;
+    }
+
+    .program-card-node {
+      transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+      transform-style: preserve-3d;
+      will-change: transform, opacity;
+    }
+
+    .program-card-node.state-center {
+      transform: translate3d(0, 0, 0) rotateY(0deg) scale(1);
+      opacity: 1;
+      z-index: 10;
+      pointer-events: auto;
+    }
+
+    .program-card-node.state-left-prev {
+      transform: translate3d(-32%, 0, -200px) rotateY(28deg) scale(0.85);
+      opacity: 0.35;
+      z-index: 4;
+      pointer-events: auto;
+    }
+
+    .program-card-node.state-right-next {
+      transform: translate3d(32%, 0, -200px) rotateY(-28deg) scale(0.85);
+      opacity: 0.35;
+      z-index: 4;
+      pointer-events: auto;
+    }
+
+    .program-card-node.state-stowed-left {
+      transform: translate3d(-60%, 0, -400px) rotateY(45deg) scale(0.7);
+      opacity: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .program-card-node.state-stowed-right {
+      transform: translate3d(60%, 0, -400px) rotateY(-45deg) scale(0.7);
+      opacity: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* --- SEAMLESS PARTNER MARQUEE (duplicate track, -50% loop, no snap) --- */
+    @keyframes marqueeLeft {
+      from { transform: translate3d(0, 0, 0); }
+      to   { transform: translate3d(-50%, 0, 0); }
+    }
+
+    @keyframes marqueeRight {
+      from { transform: translate3d(-50%, 0, 0); }
+      to   { transform: translate3d(0, 0, 0); }
+    }
+
+    .animate-marquee-left,
+    .animate-marquee-right {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      width: max-content;
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+
+    .animate-marquee-left > *,
+    .animate-marquee-right > * {
+      flex-shrink: 0;
+    }
+
+    .animate-marquee-left {
+      animation: marqueeLeft 22s linear infinite;
+    }
+
+    .animate-marquee-right {
+      animation: marqueeRight 26s linear infinite;
+    }
+
+    @media (hover: hover) {
+      .marquee-container:hover .animate-marquee-left,
+      .marquee-container:hover .animate-marquee-right {
+        animation-play-state: paused;
+      }
+    }
+
+    .saas-edge-mask {
+      mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+    }
+
+    /* --- EXPANDING GALLERY --- */
+    .peel-gallery-container {
+      display: flex;
+      width: 100%;
+      gap: 1.25rem;
+      height: 480px;
+    }
+
+    .peel-card {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      border-radius: 9999px;
+      transition: flex 0.85s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .peel-gallery-container:hover .peel-card:hover {
+      flex: 3.8;
+      border-radius: 2.5rem;
+    }
+
+    /* Click/tap-driven state — authoritative on all devices, since iOS
+       Safari doesn't reliably trigger :hover on tap the way Android does. */
+    .peel-card.peel-active {
+      flex: 3.8;
+      border-radius: 2.5rem;
+    }
+
+    .peel-image-wrapper {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .peel-image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.05);
+      transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .peel-card:hover .peel-image-wrapper img,
+    .peel-card.peel-active .peel-image-wrapper img {
+      transform: scale(1);
+    }
+
+    .peel-card.peel-active .peel-overlay {
+      opacity: 1 !important;
+    }
+    
+
+/* --- OPTIMIZED FLUID GRADIENT TRACK GLOW INFRASTRUCTURE --- */
+
+/* 1. Define the custom angle property for hardware-accelerated interpolation */
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.morph-nav-pill {
+  width: 0px;
+  opacity: 0;
+  pointer-events: none;
+  position: relative;
+  /* Lock absolute path coordinates */
+  transition: width 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.morph-nav-pill.state-expanded {
+  width: 180px;
+  opacity: 1;
+}
+
+/* Structural Comet Engine */
+.morph-nav-pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  /* Defines the precise stroke thickness of the border */
+  
+  /* 2. Bind the custom property to the conic gradient */
+  background: conic-gradient(from var(--gradient-angle),
+      transparent 40%,
+      rgba(147, 197, 253, 0.3) 65%,
+      #3b82f6 80%,
+      #ffffff 95%,
+      #3b82f6 100%);
+  
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Active State Dispatcher */
+.morph-nav-pill.state-expanded::before {
+  opacity: 1;
+  animation: traceCapsuleEdge 1.8s linear infinite;
+}
+
+/* 3. Animate the mathematical property, not the background string */
+@keyframes traceCapsuleEdge {
+  0% {
+    --gradient-angle: 0deg;
+  }
+  
+  100% {
+    --gradient-angle: 360deg;
+  }
+}
+
+    /* --- SUBMISSION STATUS SHEET ANIMATIONS --- */
+    .status-icon-pop {
+      animation: statusPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes statusPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .status-check-path {
+      stroke-dasharray: 30;
+      stroke-dashoffset: 30;
+      animation: drawStatusPath 0.5s 0.15s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+    .status-cross-path {
+      stroke-dasharray: 24;
+      stroke-dashoffset: 24;
+      animation: drawStatusPath 0.4s 0.15s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    }
+    @keyframes drawStatusPath { to { stroke-dashoffset: 0; } }
+
+    .status-spinner-ring {
+      animation: statusSpin 0.85s linear infinite;
+      transform-origin: center;
+    }
+    @keyframes statusSpin { to { transform: rotate(360deg); } }
+
+    .morph-nav-pill.pill-error::before {
+      background: conic-gradient(from var(--gradient-angle),
+          transparent 40%,
+          rgba(252, 165, 165, 0.35) 65%,
+          #ef4444 80%,
+          #ffffff 95%,
+          #ef4444 100%);
+    }
+
+    .morph-nav-pill.pill-error {
+      animation: pillErrorShake 0.45s ease;
+      cursor: pointer;
+    }
+
+    @keyframes pillErrorShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-4px); }
+      40% { transform: translateX(4px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
+    }
+
+    .soft-component-card { contain: layout style paint; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .mesh-gradient-canvas,
+      .animate-marquee-left,
+      .animate-marquee-right,
+      .morph-nav-pill.state-expanded::before,
+      .status-spinner-ring {
+        animation: none !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .mesh-gradient-canvas {
+        animation: none;
+        background-position: 30% 40%;
+      }
+      .soft-component-card {
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+    }
+
+    /* Masonry Layout Setup */
+    .masonry-layout-column-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-gap: 2rem;
+      grid-auto-flow: dense;
+    }
+    .masonry-row-span-tall { grid-row: span 2; }
+    .masonry-row-span-short { grid-row: span 1; }
+  
+/* From original index.html (body-level style block) */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes blurFadeIn {
+  from { opacity: 0; filter: blur(12px); transform: translateY(20px); }
+  to { opacity: 1; filter: blur(0px); transform: translateY(0); }
+}
+
+/* ---------------------------------------------------------------------------
+   Remove residual bottom / full-screen overlay when mobile sheet is closed.
+   The sheet uses fixed inset-0; some WebViews still paint a soft blend if
+   backdrop-filter remains on the layer even at blur(0).
+--------------------------------------------------------------------------- */
+#mobileBottomSheet.pointer-events-none {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  /* Fully out of the way while scrolling — no peek of the sheet chrome */
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#mobileBottomSheet.pointer-events-none #bottomSheetDrawer {
+  transform: translateY(110%) !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+#mobileBottomSheet.pointer-events-auto {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#mobileBottomSheet.pointer-events-auto #bottomSheetDrawer {
+  pointer-events: auto !important;
+  /* Do not force transform here — JS controls open position */
+}
+
+/* No extra bottom gradient wash above the floating menu button */
+.block.md\:hidden.fixed.bottom-6 {
+  background: transparent !important;
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Contact page — soft decorative blobs (from original contact.html <style>)
+--------------------------------------------------------------------------- */
+.contact-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(24px);
+  opacity: 0.35;
+  pointer-events: none;
+  animation: none; /* float disabled for performance; static soft blobs */
+}
+
+/* FAQ accordion (contact + other pages that use it) */
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.faq-chevron {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ===== PAGE-SPECIFIC STYLES MERGED FROM ORIGINAL PAGES ===== */
+
+
+/* from contact.html */
+.contact-blob {
+      position: absolute;
+      border-radius: 9999px;
+      filter: blur(24px);
+      opacity: 0.35;
+      pointer-events: none;
+      animation: none;
+    }
+
+
+/* from contact.html */
+/* --- FAQ ACCORDION --- */
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .faq-chevron {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .faq-item.faq-open .faq-chevron {
+      transform: rotate(180deg);
+    }
+
+
+/* from gallery.html */
+.masonry-columns {
+      column-count: 2;
+      column-gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .masonry-columns { column-count: 3; column-gap: 1.25rem; }
+    }
+    @media (min-width: 1200px) {
+      .masonry-columns { column-count: 4; column-gap: 1.25rem; }
+    }
+    .masonry-item {
+      break-inside: avoid;
+      margin-bottom: 1rem;
+      border-radius: 1.75rem;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      background: #f1f5f9;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    @media (min-width: 768px) { .masonry-item { margin-bottom: 1.25rem; } }
+    .masonry-item.gallery-filtered-out {
+      display: none;
+    }
+    .masonry-item img, .masonry-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .masonry-item:hover img, .masonry-item:hover video {
+      transform: scale(1.04);
+    }
+    .masonry-item .masonry-caption {
+      position: absolute;
+      inset: auto 0 0 0;
+      padding: 1rem 1.1rem;
+      background: linear-gradient(to top, rgba(10,17,40,0.75), transparent);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+
+/* from gallery.html */
+.lightbox-visible {
+      display: flex;
+    }
+
+/* gallery filters + media (from original gallery.html) */
+.gallery-filtered-out { display: none; }
+.masonry-item img, .masonry-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.masonry-item:hover img, .masonry-item:hover video {
+  transform: scale(1.04);
+}
+.masonry-item .masonry-caption {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(to top, rgba(10,17,40,0.75), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.masonry-item:hover .masonry-caption { opacity: 1; }
+.gallery-filter-btn { transition: all 0.3s ease; }
+.faq-item.faq-open .faq-chevron { transform: rotate(180deg); }
+
+
+/* ===========================================================================
+   PERFORMANCE LAYER — old devices / reduced motion
+   =========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-marquee-left,
+  .animate-marquee-right,
+  .program-card-node {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Pause marquees when tab is in background is handled in JS; CSS containment helps */
+.marquee-container {
+  contain: layout paint;
+  content-visibility: auto;
+}
+
+/* Contain heavy sections */
+.arc-viewport-perspective {
+  contain: layout paint;
+}
+
+/* Softer will-change — only when interacting if possible */
+.program-card-node {
+  will-change: auto;
+}
+
+/* Mobile / constrained devices — pause continuous marquees */
+/* Mobile marquees stay in motion; reduced-motion handled globally above */
+
+/* Prefer cheaper composites on 3D arc when possible */
+.program-card-node {
+  transition: transform 0.45s ease, opacity 0.45s ease;
+}
+
+
+/* --- LIGHTBOX (gallery) --- */
+#lightboxOverlay {
+  display: none;
+}
+#lightboxOverlay.lightbox-visible {
+  display: flex;
+}
+#lightboxOverlay.lightbox-hidden {
+  display: none;
+}
+
+/* Desktop overlays — ensure interactive stacking */
+#applyScreen,
+#statusScreen,
+#paymentScreen,
+#authScreen {
+  z-index: 60;
+}
+#applyScreen.pointer-events-auto,
+#statusScreen.pointer-events-auto,
+#paymentScreen.pointer-events-auto,
+#authScreen.pointer-events-auto {
+  pointer-events: auto !important;
+}
+#applyDrawer,
+#statusDrawer,
+#paymentDrawer,
+#authDrawer {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+#statusScreen { z-index: 70; }
+#paymentScreen { z-index: 75; }
+
+
+/* Viewport-triggered skeleton shimmer (Wall of Fame / Graduates) */
+@keyframes shimmerMove {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.shimmer-anim {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.15) 0%,
+    rgba(148, 163, 184, 0.35) 40%,
+    rgba(148, 163, 184, 0.15) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmerMove 1.25s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-anim { animation: none; }
+}
+
+
+/* Text image placeholders — replace via assets/images when ready */
+.img-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  min-height: 8rem;
+  width: 100%;
+  color: #64748b;
+  text-align: center;
+  padding: 1rem;
+}
+.img-placeholder-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  max-width: 14rem;
+  line-height: 1.35;
+}
+.partner-chip {
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+}

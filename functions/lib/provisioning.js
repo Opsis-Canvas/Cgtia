@@ -1,0 +1,141 @@
+const { admin, db } = require('./firebaseAdmin');
+
+async function recordInstallmentPayment(appRef, appData, method, reference, amountOverride) {
+  const previousPaid = appData.installmentsPaid || 0;
+  const total = Math.max(1, Number(appData.installmentsTotal || 1));
+  const newPaid = previousPaid + 1;
+  const paidInFull = newPaid >= total;
+  // Next installment due in 30 days (admin can change later)
+  const intervalDays = Number(appData.installmentIntervalDays || 30);
+  let nextDueDate = null;
+  if (!paidInFull) {
+    const d = new Date();
+    d.setDate(d.getDate() + intervalDays);
+    nextDueDate = d.toISOString().slice(0, 10);
+  }
+
+  const amount = (amountOverride != null && amountOverride > 0)
+    ? amountOverride
+    : (total === 1
+      ? (appData.programAmount || appData.amount || 0)
+      : Math.round((appData.programAmount || appData.amount || 0) / total));
+
+  await appRef.update({
+    installmentsPaid: newPaid,
+    installmentsTotal: total,
+    paymentStatus: paidInFull ? 'paid' : 'partial',
+    nextDueDate: nextDueDate,
+    lastPaymentAt: new Date().toISOString(),
+    defaulted: false,
+    updatedAt: new Date(),
+    ...(reference ? { lastTransactionRef: reference } : {}),
+  });
+
+  await db.collection('payments').add({
+    applicationId: appRef.id,
+    email: appData.email || appRef.id || null,
+    fullName: appData.fullName || appData.name || null,
+    method,
+    reference: reference || null,
+    amount,
+    program: appData.program || appData.programId || '',
+    channel: method,
+    installmentNumber: newPaid,
+    installmentsPaid: newPaid,
+    installmentsTotal: total,
+    nextDueDate: nextDueDate,
+    status: 'completed',
+    paymentStatus: paidInFull ? 'paid' : 'partial',
+    createdAt: new Date(),
+  });
+
+  return { installmentsPaid: newPaid, previousInstallmentsPaid: previousPaid, nextDueDate, paidInFull };
+}
+
+async function provisionStudentAccount(applicationId, appData) {
+  const uid = applicationId;
+  const email = appData.email;
+
+  // Generate a temporary password (12 characters)
+  const tempPassword = Math.random().toString(36).slice(-12);
+
+  console.log('📧 [provisionStudentAccount] Starting...');
+
+  // Check if user already exists
+  try {
+    await admin.auth().getUserByEmail(email);
+    console.log('👤 User already exists – updating password...');
+    await admin.auth().updateUser(uid, {
+      email,
+      displayName: appData.fullName || '',
+      password: tempPassword, // Update password
+    });
+  } catch (err) {
+    if (err.code === 'auth/user-not-found') {
+      console.log('👤 User not found – creating new user...');
+      await admin.auth().createUser({
+        uid,
+        email,
+        displayName: appData.fullName || '',
+        emailVerified: true,
+        password: tempPassword,
+      });
+      console.log('✅ User created');
+    } else {
+      console.error('❌ Error checking user:', err);
+      throw err;
+    }
+  }
+
+  // Set custom claims for student role
+  await admin.auth().setCustomUserClaims(uid, { role: 'student' });
+  console.log('✅ Custom claims set');
+
+  // Create user profile in Firestore
+  await db.collection('users').doc(uid).set({
+    email,
+    fullName: appData.fullName || '',
+    phone: appData.phone || '',
+    role: 'student',
+    active: true,
+    applicationId,
+    program: appData.program,
+    mustChangePassword: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }, { merge: true });
+  console.log('✅ Firestore user profile created');
+
+  // Send login credentials email with the temporary password
+  console.log('📧 Attempting to send welcome email...');
+  const { sendMail } = require('./email');
+
+  const loginUrl = 'https://cgtiacademy.netlify.app/';
+
+  try {
+    await sendMail({
+      to: email,
+      subject: 'Your CGTIA Student Account',
+      text: `Hello ${appData.fullName || 'Student'},
+
+Your CGTIA student account has been created.
+
+Login at: ${loginUrl}
+Email: ${email}
+Temporary Password: ${tempPassword}
+
+You will be required to change your password after your first login.
+
+Regards,
+CGTIA Admissions Team`,
+    });
+    console.log('✅ Welcome email sent successfully!');
+  } catch (err) {
+    console.error('❌ Failed to send welcome email:', err.message);
+    // Don't throw – the account is already created
+  }
+
+  return { uid };
+}
+
+module.exports = { recordInstallmentPayment, provisionStudentAccount };
