@@ -1,6 +1,2 @@
-# SPA — serve index.html for client routes (not for /api)
-/api/*  /api/:splat  200
-/pay-fee  /index.html  200
-/field-check/*  /index.html  200
-/licensing/*  /index.html  200
-/*  /index.html  200
+# API stays on functions / worker routes — do not rewrite
+# SPA fallback is configured in wrangler.toml (not_found_handling)
