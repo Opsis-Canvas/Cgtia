@@ -9,6 +9,8 @@ node_modules/**
 package-lock.json
 bun.lock
 bun.lockb
+worker.js
+wrangler.toml
 CLOUDFLARE-DEPLOY.md
 firestore.rules
 firestore.indexes.json
@@ -19,3 +21,4 @@ FIRESTORE-MERGE-NOTES.md
 firestore.rules.MERGE-GUIDE.md
 DEPLOY-SETUP.md
 README.md
+ 

@@ -1,7 +1,12 @@
 name = "cgtia"
+main = "worker.js"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
+# Static site files + SPA fallback
+# binding = "ASSETS" is REQUIRED so this is not "assets-only"
+# (assets-only Workers cannot use variables/secrets)
 [assets]
 directory = "."
+binding = "ASSETS"
 not_found_handling = "single-page-application"

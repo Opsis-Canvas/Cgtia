@@ -1,2 +1,2 @@
-# API stays on functions / worker routes — do not rewrite
-# SPA fallback is configured in wrangler.toml (not_found_handling)
+# SPA fallback is handled by wrangler.toml not_found_handling
+# Do not add /* -> /index.html here (causes infinite loop on Workers)
