@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 async function sendMail({ to, subject, text, html }) {
   const user = process.env.EMAIL_SENDER;
@@ -33,4 +33,5 @@ async function sendMail({ to, subject, text, html }) {
   }
 }
 
-module.exports = { sendMail };
+
+export { sendMail };

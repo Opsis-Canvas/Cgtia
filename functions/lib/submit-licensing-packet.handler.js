@@ -2,7 +2,7 @@
  * One-time licensing packet (documents + notes) after staff invite.
  * Payment can be handled separately / later via Paystack on same flow.
  */
-const { db, admin } = require('./firebaseAdmin');
+import { db, admin } from './firebaseAdmin.js';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -10,7 +10,7 @@ const CORS = {
 };
 function bad(s, e) { return { statusCode: s, headers: CORS, body: JSON.stringify({ error: e }) }; }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return bad(405, 'Method Not Allowed');
   let body;

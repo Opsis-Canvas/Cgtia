@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 
@@ -37,4 +37,5 @@ async function getTransaction({ reference }) {
   return response.data.data;
 }
 
-module.exports = { createCustomer, createDedicatedAccount, getTransaction };
+
+export { createCustomer, createDedicatedAccount, getTransaction };

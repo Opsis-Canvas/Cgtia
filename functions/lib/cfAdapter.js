@@ -1,5 +1,5 @@
 /**
- * Adapt a Netlify-style exports.handler(event) to Cloudflare Pages onRequest.
+ * Adapt Netlify-style handler(event) → Cloudflare Pages onRequest
  */
 export function netlifyToCf(handler) {
   return async function onRequest(context) {
@@ -7,7 +7,9 @@ export function netlifyToCf(handler) {
     try {
       if (env && typeof process !== "undefined" && process.env) {
         for (const k of Object.keys(env)) {
-          if (env[k] != null && process.env[k] == null) process.env[k] = String(env[k]);
+          if (env[k] != null && process.env[k] == null) {
+            process.env[k] = String(env[k]);
+          }
         }
       }
     } catch (e) {}
@@ -21,21 +23,15 @@ export function netlifyToCf(handler) {
 
     let body = null;
     if (request.method !== "GET" && request.method !== "HEAD") {
-      try {
-        body = await request.text();
-      } catch (e) {
-        body = null;
-      }
+      try { body = await request.text(); } catch (e) { body = null; }
     }
-
-    const queryStringParameters = Object.fromEntries(url.searchParams.entries());
 
     const event = {
       httpMethod: request.method,
       headers,
       rawUrl: request.url,
       path: url.pathname,
-      queryStringParameters,
+      queryStringParameters: Object.fromEntries(url.searchParams.entries()),
       body,
       isBase64Encoded: false
     };

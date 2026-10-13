@@ -1,6 +1,3 @@
-import { createRequire } from "node:module";
-const require = createRequire(import.meta.url);
-const { netlifyToCf } = require("../lib/cfAdapter.cjs");
-const mod = require("../lib/submit-licensing-request.handler.js");
-const handler = mod.handler || mod;
+import { netlifyToCf } from "../lib/cfAdapter.js";
+import { handler } from "../lib/submit-licensing-request.handler.js";
 export const onRequest = netlifyToCf(handler);

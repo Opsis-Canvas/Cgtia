@@ -2,11 +2,11 @@
  * Paystack webhook — configure this URL in the Paystack dashboard
  */
 
-const crypto = require('crypto');
-const { admin, db } = require('./firebaseAdmin');
-const { provisionStudentAccount, recordInstallmentPayment } = require('./provisioning');
+import crypto from 'crypto';
+import { admin, db } from './firebaseAdmin.js';
+import { provisionStudentAccount, recordInstallmentPayment } from './provisioning.js';
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   console.log('🔔 ===== PAYSTACK WEBHOOK RECEIVED =====');
   
   if (event.httpMethod !== 'POST') {

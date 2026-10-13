@@ -13,10 +13,10 @@
  * account instead, exactly like before this feature existed.
  */
 
-const { db } = require('./firebaseAdmin');
-const { createCustomer, createDedicatedAccount } = require('./paystack');
+import { db } from './firebaseAdmin.js';
+import { createCustomer, createDedicatedAccount } from './paystack.js';
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }

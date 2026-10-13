@@ -6,8 +6,8 @@
  * claim, passed as `Authorization: Bearer <token>`.
  */
 
-const { admin, db } = require('./firebaseAdmin');
-const { provisionStudentAccount, recordInstallmentPayment } = require('./provisioning');
+import { admin, db } from './firebaseAdmin.js';
+import { provisionStudentAccount, recordInstallmentPayment } from './provisioning.js';
 
 async function requireAdmin(event) {
   const authHeader = event.headers.authorization || event.headers.Authorization || '';
@@ -18,7 +18,7 @@ async function requireAdmin(event) {
   return decoded;
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }

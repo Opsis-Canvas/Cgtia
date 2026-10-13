@@ -1,6 +1,6 @@
-const { sendMail } = require('./email');
+import { sendMail } from './email.js';
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   const to = process.env.ADMIN_EMAIL;
 
   try {

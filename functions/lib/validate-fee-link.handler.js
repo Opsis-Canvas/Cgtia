@@ -2,7 +2,7 @@
  * Validate a fee payment link token (query or body).
  * Used by /pay-fee?token=...
  */
-const { db } = require('./firebaseAdmin');
+import { db } from './firebaseAdmin.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +14,7 @@ function json(status, body) {
   return { statusCode: status, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
     return json(405, { error: 'Method Not Allowed' });
@@ -39,7 +39,7 @@ exports.handler = async (event) => {
     if (!snap.exists) return json(200, { valid: false, error: 'This payment link is invalid.' });
     const link = snap.data() || {};
 
-    if (link.revoked || link.active === false) {
+    if (link.deleted || link.trashed || link.revoked || link.active === false) {
       return json(200, { valid: false, error: 'This payment link has been revoked.' });
     }
 

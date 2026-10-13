@@ -2,7 +2,7 @@
  * Student legal profile intake — requires valid, unexpired, unused invite token.
  * Path on client: /field-check/confirm?token=...
  */
-const { db, admin } = require('./firebaseAdmin');
+import { db, admin } from './firebaseAdmin.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -65,7 +65,7 @@ async function nextRegNumber(yearHint) {
   return `${y}/CG/${randomDigits(4)}${Date.now().toString().slice(-4)}`;
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: CORS, body: '' };
   }

@@ -1,4 +1,4 @@
-const { db } = require('./firebaseAdmin');
+import { db } from './firebaseAdmin.js';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -7,7 +7,7 @@ const CORS = {
 function json(s, b) {
   return { statusCode: s, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify(b) };
 }
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   const token = ((event.queryStringParameters || {}).token || '').trim();
   if (!token) return json(400, { valid: false, error: 'Missing token' });
@@ -15,6 +15,7 @@ exports.handler = async (event) => {
     const snap = await db.collection('licensingInvites').doc(token).get();
     if (!snap.exists) return json(200, { valid: false, error: 'Invalid invite link' });
     const inv = snap.data() || {};
+    if (inv.deleted || inv.trashed) return json(200, { valid: false, error: 'This link is no longer available' });
     if (inv.used) return json(200, { valid: false, error: 'This link was already used' });
     let exp = inv.expiresAt;
     let ms = null;

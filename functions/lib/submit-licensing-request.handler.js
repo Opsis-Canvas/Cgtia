@@ -2,7 +2,7 @@
  * Public licensing REQUEST (interest form on /licensing)
  * Does not issue a licence — staff review in admin.
  */
-const { db, admin } = require('./firebaseAdmin');
+import { db, admin } from './firebaseAdmin.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +14,7 @@ function bad(status, error) {
   return { statusCode: status, headers: CORS, body: JSON.stringify({ error }) };
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return bad(405, 'Method Not Allowed');
 

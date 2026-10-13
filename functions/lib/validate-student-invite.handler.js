@@ -2,7 +2,7 @@
  * Validate a one-time student profile invite token (query or body).
  * Used by /field-check/confirm?token=...
  */
-const { db } = require('./firebaseAdmin');
+import { db } from './firebaseAdmin.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +14,7 @@ function json(status, body) {
   return { statusCode: status, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') {
     return json(405, { error: 'Method Not Allowed' });
@@ -38,6 +38,7 @@ exports.handler = async (event) => {
     const snap = await db.collection('studentInvites').doc(token).get();
     if (!snap.exists) return json(200, { valid: false, error: 'This invite link is invalid.' });
     const inv = snap.data() || {};
+    if (inv.deleted || inv.trashed) return json(200, { valid: false, error: 'This invite link is no longer available.' });
     if (inv.used) return json(200, { valid: false, error: 'This invite link has already been used.' });
     const exp = inv.expiresAt;
     let expiresMs = null;

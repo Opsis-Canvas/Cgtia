@@ -3,8 +3,8 @@
  * Verifies the transaction with Paystack secret, then records payment.
  * Handles both tuition applications AND fee-link payments.
  */
-const { admin, db } = require('./firebaseAdmin');
-const { provisionStudentAccount, recordInstallmentPayment } = require('./provisioning');
+import { admin, db } from './firebaseAdmin.js';
+import { provisionStudentAccount, recordInstallmentPayment } from './provisioning.js';
 
 async function verifyPaystackReference(reference) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
@@ -119,7 +119,7 @@ async function recordFeePayment(data, body) {
   return { recorded: true, payId, studentId };
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }

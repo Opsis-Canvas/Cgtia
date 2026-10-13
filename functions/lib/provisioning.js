@@ -1,4 +1,4 @@
-const { admin, db } = require('./firebaseAdmin');
+import { admin, db } from './firebaseAdmin.js';
 
 async function recordInstallmentPayment(appRef, appData, method, reference, amountOverride) {
   const previousPaid = appData.installmentsPaid || 0;
@@ -108,7 +108,7 @@ async function provisionStudentAccount(applicationId, appData) {
 
   // Send login credentials email with the temporary password
   console.log('📧 Attempting to send welcome email...');
-  const { sendMail } = require('./email');
+  import { sendMail } from './email.js';
 
   const loginUrl = 'https://cgtiacademy.netlify.app/';
 
@@ -138,4 +138,5 @@ CGTIA Admissions Team`,
   return { uid };
 }
 
-module.exports = { recordInstallmentPayment, provisionStudentAccount };
+
+export { recordInstallmentPayment, provisionStudentAccount };
