@@ -1,33 +1,20 @@
 /**
- * CGTIA Worker entry
- * - Enables Runtime variables & secrets (assets-only Workers cannot have env)
- * - Serves the static site from the ASSETS binding
- * - /api/* can be extended to call your function handlers later
+ * NOT USED for normal Cloudflare Pages deploys of CGTIA.
+ *
+ * Pages serves HTML/CSS/JS as static assets (no Worker per page view).
+ * API routes live in functions/api/* and only run for /api/...
+ *
+ * Do not set main = "worker.js" in wrangler.toml or every page hit
+ * will consume Worker request credits.
+ *
+ * Optional local health check only if you intentionally deploy a Worker:
  */
 export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-
-    // Optional: health check so you can confirm the Worker (not only assets) is live
-    if (url.pathname === "/api/health") {
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          hasPaystackKey: Boolean(env.PAYSTACK_SECRET_KEY),
-          hasFirebase: Boolean(env.FIREBASE_SERVICE_ACCOUNT_B64),
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Static site (SPA) via assets binding
-    if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
-    }
-
+  async fetch() {
     return new Response(
-      "CGTIA Worker is running but ASSETS binding is missing. Check wrangler.toml [assets] binding.",
-      { status: 500 }
+      "CGTIA: use Cloudflare Pages + functions/api. This Worker entry is intentionally unused for static pages.",
+      { status: 200, headers: { "Content-Type": "text/plain" } }
     );
   },
 };
+ 

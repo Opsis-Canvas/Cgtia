@@ -1,2 +1,4 @@
-# SPA fallback is handled by wrangler.toml not_found_handling
-# Do not add /* -> /index.html here (causes infinite loop on Workers)
+# SPA: unknown paths → index.html (200 so /about, /tuition, etc. work)
+# /api/* is handled by Pages Functions (see _routes.json) — not redirected.
+/*    /index.html   200
+ 

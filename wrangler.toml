@@ -1,33 +1,11 @@
+# CGTIA — Cloudflare Pages (static site + API Functions only)
+# Home/About/Tuition/etc. = static CDN (no Worker invocation)
+# /api/* only = Pages Functions (Paystack, webhooks, email, invites)
+
 name = "cgtia"
-main = "worker.js"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Static site files + SPA fallback
-# binding = "ASSETS" is REQUIRED so this is not "assets-only"
-# (assets-only Workers cannot use variables/secrets)
-[assets]
-directory = "."
-binding = "ASSETS"
-not_found_handling = "single-page-application"
-
-# ...
-[previews.observability]
-enabled = true
-head_sampling_rate = 1
-
-[previews.observability.logs]
-enabled = false
-head_sampling_rate = 1
-invocation_logs = true
-persist = true
-
-[previews.observability.traces]
-enabled = false
-head_sampling_rate = 1
-persist = true
-
-[previews.observability.issue_detection]
-enabled = false
-# ...
-
+# Static output for Pages (do NOT set main = worker.js — that routes every page through a Worker)
+pages_build_output_dir = "."
+ 

@@ -1,21 +1,39 @@
-# Cloudflare Pages deploy (Git)
+# Cloudflare Pages — static site + API only (saves free-tier credits)
 
-## Dashboard settings (must match)
+## Goal
+
+| Path | How it is served | Uses Worker / Function credits? |
+|------|------------------|----------------------------------|
+| `/`, `/about`, `/tuition`, CSS, JS… | **Static** (CDN) | **No** |
+| `/api/paystack-webhook`, `/api/confirm-paystack-client`, … | **Pages Function** | **Yes** (only when called) |
+
+## Dashboard (Git or direct upload)
 
 - Framework preset: **None**
-- Build command: **leave EMPTY** (do not use `wrangler deploy`)
-- Build output directory: **/** or **.**
-- Root directory: **/** (repo root)
+- Build command: **empty**
+- Build output directory: **.** (or `/`)
+- Root: repo root
 
-## wrangler.toml
+**Do not** deploy this project as a full-site Worker (`main = worker.js`). That makes every page view a Worker request.
 
-Uses `pages_build_output_dir = "."` so Cloudflare does not look for a Worker entry file.
+## Config files that enforce this
 
-## After deploy
+- `wrangler.toml` → `pages_build_output_dir = "."` only (no `main = worker.js`)
+- `_routes.json` → Functions **only** for `/api/*`
+- `_redirects` → SPA fallback for client routes
+- `functions/api/*.js` → Paystack, email, invites, fee links, etc.
 
-Set Environment variables:
-- PAYSTACK_SECRET_KEY
-- FIREBASE_SERVICE_ACCOUNT_B64
-- (email vars if needed)
+## Environment variables (Pages → Settings → Environment variables)
 
-Webhook: https://YOUR_DOMAIN/api/paystack-webhook
+- `FIREBASE_SERVICE_ACCOUNT_B64`
+- `PAYSTACK_SECRET_KEY`
+- `EMAIL_SENDER`
+- `EMAIL_PASSWORD`
+- `ADMIN_EMAIL`
+
+Webhook: `https://YOUR_DOMAIN/api/paystack-webhook`
+
+## After changing config
+
+Redeploy the Pages project so `_routes.json` and `wrangler.toml` apply.
+ 
