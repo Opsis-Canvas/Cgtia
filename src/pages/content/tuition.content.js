@@ -337,8 +337,8 @@ export const tuition_html = `
       </div>
       <div class="flex justify-between items-start mb-6 shrink-0">
         <div>
-          <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-2">Admissions</span>
-          <h3 class="font-editorial text-2xl md:text-3xl font-bold text-blue-950">Apply to CGTIA</h3>
+          <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-2"><span data-cms="applyEyebrow">Admissions</span></span>
+          <h3 class="font-editorial text-2xl md:text-3xl font-bold text-blue-950"><span data-cms="applyTitle">Apply to CGTIA</span></h3>
         </div>
         <button onclick="toggleApplyScreen()" class="text-xs font-bold tracking-widest text-slate-400 uppercase mt-2">Close</button>
       </div>
@@ -348,21 +348,21 @@ export const tuition_html = `
           <input type="text" id="applyWebsiteField" name="website" tabindex="-1" autocomplete="off">
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Full Name</label>
+          <label data-cms="labelFullName" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Full Name</label>
           <input required type="text" placeholder="e.g. Ada Okonkwo" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Phone Number</label>
+            <label data-cms="labelPhone" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Phone Number</label>
             <input required type="tel" placeholder="080X XXX XXXX" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
           </div>
           <div>
-            <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Email Address</label>
+            <label data-cms="labelEmail" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Email Address</label>
             <input required type="email" placeholder="you@email.com" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
           </div>
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program of Interest</label>
+          <label data-cms="labelProgram" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program of Interest</label>
           <select id="programSelect" required onchange="handleProgramChange()" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
             <option value="">Select a program</option>
             <option value="certificate">CGTIA Certificate</option>
@@ -372,16 +372,17 @@ export const tuition_html = `
           </select>
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program Start Date</label>
+          <label data-cms="labelStartDate" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program Start Date</label>
           <div id="startDateDisplay" class="w-full px-5 py-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-sm text-slate-400">Select a program to see its fixed start date</div>
           <p class="text-[11px] text-slate-400 mt-2">Each cohort has one fixed start date &mdash; there's no need to pick your own.</p>
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Tell us a little about you</label>
+          <label data-cms="labelMessage" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Tell us a little about you</label>
           <textarea rows="3" placeholder="Why are you interested in caregiving training?" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition resize-none"></textarea>
         </div>
+        <div id="applyCustomFields" class="space-y-5"></div>
         <button type="submit" class="w-full mt-4 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
-          Submit Application
+          <span data-cms="labelSubmit">Submit Application</span>
         </button>
       </form>
     </div>

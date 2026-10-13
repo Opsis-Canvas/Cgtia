@@ -40,7 +40,7 @@ export const terms_html = `
 
   <!-- Body -->
   <section class="w-full max-w-4xl mx-auto px-6 pb-32 md:pb-48">
-    <div class="soft-component-card rounded-[2.5rem] p-8 md:p-12 border border-white/60 space-y-10 text-slate-600 font-light text-sm md:text-base leading-relaxed">
+    <div data-cms-sections="terms" class="soft-component-card rounded-[2.5rem] p-8 md:p-12 border border-white/60 space-y-10 text-slate-600 font-light text-sm md:text-base leading-relaxed">
 
       <div>
         <h2 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold mb-3">1. Acceptance of Terms</h2>

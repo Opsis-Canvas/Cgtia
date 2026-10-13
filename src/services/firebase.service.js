@@ -91,6 +91,7 @@ export async function saveApplication(app) {
     paymentPlan: "full",
     installmentsTotal: 1,
     installmentsPaid: 0,
+    customAnswers: Array.isArray(window.__cgtiaCustomAnswers) ? window.__cgtiaCustomAnswers : [],
     createdAt: api.serverTimestamp(),
     updatedAt: api.serverTimestamp()
   };
@@ -132,6 +133,13 @@ export async function saveApplication(app) {
       console.log("[cgtia] application created (no resumeToken)", id);
       return id;
     } catch (e2) {
+      // Rules not yet updated to accept customAnswers: save the application without them
+      try {
+        const { customAnswers: _ignored, ...noAnswers } = baseCreate;
+        await api.setDoc(ref, app.resumeToken ? { ...noAnswers, resumeToken: app.resumeToken } : noAnswers);
+        console.warn("[cgtia] application saved without custom answers (update firestore.rules)");
+        return id;
+      } catch (e3) { /* fall through to the error below */ }
       console.error("[cgtia] application create FAILED:", e2);
       throw e2;
     }

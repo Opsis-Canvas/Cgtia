@@ -144,6 +144,10 @@ export async function handleApplySubmitFlow(event) {
   const messageEl = form ? form.querySelector("textarea") : null;
   const message = messageEl ? messageEl.value.trim() : "";
 
+  const customAnswers = window.__cgtiaCollectCustomAnswers ? window.__cgtiaCollectCustomAnswers() : [];
+  if (customAnswers === null) return false;
+  window.__cgtiaCustomAnswers = customAnswers;
+
   Array.from(form.querySelectorAll("input, select, textarea, button")).forEach((el) => {
     el.disabled = true;
   });

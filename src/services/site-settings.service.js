@@ -45,6 +45,14 @@ export async function loadSiteSettings() {
       const tp = await api.getDoc(api.doc(db, "siteContent", "tuitionPage"));
       out.tuitionPage = tp.exists() ? tp.data() : null;
     } catch (e) { out.tuitionPage = null; }
+    try {
+      const lg = await api.getDoc(api.doc(db, "siteContent", "legalPages"));
+      out.legalPages = lg.exists() ? lg.data() : null;
+    } catch (e) { out.legalPages = null; }
+    try {
+      const af = await api.getDoc(api.doc(db, "siteContent", "applyForm"));
+      out.applyForm = af.exists() ? af.data() : null;
+    } catch (e) { out.applyForm = null; }
     const snap = await api.getDocs(api.collection(db, "programs"));
     snap.forEach((docSnap) => {
       const d = docSnap.data();
@@ -82,7 +90,9 @@ export async function loadSiteSettings() {
   }
   window.__cgtiaSiteSettings = out;
   applySiteSettingsToDom(out);
-  applyTuitionPage(out.tuitionPage);
+  applyTuitionPage(Object.assign({}, out.tuitionPage || {}, out.applyForm || {}));
+  applyLegalPages(out.legalPages);
+  applyCustomFields(out.applyForm);
   applyTuitionCardCopy(out);
   try { renderProgramCards(out); } catch (e) { console.warn(e); }
   // Sync tuition card base amounts from admin (always)
@@ -206,8 +216,71 @@ export function getProgramStudyOptions(programKey) {
 }
 
 function escapeText(v) {
-  return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+
+/** Terms and Privacy: sections rebuilt from the saved document */
+export function applyLegalPages(lp) {
+  if (!lp) return;
+  ["terms", "privacy"].forEach((key) => {
+    const el = document.querySelector('[data-cms-sections="' + key + '"]');
+    const doc = lp[key];
+    const sections = doc && Array.isArray(doc.sections) ? doc.sections.filter((x) => x && (x.heading || x.body)) : [];
+    if (!el || !sections.length) return;
+    el.innerHTML = sections.map((sec) => {
+      const paras = String(sec.body || "").split(/\n+/).filter(Boolean).map((line) => {
+        const bullet = line.indexOf("\u2022 ") === 0;
+        const text = escapeText(bullet ? line.slice(2) : line);
+        return bullet ? '<p class="pl-4">&bull; ' + text + "</p>" : "<p>" + text + "</p>";
+      }).join("");
+      return '<div><h2 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold mb-3">' + escapeText(sec.heading || "") + "</h2>" + paras + "</div>";
+    }).join("");
+  });
+}
+
+/** Apply form: custom questions (text, phone, email, date, long text, dropdown) */
+const CF_CLASS = "w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition";
+export function applyCustomFields(cfg) {
+  const mount = document.getElementById("applyCustomFields");
+  const fields = cfg && Array.isArray(cfg.customFields) ? cfg.customFields.filter((f) => f && f.label) : [];
+  window.__cgtiaApplyFields = fields;
+  if (!mount) return;
+  mount.innerHTML = fields.map((f, i) => {
+    const id = "cfield-" + i;
+    const req = f.required ? " required" : "";
+    const label = '<label for="' + id + '" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">' + escapeText(f.label) + (f.required ? ' <span class="text-red-400">*</span>' : "") + "</label>";
+    let input;
+    if (f.type === "long") {
+      input = '<textarea id="' + id + '" rows="3" class="' + CF_CLASS + '"' + req + "></textarea>";
+    } else if (f.type === "select") {
+      input = '<select id="' + id + '" class="' + CF_CLASS + '"' + req + '><option value="">Select one</option>' +
+        (f.options || []).map((o) => '<option value="' + escapeText(o) + '">' + escapeText(o) + "</option>").join("") + "</select>";
+    } else {
+      const t = { phone: "tel", email: "email", date: "date" }[f.type] || "text";
+      input = '<input id="' + id + '" type="' + t + '" class="' + CF_CLASS + '"' + req + ">";
+    }
+    return "<div>" + label + input + "</div>";
+  }).join("");
+}
+
+/** Reads custom answers. Returns null (and points at the field) if a required one is empty. */
+window.__cgtiaCollectCustomAnswers = function () {
+  const fields = window.__cgtiaApplyFields || [];
+  const out = [];
+  for (let i = 0; i < fields.length; i++) {
+    const f = fields[i];
+    const el = document.getElementById("cfield-" + i);
+    if (!el) continue;
+    const v = String(el.value || "").trim();
+    if (f.required && !v) {
+      if (el.reportValidity) el.reportValidity();
+      el.focus();
+      return null;
+    }
+    out.push({ label: f.label, type: f.type || "text", value: v });
+  }
+  return out;
+};
 
 /** Applies admin-edited tuition wording to any element marked data-cms / data-cms-list */
 export function applyTuitionPage(tp) {

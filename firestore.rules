@@ -164,7 +164,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
           'fullName','phone','email','program','startDate','message',
           'status','paymentStatus','paymentPlan','installmentsTotal','installmentsPaid',
-          'createdAt','updatedAt','resumeToken'
+          'createdAt','updatedAt','resumeToken','customAnswers'
         ])
         && request.resource.data.status == "pending"
         && request.resource.data.paymentStatus == "unpaid"
