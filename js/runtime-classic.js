@@ -1387,7 +1387,7 @@ window.payWithPaystackCard = async function () {
       clearPendingPayment();
       // Backup: tell Netlify to record payment + provision portal account (if webhook missed)
       try {
-        fetch("/api/confirm-paystack-client", {
+        fetch("/.netlify/functions/confirm-paystack-client", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ applicationId: email, reference: response.reference || "", source: "client-paystack-callback" })
@@ -1943,13 +1943,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function validateToken(token) {
-    var url = (window.location.origin || "") + "/api/validate-fee-link?token=" + encodeURIComponent(token);
+    var url = (window.location.origin || "") + "/.netlify/functions/validate-fee-link?token=" + encodeURIComponent(token);
     var res = await fetch(url, { method: "GET" });
     return res.json();
   }
 
   async function confirmFeePayment(reference, fee, email, fullName, reg) {
-    var res = await fetch("/api/confirm-paystack-client", {
+    var res = await fetch("/.netlify/functions/confirm-paystack-client", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2507,3 +2507,135 @@ document.addEventListener("DOMContentLoaded", function () {
     boot();
   }
 })();
+
+
+/* --- Contact page: load editable content from siteContent/contactPage --- */
+window.__cgtiaApplyContactPage = async function () {
+  try {
+    var phonesEl = document.getElementById("contact-phones");
+    var waEl = document.getElementById("contact-whatsapps");
+    var emailEl = document.getElementById("contact-emails");
+    var mapEl = document.getElementById("contact-map-iframe");
+    var banner = document.getElementById("contact-wa-banner");
+    if (!phonesEl && !waEl && !banner) return;
+
+    var data = null;
+    try {
+      if (window.__cgtiaGetContactPage) {
+        data = await window.__cgtiaGetContactPage();
+      }
+    } catch (e) {}
+    if (!data && window.firebase && window.firebase.firestore) {
+      // legacy
+    }
+    // Prefer firebase service on window if exposed
+    try {
+      if (!data && window.__cgtiaFirebaseGetDoc) {
+        data = await window.__cgtiaFirebaseGetDoc("siteContent", "contactPage");
+      }
+    } catch (e2) {}
+
+    // Dynamic import path used by site modules
+    try {
+      if (!data) {
+        var mod = await import("/src/services/firebase.service.js").catch(function () { return null; });
+        if (mod && mod.getDb) {
+          var api = await mod.getDb();
+          var snap = await api.getDoc(api.doc(api.db, "siteContent", "contactPage"));
+          if (snap && snap.exists()) data = snap.data();
+          else if (snap && snap.exists === true) data = snap.data();
+          else if (snap && typeof snap.data === "function") {
+            var d = snap.data();
+            if (d) data = d;
+          }
+        }
+      }
+    } catch (e3) {}
+
+    if (!data) return;
+
+    function digits(n) { return String(n || "").replace(/\D/g, ""); }
+    function fmtPhone(n) {
+      var d = digits(n);
+      if (d.indexOf("234") === 0 && d.length >= 13) {
+        return "+" + d.slice(0, 3) + " " + d.slice(3, 6) + " " + d.slice(6, 9) + " " + d.slice(9);
+      }
+      return n;
+    }
+
+    var phones = Array.isArray(data.phones) ? data.phones.filter(Boolean) : [];
+    var whatsapps = Array.isArray(data.whatsapps) ? data.whatsapps.filter(Boolean) : [];
+    var emails = Array.isArray(data.emails) ? data.emails.filter(Boolean) : [];
+    if (!phones.length && data.phone) phones = [data.phone];
+    if (!whatsapps.length && data.whatsapp) whatsapps = [data.whatsapp];
+    if (!emails.length && data.email) emails = [data.email];
+
+    if (phonesEl && phones.length) {
+      phonesEl.innerHTML = phones.map(function (ph) {
+        var d = digits(ph);
+        var href = "tel:+" + d;
+        return '<a href="' + href + '" class="block text-slate-500 font-light text-sm hover:text-blue-950 smooth-transition">' + fmtPhone(ph) + "</a>";
+      }).join("");
+    }
+    if (waEl && whatsapps.length) {
+      waEl.innerHTML = whatsapps.map(function (wa, i) {
+        var d = digits(wa);
+        return '<a href="https://wa.me/' + d + '" target="_blank" rel="noopener" class="block text-slate-500 font-light text-sm hover:text-blue-950 smooth-transition">' + (i === 0 ? "Message the Academy" : fmtPhone(wa)) + "</a>";
+      }).join("");
+    }
+    if (banner && whatsapps.length) {
+      banner.setAttribute("href", "https://wa.me/" + digits(whatsapps[0]));
+    }
+    if (whatsapps.length) {
+      window.CGTIA_WHATSAPP_NUMBER = digits(whatsapps[0]);
+    }
+    if (emailEl && emails.length) {
+      emailEl.innerHTML = emails.map(function (em) {
+        return '<a href="mailto:' + em + '" class="block text-slate-500 font-light text-sm hover:text-blue-950 smooth-transition">' + em + "</a>";
+      }).join("");
+    }
+    if (mapEl && data.mapLat != null && data.mapLng != null) {
+      var lat = String(data.mapLat).trim();
+      var lng = String(data.mapLng).trim();
+      if (lat && lng) {
+        mapEl.src = "https://maps.google.com/maps?q=" + encodeURIComponent(lat + "," + lng) + "&z=15&output=embed";
+      }
+    }
+
+    // FAQs
+    var faqs = Array.isArray(data.faqs) ? data.faqs : [];
+    var list = document.getElementById("contact-faq-list");
+    if (list && faqs.length) {
+      list.innerHTML = faqs.map(function (f) {
+        var q = (f.q || f.question || "").replace(/</g, "&lt;");
+        var a = (f.a || f.answer || "").replace(/</g, "&lt;");
+        return (
+          '<div class="faq-item">' +
+          '<button type="button" onclick="toggleFaq(this)" class="w-full flex justify-between items-center py-6 text-left gap-4">' +
+          '<span class="font-editorial text-lg md:text-xl font-bold text-blue-950">' + q + "</span>" +
+          '<svg class="faq-chevron w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>' +
+          "</button>" +
+          '<div class="faq-answer"><p class="text-slate-500 font-light text-sm leading-relaxed pb-2">' + a + "</p></div>" +
+          "</div>"
+        );
+      }).join("");
+    }
+  } catch (err) {
+    console.warn("applyContactPage", err);
+  }
+};
+
+// Run on load and after SPA navigation
+(function () {
+  function run() {
+    if (typeof window.__cgtiaApplyContactPage === "function") {
+      window.__cgtiaApplyContactPage();
+    }
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+  else run();
+  document.addEventListener("cgtia:page", run);
+  setTimeout(run, 400);
+  setTimeout(run, 1200);
+})();
+

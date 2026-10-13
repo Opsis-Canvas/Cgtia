@@ -184,3 +184,18 @@ export async function getProgramPricing(programKey) {
   } catch (e) {}
   return null;
 }
+
+
+export async function getContactPage() {
+  const api = await getDb();
+  const snap = await api.getDoc(api.doc(api.db, "siteContent", "contactPage"));
+  if (!snap) return null;
+  if (typeof snap.exists === "function" ? snap.exists() : snap.exists) {
+    return snap.data();
+  }
+  const d = typeof snap.data === "function" ? snap.data() : null;
+  return d || null;
+}
+if (typeof window !== "undefined") {
+  window.__cgtiaGetContactPage = getContactPage;
+}
