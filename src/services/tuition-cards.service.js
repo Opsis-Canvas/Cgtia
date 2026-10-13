@@ -65,10 +65,12 @@ export function renderProgramCards(settings) {
     (pr.programs || []).forEach((k) => { byProg[k] = pr; });
   });
 
+  const sortKey = (p) => (Number(p.sortOrder) > 0 ? Number(p.sortOrder) : 9999);
   const list = Object.keys(programs)
     .map((id) => ({ id, ...programs[id] }))
     .filter((p) => p.active !== false);
 
+  list.sort((x, y) => sortKey(x) - sortKey(y));
   const home = list.filter((p) => p.showOnHome !== false);
   const tuition = list.filter((p) => p.showOnTuition !== false);
 

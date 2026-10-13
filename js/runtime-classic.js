@@ -2602,6 +2602,12 @@ window.__cgtiaApplyContactPage = async function () {
       }
     }
 
+    // Contact form wording (editable in admin)
+    var ftEl = document.querySelector("[data-contact-form-title]");
+    if (ftEl && data.formTitle) ftEl.textContent = data.formTitle;
+    var fiEl = document.querySelector("[data-contact-form-intro]");
+    if (fiEl && data.formIntro) fiEl.textContent = data.formIntro;
+
     // FAQs
     var faqs = Array.isArray(data.faqs) ? data.faqs : [];
     var list = document.getElementById("contact-faq-list");
