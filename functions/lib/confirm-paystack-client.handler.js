@@ -17,6 +17,25 @@ async function verifyPaystackReference(reference) {
   return json.data;
 }
 
+async function checkFeePayer(data, body) {
+  const meta = (data && data.metadata) || {};
+  const token = body.feeLinkToken || meta.feeLinkToken || null;
+  if (!token) return { ok: true };
+  const snap = await db.collection('feePaymentLinks').doc(token).get();
+  if (!snap.exists) return { ok: false, error: 'This payment link is invalid.' };
+  const link = snap.data() || {};
+  const rule = link.payerRule || 'student';
+  if (rule === 'anyone') return { ok: true };
+  const paid = String((data.customer && data.customer.email) || '').toLowerCase().trim();
+  if (!paid) return { ok: false, error: 'Could not confirm the payer email. Contact the academy.' };
+  if (rule === 'email') {
+    const want = String(link.payerEmail || '').toLowerCase().trim();
+    return want && paid === want ? { ok: true } : { ok: false, error: 'This payment link is reserved for another email address.' };
+  }
+  const q = await db.collection('students').where('email', '==', paid).limit(1).get();
+  return q.empty ? { ok: false, error: 'We could not find a registered student with this email.' } : { ok: true };
+}
+
 async function recordFeePayment(data, body) {
   const meta = (data && data.metadata) || {};
   const email = (
@@ -151,6 +170,10 @@ export const handler = async (event) => {
       meta.feeType;
 
     if (isFee) {
+      const payerCheck = await checkFeePayer(data, body);
+      if (!payerCheck.ok) {
+        return { statusCode: 403, body: JSON.stringify({ success: false, error: payerCheck.error }) };
+      }
       const result = await recordFeePayment(data, body);
       return {
         statusCode: 200,

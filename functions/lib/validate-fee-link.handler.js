@@ -59,6 +59,21 @@ export const handler = async (event) => {
       return json(200, { valid: false, error: 'This payment link has reached its maximum number of uses.' });
     }
 
+    // Payer check: only runs when the browser sends the email the payer typed
+    const payerEmail = String((event.queryStringParameters && event.queryStringParameters.email) || '').toLowerCase().trim();
+    let payerError = null;
+    if (payerEmail) {
+      const rule = link.payerRule || 'student';
+      if (rule === 'email') {
+        if (link.payerEmail && payerEmail !== String(link.payerEmail).toLowerCase().trim()) {
+          payerError = 'This payment link is reserved for another email address. Use the email the academy has on file.';
+        }
+      } else if (rule === 'student') {
+        const q = await db.collection('students').where('email', '==', payerEmail).limit(1).get();
+        if (q.empty) payerError = 'We could not find a registered student with this email. Use the email the academy has on file.';
+      }
+    }
+
     let amount = Number(link.amount) || 0;
     let feeName = link.feeName || 'Fee';
     let feeType = link.feeType || 'custom';
@@ -95,7 +110,8 @@ export const handler = async (event) => {
       installmentsMax,
       installmentIntervalDays,
       mode: link.mode || 'multi',
-      expiresAt: expiresMs ? new Date(expiresMs).toISOString() : null
+      expiresAt: expiresMs ? new Date(expiresMs).toISOString() : null,
+      payerError
     });
   } catch (err) {
     console.error('validate-fee-link', err);

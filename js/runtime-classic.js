@@ -2329,6 +2329,19 @@ document.addEventListener("DOMContentLoaded", function () {
       setBusy(true, "Opening Paystack…");
 
       function openPopup() {
+        fetch("/api/validate-fee-link?token=" + encodeURIComponent(token) + "&email=" + encodeURIComponent(email))
+          .then(function (r) { return r.json(); })
+          .then(function (pre) {
+            if (pre && pre.payerError) {
+              setStatus("error", pre.payerError);
+              setBusy(false, "Pay " + formatNaira(fee.amount));
+              return;
+            }
+            openPaystackNow();
+          })
+          .catch(function () { openPaystackNow(); });
+      }
+      function openPaystackNow() {
         if (typeof PaystackPop === "undefined") {
           setStatus("error", "Payment library still loading. Try again in a moment.");
           setBusy(false, "Pay " + formatNaira(fee.amount));
@@ -2600,6 +2613,16 @@ window.__cgtiaApplyContactPage = async function () {
       if (lat && lng) {
         mapEl.src = "https://maps.google.com/maps?q=" + encodeURIComponent(lat + "," + lng) + "&z=15&output=embed";
       }
+    }
+
+    // Office hours (editable in admin)
+    var hoursList = document.getElementById("contact-hours-list");
+    if (hoursList && Array.isArray(data.officeHours) && data.officeHours.length) {
+      hoursList.innerHTML = data.officeHours.map(function (h) {
+        var l = String(h.label || "").replace(/</g, "&lt;");
+        var t = String(h.time || "").replace(/</g, "&lt;");
+        return '<div class="flex justify-between border-b border-slate-200/50 pb-3"><span>' + l + '</span><span class="text-blue-950 font-medium">' + t + "</span></div>";
+      }).join("");
     }
 
     // Contact form wording (editable in admin)

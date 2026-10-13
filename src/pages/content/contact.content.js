@@ -106,7 +106,7 @@ export const contact_html = `
       <div class="w-full md:w-2/5">
         <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Office Hours</span>
         <h2 data-contact-form-title class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold leading-tight mb-8">Send Us a Message</h2>
-        <div class="space-y-4 text-slate-500 font-light text-sm md:text-base">
+        <div id="contact-hours-list" class="space-y-4 text-slate-500 font-light text-sm md:text-base">
           <div class="flex justify-between border-b border-slate-200/50 pb-3"><span>Monday &ndash; Friday</span><span class="text-blue-950 font-medium">8:00 AM &ndash; 5:00 PM</span></div>
           <div class="flex justify-between border-b border-slate-200/50 pb-3"><span>Saturday</span><span class="text-blue-950 font-medium">9:00 AM &ndash; 1:00 PM</span></div>
           <div class="flex justify-between pb-3"><span>Sunday</span><span class="text-slate-400">Closed</span></div>

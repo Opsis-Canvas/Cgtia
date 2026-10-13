@@ -81,7 +81,7 @@ export function renderProgramCards(settings) {
     // Hide older static tuition cards on home when CMS data is present
     document.querySelectorAll("#tuition [data-tuition-program]").forEach((el) => {
       const card = el.closest(".soft-component-card, .rounded-\\[2\\.5rem\\], .bg-white\\/90");
-      if (card && !card.closest("#cgtiaHomeProgramCards")) card.style.display = "none";
+      if (card && !card.closest("#cgtiaHomeProgramCards")) card.remove();
     });
   }
   const tuitionMount = document.getElementById("cgtiaTuitionProgramCards");
@@ -90,7 +90,7 @@ export function renderProgramCards(settings) {
     tuitionMount.style.display = "grid";
     document.querySelectorAll("#tuition [data-tuition-program]").forEach((el) => {
       const card = el.closest("div.soft-component-card, div.bg-white\\/90, div.rounded-\\[2\\.5rem\\]");
-      if (card && !card.closest("#cgtiaTuitionProgramCards")) card.style.display = "none";
+      if (card && !card.closest("#cgtiaTuitionProgramCards")) card.remove();
     });
   }
 }
