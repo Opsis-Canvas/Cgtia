@@ -1,4 +1,5 @@
 import { admin, db } from './firebaseAdmin.js';
+import { sendMail } from './email.js';
 
 async function recordInstallmentPayment(appRef, appData, method, reference, amountOverride) {
   const previousPaid = appData.installmentsPaid || 0;
@@ -108,8 +109,6 @@ async function provisionStudentAccount(applicationId, appData) {
 
   // Send login credentials email with the temporary password
   console.log('📧 Attempting to send welcome email...');
-  import { sendMail } from './email.js';
-
   const loginUrl = 'https://cgtiacademy.netlify.app/';
 
   try {
