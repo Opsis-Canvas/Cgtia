@@ -160,6 +160,7 @@ export async function getActivePromotion(programKey) {
   try {
     const { db, api } = await getFirebase();
     const snap = await api.getDocs(api.collection(db, "promotions"));
+    // trashed promotions are hidden from the public site
     let found = null;
     snap.forEach((d) => {
       const data = d.data();

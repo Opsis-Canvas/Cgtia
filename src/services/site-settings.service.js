@@ -44,6 +44,7 @@ export async function loadSiteSettings() {
     const snap = await api.getDocs(api.collection(db, "programs"));
     snap.forEach((docSnap) => {
       const d = docSnap.data();
+      if (d.trashed === true) return;
       out.programs[docSnap.id] = {
         name: d.name || docSnap.id,
         startDate: d.startDate || "To be announced",

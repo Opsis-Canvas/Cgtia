@@ -38,7 +38,7 @@ async function getDb() {
 async function lookupById(col, id) {
   const api = await getDb();
   const snap = await api.getDoc(api.doc(api.db, col, id));
-  if (snap.exists()) return { id: snap.id, ...snap.data() };
+  if (snap.exists() && snap.data().trashed !== true) return { id: snap.id, ...snap.data() };
   return null;
 }
 
@@ -46,7 +46,7 @@ async function lookupByField(col, field, value) {
   const api = await getDb();
   const q = api.query(api.collection(api.db, col), api.where(field, "==", value), api.limit(1));
   const snap = await api.getDocs(q);
-  if (!snap.empty) {
+  if (!snap.empty && snap.docs[0].data().trashed !== true) {
     const d = snap.docs[0];
     return { id: d.id, ...d.data() };
   }
