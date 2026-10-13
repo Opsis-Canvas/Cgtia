@@ -1,4 +1,8 @@
-# SPA: unknown paths → index.html (200 so /about, /tuition, etc. work)
-# /api/* is handled by Pages Functions (see _routes.json) — not redirected.
-/*    /index.html   200
- 
+# API must NOT fall through to SPA (or invites/payments break)
+/api/*  /api/:splat  200
+
+# Client routes → SPA
+/pay-fee  /index.html  200
+/field-check/*  /index.html  200
+/licensing/*  /index.html  200
+/*  /index.html  200

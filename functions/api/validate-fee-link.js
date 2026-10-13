@@ -1,4 +1,6 @@
-const { netlifyToCf } = require("../lib/cfAdapter");
-const mod = require("../lib/validate-fee-link.handler");
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
+const { netlifyToCf } = require("../lib/cfAdapter.cjs");
+const mod = require("../lib/validate-fee-link.handler.js");
 const handler = mod.handler || mod;
-exports.onRequest = netlifyToCf(handler);
+export const onRequest = netlifyToCf(handler);
