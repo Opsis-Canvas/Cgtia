@@ -2,13 +2,12 @@
   "name": "cgtia-site",
   "version": "1.0.0",
   "private": true,
-  "description": "CGTIA public site — Cloudflare Pages + Functions",
+  "description": "CGTIA public site \u2014 Cloudflare Pages + Functions",
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "axios": "^1.6.0",
-    "firebase-admin": "^11.11.0",
     "nodemailer": "^6.9.13"
   }
 }
