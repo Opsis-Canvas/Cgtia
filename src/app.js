@@ -12,6 +12,8 @@ import htm from "htm";
 import { createRouter } from "./router/router.js";
 import { ROUTES } from "./config/routes.config.js";
 import { installApplyFlow } from "./services/apply-flow.service.js";
+import { loadPageControl, pageKeyFor } from "./services/page-control.service.js";
+import { PageStatus } from "./pages/page-status.page.js";
 import { installAuthFlow } from "./services/auth.service.js";
 import { installPromoBanner, loadActivePromotions, renderPromoBanner } from "./services/promo-banner.service.js";
 import { loadSiteSettings, getProgramStartDate, getProgramModality, getProgramStudyOptions } from "./services/site-settings.service.js";
@@ -59,8 +61,18 @@ const routeTable = {
 
 const root = createRoot(document.getElementById("root"));
 
+const pageControlReady = loadPageControl();
+
 function renderPage(PageComponent) {
-  root.render(html`<${PageComponent} />`);
+  pageControlReady.then((control) => {
+    const key = pageKeyFor(window.location.pathname);
+    const rule = control && key ? control[key] : null;
+    if (rule && rule.mode && rule.mode !== "live") {
+      root.render(html`<${PageStatus} rule=${rule} />`);
+      return;
+    }
+    root.render(html`<${PageComponent} />`);
+  });
 }
 
 const router = createRouter(routeTable, renderPage);
