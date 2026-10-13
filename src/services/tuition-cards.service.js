@@ -41,10 +41,11 @@ function cardHtml(p, withPromo) {
       <div class="flex justify-between items-start mb-6">
         <div>
           <h3 class="font-editorial text-xl font-bold text-blue-950" data-tuition-headline>${p.headline || p.name || ""}</h3>
-          <p class="text-xs text-slate-400 mt-1" data-tuition-body>${p.subtitle || p.body || ""}</p>
+          <p class="text-xs text-slate-400 mt-1" data-tuition-body>${p.subtitle || ""}</p>
         </div>
         <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase px-3 py-1 bg-white/50 rounded-full" data-tuition-badge>${p.badge || p.levelLabel || ""}</span>
       </div>
+      ${p.body ? `<p class="text-sm text-slate-500 font-light leading-relaxed mt-6">${String(p.body).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>` : ""}
       <div class="my-8">${priceBlock}
         <span class="text-xs text-slate-400 ml-2 uppercase tracking-wider">${p.priceNote || ""}</span>
       </div>

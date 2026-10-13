@@ -41,6 +41,10 @@ export async function loadSiteSettings() {
       if (d.cohortLabel) out.cohortLabel = d.cohortLabel;
       if (d.footerYear) out.footerYear = String(d.footerYear);
     }
+    try {
+      const tp = await api.getDoc(api.doc(db, "siteContent", "tuitionPage"));
+      out.tuitionPage = tp.exists() ? tp.data() : null;
+    } catch (e) { out.tuitionPage = null; }
     const snap = await api.getDocs(api.collection(db, "programs"));
     snap.forEach((docSnap) => {
       const d = docSnap.data();
@@ -55,7 +59,7 @@ export async function loadSiteSettings() {
         badge: d.badge || "",
         headline: d.headline || d.name || "",
         body: d.body || "",
-        subtitle: d.subtitle || d.body || "",
+        subtitle: d.subtitle || "",
         bullets: d.bullets || "",
         feature1: d.feature1 || "",
         feature2: d.feature2 || "",
@@ -78,6 +82,7 @@ export async function loadSiteSettings() {
   }
   window.__cgtiaSiteSettings = out;
   applySiteSettingsToDom(out);
+  applyTuitionPage(out.tuitionPage);
   applyTuitionCardCopy(out);
   try { renderProgramCards(out); } catch (e) { console.warn(e); }
   // Sync tuition card base amounts from admin (always)
@@ -198,4 +203,23 @@ export function getProgramStudyOptions(programKey) {
     allowInPerson: !p || p.allowInPerson !== false,
     modality: (p && p.modality) || "Online and in person"
   };
+}
+
+function escapeText(v) {
+  return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Applies admin-edited tuition wording to any element marked data-cms / data-cms-list */
+export function applyTuitionPage(tp) {
+  if (!tp) return;
+  document.querySelectorAll("[data-cms]").forEach((el) => {
+    const v = tp[el.getAttribute("data-cms")];
+    if (typeof v === "string" && v.trim()) el.textContent = v;
+  });
+  document.querySelectorAll("[data-cms-list]").forEach((el) => {
+    const items = Array.isArray(tp[el.getAttribute("data-cms-list")])
+      ? tp[el.getAttribute("data-cms-list")].filter(Boolean)
+      : [];
+    if (items.length) el.innerHTML = items.map((t) => "<p>" + escapeText(t) + "</p>").join("");
+  });
 }

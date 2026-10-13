@@ -33,11 +33,11 @@ export const tuition_html = `
 
   <!-- Hero -->
   <section class="w-full max-w-5xl mx-auto px-6 pt-16 md:pt-24 pb-16 md:pb-20 text-center">
-    <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">Admissions</span>
+    <span data-cms="eyebrow" class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">Admissions</span>
     <h1 class="font-editorial text-4xl sm:text-6xl md:text-7xl text-blue-950 font-bold tracking-tight leading-[1.1] mb-8 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
-      Tuition <span class="italic font-normal text-blue-900/90">& Fees</span>.
+      <span data-cms="headlineLead">Tuition</span> <span data-cms="headlineAccent" class="italic font-normal text-blue-900/90">& Fees</span>.
     </h1>
-    <p class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
+    <p data-cms="intro" class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
       Clear, one-time program pricing &mdash; no hidden charges. Choose the track that matches where you are in your caregiving journey.
     </p>
   </section>
@@ -214,9 +214,9 @@ export const tuition_html = `
   <section class="w-full max-w-7xl mx-auto px-6 pb-32 md:pb-48">
     <div class="w-full border-t border-slate-200/60 pt-12 md:pt-16 flex flex-col md:flex-row justify-between items-start gap-8 md:gap-12">
       <div class="w-full md:w-1/3">
-        <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold leading-tight">Payment & Fees Notes</h2>
+        <h2 data-cms="notesTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold leading-tight">Payment & Fees Notes</h2>
       </div>
-      <div class="w-full md:w-2/3 text-slate-500 font-light text-base md:text-lg leading-relaxed space-y-4">
+      <div data-cms-list="notesParagraphs" class="w-full md:w-2/3 text-slate-500 font-light text-base md:text-lg leading-relaxed space-y-4">
         <p>All program fees cover course materials, clinical lab access, and guided internship placement support. Fees are payable in full or in installments &mdash; speak with admissions for a payment plan that fits your schedule.</p>
         <p>Prices are current for the enrolling cohort and may be reviewed for future intakes.</p>
       </div>

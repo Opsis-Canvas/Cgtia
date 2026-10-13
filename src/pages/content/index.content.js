@@ -118,8 +118,8 @@ export const index_html = `
 
   <section id="tuition" data-has-dynamic-cards="1" class="w-full max-w-7xl mx-auto px-6 pb-36">
     <div class="text-left mb-12 md:mb-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Tuition Options</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Straightforward Program Fees</h2>
+      <span data-cms="homeEyebrow" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Tuition Options</span>
+      <h2 data-cms="homeHeadline" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Straightforward Program Fees</h2>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
