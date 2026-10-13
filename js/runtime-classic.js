@@ -1387,7 +1387,7 @@ window.payWithPaystackCard = async function () {
       clearPendingPayment();
       // Backup: tell Netlify to record payment + provision portal account (if webhook missed)
       try {
-        fetch("/.netlify/functions/confirm-paystack-client", {
+        fetch("/api/confirm-paystack-client", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ applicationId: email, reference: response.reference || "", source: "client-paystack-callback" })
@@ -1943,13 +1943,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function validateToken(token) {
-    var url = (window.location.origin || "") + "/.netlify/functions/validate-fee-link?token=" + encodeURIComponent(token);
+    var url = (window.location.origin || "") + "/api/validate-fee-link?token=" + encodeURIComponent(token);
     var res = await fetch(url, { method: "GET" });
     return res.json();
   }
 
   async function confirmFeePayment(reference, fee, email, fullName, reg) {
-    var res = await fetch("/.netlify/functions/confirm-paystack-client", {
+    var res = await fetch("/api/confirm-paystack-client", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

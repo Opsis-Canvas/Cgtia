@@ -60,6 +60,7 @@ export async function loadSiteSettings() {
         feature2: d.feature2 || "",
         feature3: d.feature3 || "",
         feature4: d.feature4 || "",
+        features: Array.isArray(d.features) ? d.features.map((x) => String(x || "").trim()).filter(Boolean) : [d.feature1, d.feature2, d.feature3, d.feature4].filter(Boolean),
         levelLabel: d.levelLabel || "",
         priceNote: d.priceNote || "",
         ctaLabel: d.ctaLabel || "Apply for This Program",

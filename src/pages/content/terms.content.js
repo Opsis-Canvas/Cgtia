@@ -42,10 +42,6 @@ export const terms_html = `
   <section class="w-full max-w-4xl mx-auto px-6 pb-32 md:pb-48">
     <div class="soft-component-card rounded-[2.5rem] p-8 md:p-12 border border-white/60 space-y-10 text-slate-600 font-light text-sm md:text-base leading-relaxed">
 
-      <div class="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 text-xs md:text-sm text-amber-900">
-        This is a plain-language starting point, not a substitute for legal advice. Have a lawyer review and adapt these terms &mdash; particularly the payment, refund, and liability sections &mdash; before relying on them.
-      </div>
-
       <div>
         <h2 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold mb-3">1. Acceptance of Terms</h2>
         <p>By using this website or applying to any CGTIA program, you agree to these terms. If you don't agree, please don't use the site or submit an application.</p>

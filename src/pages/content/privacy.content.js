@@ -42,10 +42,6 @@ export const privacy_html = `
   <section class="w-full max-w-4xl mx-auto px-6 pb-32 md:pb-48">
     <div class="soft-component-card rounded-[2.5rem] p-8 md:p-12 border border-white/60 space-y-10 text-slate-600 font-light text-sm md:text-base leading-relaxed">
 
-      <div class="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 text-xs md:text-sm text-amber-900">
-        This policy is a plain-language starting point, not a substitute for legal advice. Have a lawyer familiar with Nigerian data protection law (the NDPA and NDPC regulations) review and adapt it before you rely on it.
-      </div>
-
       <div>
         <h2 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold mb-3">1. What We Collect</h2>
         <p class="mb-3">Depending on which form you use on this site, we may collect:</p>

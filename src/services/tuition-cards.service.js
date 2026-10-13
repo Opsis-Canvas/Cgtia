@@ -22,7 +22,7 @@ function cardHtml(p, withPromo) {
         <span data-tuition-price class="font-editorial text-5xl font-bold text-blue-950 tracking-tight">${amount}</span>
       </div>`;
 
-  const features = [p.feature1, p.feature2, p.feature3, p.feature4]
+  const features = (Array.isArray(p.features) ? p.features : [p.feature1, p.feature2, p.feature3, p.feature4])
     .filter(Boolean)
     .map((f) => `<li class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-blue-600 shadow-sm"></span> ${f}</li>`)
     .join("");

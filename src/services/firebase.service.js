@@ -188,8 +188,8 @@ export async function getProgramPricing(programKey) {
 
 export async function getContactPage() {
   try {
-    const api = await getDb();
-    const snap = await api.getDoc(api.doc(api.db, "siteContent", "contactPage"));
+    const { db, api } = await getFirebase();
+    const snap = await api.getDoc(api.doc(db, "siteContent", "contactPage"));
     if (!snap) return null;
     const exists = typeof snap.exists === "function" ? snap.exists() : !!snap.exists;
     if (!exists) return null;
