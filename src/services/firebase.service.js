@@ -187,14 +187,17 @@ export async function getProgramPricing(programKey) {
 
 
 export async function getContactPage() {
-  const api = await getDb();
-  const snap = await api.getDoc(api.doc(api.db, "siteContent", "contactPage"));
-  if (!snap) return null;
-  if (typeof snap.exists === "function" ? snap.exists() : snap.exists) {
-    return snap.data();
+  try {
+    const api = await getDb();
+    const snap = await api.getDoc(api.doc(api.db, "siteContent", "contactPage"));
+    if (!snap) return null;
+    const exists = typeof snap.exists === "function" ? snap.exists() : !!snap.exists;
+    if (!exists) return null;
+    return snap.data() || null;
+  } catch (e) {
+    console.warn("getContactPage", e);
+    return null;
   }
-  const d = typeof snap.data === "function" ? snap.data() : null;
-  return d || null;
 }
 if (typeof window !== "undefined") {
   window.__cgtiaGetContactPage = getContactPage;

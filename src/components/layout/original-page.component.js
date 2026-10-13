@@ -78,6 +78,10 @@ export const OriginalPage = ({ markup }) => {
           if (typeof window.checkPendingPaymentOnLoad === "function") {
             window.checkPendingPaymentOnLoad();
           }
+          if (typeof window.__cgtiaApplyContactPage === "function") {
+            window.__cgtiaApplyContactPage();
+          }
+          try { document.dispatchEvent(new CustomEvent("cgtia:page")); } catch (e) {}
         } catch (err) {
           console.warn("Wall of Fame hydrate:", err);
         }

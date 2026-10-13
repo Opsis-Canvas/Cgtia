@@ -1,17 +1,5 @@
+# API Functions
 /api/*  /api/:splat  200
-/about  /index.html  200
-/programs  /index.html  200
-/gallery  /index.html  200
-/tuition  /index.html  200
-/contact  /index.html  200
-/licensing  /index.html  200
-/custom  /index.html  200
-/privacy  /index.html  200
-/terms  /index.html  200
-/verify  /index.html  200
-/dashboard  /index.html  200
-/wall-of-fame  /index.html  200
-/faq  /index.html  200
-/pay-fee  /index.html  200
-/field-check/confirm  /index.html  200
-/licensing/complete  /index.html  200
+
+# SPA shell for all other routes (200 = rewrite, not browser redirect)
+/*    /index.html   200
