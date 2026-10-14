@@ -35,25 +35,31 @@ async function loadSiteSettingsNow() {
   };
   try {
     const { db, api } = await getFirebase();
-    const site = await api.getDoc(api.doc(db, "siteContent", "settings"));
+    // All reads start together, each with a time limit and one retry, so one stalled request can't block the rest
+    const pSite = readDoc(api, db, "settings");
+    const pTp = readDoc(api, db, "tuitionPage");
+    const pLg = readDoc(api, db, "legalPages");
+    const pAf = readDoc(api, db, "applyForm");
+    const pProg = readCollection(api, db, "programs");
+    const site = await pSite;
     if (site.exists()) {
       const d = site.data();
       if (d.cohortLabel) out.cohortLabel = d.cohortLabel;
       if (d.footerYear) out.footerYear = String(d.footerYear);
     }
     try {
-      const tp = await api.getDoc(api.doc(db, "siteContent", "tuitionPage"));
+      const tp = await pTp;
       out.tuitionPage = tp.exists() ? tp.data() : null;
     } catch (e) { out.tuitionPage = null; }
     try {
-      const lg = await api.getDoc(api.doc(db, "siteContent", "legalPages"));
+      const lg = await pLg;
       out.legalPages = lg.exists() ? lg.data() : null;
     } catch (e) { out.legalPages = null; }
     try {
-      const af = await api.getDoc(api.doc(db, "siteContent", "applyForm"));
+      const af = await pAf;
       out.applyForm = af.exists() ? af.data() : null;
     } catch (e) { out.applyForm = null; }
-    const snap = await api.getDocs(api.collection(db, "programs"));
+    const snap = await pProg;
     out.programs = snap.empty ? { ...DEFAULT_PROGRAMS } : {};
     snap.forEach((docSnap) => {
       const d = docSnap.data();
@@ -346,4 +352,34 @@ export function loadSiteSettings() {
     });
   }
   return settingsPromise;
+}
+
+
+/* ---- timed, retried reads for the public site ---- */
+const READ_TIMEOUT_MS = 6000;
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timed out")), ms))
+  ]);
+}
+async function readDoc(api, db, name) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await withTimeout(api.getDoc(api.doc(db, "siteContent", name)), READ_TIMEOUT_MS);
+    } catch (e) {
+      console.warn("[cgtia] could not read siteContent/" + name + " (attempt " + (attempt + 1) + ")", e && e.message);
+    }
+  }
+  return { exists: () => false, data: () => undefined };
+}
+async function readCollection(api, db, name) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await withTimeout(api.getDocs(api.collection(db, name)), READ_TIMEOUT_MS);
+    } catch (e) {
+      console.warn("[cgtia] could not read " + name + " (attempt " + (attempt + 1) + ")", e && e.message);
+    }
+  }
+  return { empty: true, forEach: () => {} };
 }

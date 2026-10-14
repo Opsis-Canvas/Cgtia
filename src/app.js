@@ -68,7 +68,7 @@ const settingsReady = loadSiteSettings().catch(() => null);
 // Never hold a page back for more than 2.5 seconds, even on a slow or blocked connection
 const renderGate = Promise.race([
   Promise.all([pageControlReady, settingsReady]),
-  new Promise((resolve) => setTimeout(() => resolve([null, null]), 2500))
+  new Promise((resolve) => setTimeout(() => resolve([null, null]), 4000))
 ]);
 
 function renderPage(PageComponent) {
