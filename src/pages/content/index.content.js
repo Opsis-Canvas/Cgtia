@@ -122,7 +122,7 @@ export const index_html = `
       <h2 data-cms="homeHeadline" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Straightforward Program Fees</h2>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+    <div data-static-programs="1" class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
       
       <!-- Tier 1: Orientation -->
       <div class="soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/60 flex flex-col justify-between group smooth-transition">

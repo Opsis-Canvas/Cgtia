@@ -54,6 +54,7 @@ async function loadSiteSettingsNow() {
       out.applyForm = af.exists() ? af.data() : null;
     } catch (e) { out.applyForm = null; }
     const snap = await api.getDocs(api.collection(db, "programs"));
+    out.programs = snap.empty ? { ...DEFAULT_PROGRAMS } : {};
     snap.forEach((docSnap) => {
       const d = docSnap.data();
       if (d.trashed === true) return;
@@ -62,6 +63,7 @@ async function loadSiteSettingsNow() {
         startDate: d.startDate || "To be announced",
         modality: d.modality || "Online and in person",
         amount: d.amount,
+        priceText: d.priceText || "",
         allowOnline: d.allowOnline !== false,
         allowInPerson: d.allowInPerson !== false,
         badge: d.badge || "",

@@ -45,7 +45,7 @@ export const tuition_html = `
   <!-- Pricing Grid -->
   <div id="cgtiaTuitionProgramCards" class="w-full max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-6 pb-8"></div>
   <section id="tuition" class="w-full max-w-7xl mx-auto px-6 pb-32">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-stretch">
+    <div data-static-programs="1" class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-stretch">
 
       <!-- Tier 0: Orientation (Free) -->
       <div class="soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/60 flex flex-col justify-between group smooth-transition">

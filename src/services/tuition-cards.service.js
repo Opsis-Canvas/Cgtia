@@ -7,9 +7,15 @@ function formatShort(n) {
   return "₦" + v;
 }
 
+function formatPrice(p) {
+  if (p.priceText) return String(p.priceText);
+  const n = Number(p.amount) || 0;
+  return n > 0 ? "₦" + n.toLocaleString("en-NG") : "Free";
+}
+
 function cardHtml(p, withPromo) {
-  const amount = formatShort(p.amount);
-  const promo = withPromo && withPromo.promoAmount ? withPromo : null;
+  const amount = formatPrice(p);
+  const promo = withPromo && withPromo.promoAmount && !p.priceText ? withPromo : null;
   const priceBlock = promo
     ? `<div data-tuition-program="${p.id}" data-full-amount="${Number(p.amount) || 0}">
         <span data-tuition-price>
@@ -67,6 +73,10 @@ export function renderProgramCards(settings) {
   });
 
   const sortKey = (p) => (Number(p.sortOrder) > 0 ? Number(p.sortOrder) : 9999);
+  // Saved programmes replace the static cards in the page markup, on both pages
+  if (Object.keys(programs).length) {
+    document.querySelectorAll("[data-static-programs]").forEach((el) => el.remove());
+  }
   const list = Object.keys(programs)
     .map((id) => ({ id, ...programs[id] }))
     .filter((p) => p.active !== false);
