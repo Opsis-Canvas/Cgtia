@@ -180,6 +180,7 @@ function renderPromoBannerOnly(list) {
       window.__cgtiaPromoMinimized = true;
       setTimeout(function () {
         if (bar && bar.parentNode) bar.remove();
+        document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
         /* promotions do not use the bell */
       }, 500);
     };
@@ -259,7 +260,7 @@ export async function installPromoBanner() {
 
 /** Bottom-left promo bell — does not cover the ⋮ menu */
 export function showSolidBottomPromoBar() {
-  const list = (window.__cgtiaActivePromos || []).filter((p) => !p.hibernated && p.active !== false);
+  const list = (window.__cgtiaActivePromos || []).filter((p) => !p.hibernated && p.active !== false && p.type === "announcement");
   if (!list.length) {
     const b = document.getElementById("cgtiaPromoBell");
     if (b) b.remove();
@@ -367,18 +368,22 @@ function openPromoSheet(list) {
   sheet = document.createElement("div");
   sheet.id = "cgtiaPromoSheet";
   sheet.style.cssText = "position:fixed;inset:0;z-index:95;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;";
-  const cards = (list || []).filter(function (p) { return p.type === "announcement"; }).map(function (p) {
-    const amount = p.promoAmount ? "₦" + (Number(p.promoAmount) >= 1000 ? Math.round(Number(p.promoAmount) / 1000) + "k" : p.promoAmount) : "";
+  const items = (list || []).filter(function (p) { return p.type === "announcement"; });
+  const cards = items.map(function (p) {
+    const label = p.bellButtonLabel || p.linkLabel || "";
+    const dest = p.bellButtonUrl || p.linkUrl || "";
+    const button = label && dest
+      ? '<button type="button" data-promo-go="' + esc2(dest) + '" style="width:100%;padding:.85rem;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">' + esc2(label) + "</button>"
+      : "";
     return '<div style="padding:.9rem 0;border-top:1px solid #e2e8f0">' +
-      '<h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin:0 0 .35rem">' + esc2(p.title || "Special offer") + "</h3>" +
-      (amount ? '<p style="font-size:1.3rem;font-weight:800;color:#1e3a8a;margin:0 0 .35rem">' + amount + "</p>" : "") +
+      '<h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin:0 0 .35rem">' + esc2(p.title || "Announcement") + "</h3>" +
       '<p style="font-size:.9rem;color:#475569;line-height:1.5;margin:0 0 .75rem">' + esc2(p.bellText || p.description || "") + "</p>" +
-      '<button type="button" data-promo-go="' + esc2(p.bellButtonUrl || (p.type === "announcement" ? (p.linkUrl || "/") : "/tuition")) + '" style="width:100%;padding:.85rem;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">' + esc2(p.bellButtonLabel || (p.type === "announcement" ? (p.linkLabel || "Read more") : "View tuition")) + "</button></div>";
+      button + "</div>";
   }).join("");
   sheet.innerHTML =
     '<div style="width:100%;max-width:28rem;background:#fff;border-radius:1.75rem 1.75rem 0 0;padding:1.25rem 1.35rem 2rem;box-shadow:0 -12px 40px rgba(0,0,0,.2);max-height:80vh;overflow:auto">' +
     '<div style="width:2.5rem;height:4px;background:#e2e8f0;border-radius:999px;margin:0 auto 1rem"></div>' +
-    (cards || '<p style="color:#475569">No offers right now.</p>') +
+    (cards || '<p style="color:#475569">Nothing new right now.</p>') +
     '<button type="button" id="cgtiaPromoSheetClose" style="width:100%;margin-top:.6rem;padding:.7rem;border:0;background:transparent;color:#64748b;font-size:12px;cursor:pointer">Close</button></div>';
   sheet.addEventListener("click", function (e) {
     if (e.target === sheet || e.target.id === "cgtiaPromoSheetClose") { sheet.remove(); return; }
@@ -386,6 +391,10 @@ function openPromoSheet(list) {
     if (!go) return;
     const url = go.getAttribute("data-promo-go");
     sheet.remove();
+    if (url === "apply") {
+      if (window.toggleApplyScreen) window.toggleApplyScreen();
+      return;
+    }
     if (url.indexOf("/") === 0) {
       if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
       else window.location.href = url;
@@ -395,7 +404,6 @@ function openPromoSheet(list) {
   });
   document.body.appendChild(sheet);
 }
-
 
 /** Top bar: promotions only. Announcements have their own card. */
 export function renderPromoBanner(list) {
@@ -465,6 +473,8 @@ function renderAnnouncement(all) {
     if (anns.length && window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
     return;
   }
+  const bellNow = document.getElementById("cgtiaPromoBell");
+  if (bellNow) bellNow.remove();
   if (existing && existing.dataset.id === pick.id) return;
   if (existing) existing.remove();
   const card = document.createElement("div");

@@ -35,6 +35,50 @@ async function getDb() {
   return { db, doc, getDoc, collection, query, where, getDocs, limit };
 }
 
+let verifyLoaderTimer = null;
+function showVerifyLoader() {
+  hideVerifyLoader();
+  const msgs = ["Checking credentials…", "Searching our records…", "Confirming the details…", "Almost there…"];
+  const el = document.createElement("div");
+  el.id = "cgtiaVerifyLoader";
+  el.setAttribute("role", "status");
+  el.style.cssText = "position:fixed;inset:0;z-index:200;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;padding:2rem;text-align:center";
+  el.innerHTML =
+    '<style>@keyframes cgtiaSpin{to{transform:rotate(360deg)}}</style>' +
+    '<div style="font-size:2rem;font-weight:900;letter-spacing:-.02em;color:#0f172a">CGTIA<span style="color:#1e3a8a">.</span></div>' +
+    '<div style="width:56px;height:56px;border-radius:50%;border:4px solid #e2e8f0;border-top-color:#1e3a8a;animation:cgtiaSpin .9s linear infinite"></div>' +
+    '<p data-verify-msg style="font-size:.95rem;color:#475569;min-height:1.5em;margin:0">' + msgs[0] + "</p>";
+  document.body.appendChild(el);
+  let i = 0;
+  verifyLoaderTimer = setInterval(function () {
+    i = (i + 1) % msgs.length;
+    const p = el.querySelector("[data-verify-msg]");
+    if (p) p.textContent = msgs[i];
+  }, 900);
+  return el;
+}
+function hideVerifyLoader() {
+  if (verifyLoaderTimer) { clearInterval(verifyLoaderTimer); verifyLoaderTimer = null; }
+  const el = document.getElementById("cgtiaVerifyLoader");
+  if (el) el.remove();
+}
+function showVerifyResult(kind, data, q) {
+  const existing = document.getElementById("cgtiaVerifyPage");
+  if (existing) existing.remove();
+  const page = document.createElement("div");
+  page.id = "cgtiaVerifyPage";
+  page.style.cssText = "position:fixed;inset:0;z-index:200;background:#f8fafc;overflow:auto;padding:1.25rem";
+  page.innerHTML =
+    '<div style="max-width:40rem;margin:0 auto">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">' +
+    '<div style="font-size:1.5rem;font-weight:900;color:#0f172a">CGTIA<span style="color:#1e3a8a">.</span></div>' +
+    '<button type="button" data-verify-close style="background:transparent;border:0;color:#475569;font-size:14px;cursor:pointer">Close</button></div>' +
+    '<div data-verify-body></div></div>';
+  document.body.appendChild(page);
+  page.querySelector("[data-verify-close]").onclick = function () { page.remove(); };
+  renderCard(page.querySelector("[data-verify-body]"), kind, data, q);
+}
+
 async function lookupRecord(kind, q) {
   const res = await fetch("/api/verify-record?kind=" + encodeURIComponent(kind) + "&q=" + encodeURIComponent(q));
   const j = await res.json().catch(function () { return {}; });
@@ -238,7 +282,8 @@ function installVerify() {
     btn.disabled = true;
     btn.textContent = "Checking…";
     result.classList.remove("hidden");
-    result.innerHTML = `<p style="font-size:.875rem;color:#64748b">Looking up…</p>`;
+    showVerifyLoader();
+    const minWait = new Promise(function (r) { setTimeout(r, 3200); });
     try {
       let data = null;
       if (kind === "certificate") {
@@ -253,8 +298,12 @@ function installVerify() {
       } else if (kind === "student") {
         data = await lookupRecord("student", q);
       }
-      renderCard(result, kind, data, q);
+      await minWait;
+      hideVerifyLoader();
+      showVerifyResult(kind, data, q);
     } catch (err) {
+      await minWait;
+      hideVerifyLoader();
       result.innerHTML = `<div class="cgtia-v-box cgtia-v-bad"><p>Could not reach verification service.</p><p style="font-size:.75rem">${escapeHtml(err.message || "")}</p></div>`;
     } finally {
       btn.disabled = false;
