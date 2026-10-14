@@ -35,6 +35,13 @@ async function getDb() {
   return { db, doc, getDoc, collection, query, where, getDocs, limit };
 }
 
+async function lookupRecord(kind, q) {
+  const res = await fetch("/api/verify-record?kind=" + encodeURIComponent(kind) + "&q=" + encodeURIComponent(q));
+  const j = await res.json().catch(function () { return {}; });
+  if (!res.ok) throw new Error(j.error || "Verification is unavailable right now.");
+  return j.valid ? j.record : null;
+}
+
 async function lookupById(col, id) {
   const api = await getDb();
   const snap = await api.getDoc(api.doc(api.db, col, id));
@@ -235,16 +242,16 @@ function installVerify() {
     try {
       let data = null;
       if (kind === "certificate") {
-        data = await lookupById("certificates", q.toUpperCase()) || await lookupByField("certificates", "code", q.toUpperCase());
+        data = await lookupRecord("certificate", q);
       } else if (kind === "id-card") {
-        data = await lookupById("idCards", q.toUpperCase()) || await lookupByField("idCards", "code", q.toUpperCase());
+        data = await lookupRecord("id-card", q);
         if (data && data.expiryDate && new Date(data.expiryDate) < new Date() && String(data.status).toLowerCase() === "valid") {
           data = { ...data, status: "expired" };
         }
       } else if (kind === "licence") {
-        data = await lookupById("licences", q.toUpperCase()) || await lookupByField("licences", "code", q.toUpperCase());
+        data = await lookupRecord("licence", q);
       } else if (kind === "student") {
-        data = await lookupByField("students", "regNumber", q) || await lookupById("students", q);
+        data = await lookupRecord("student", q);
       }
       renderCard(result, kind, data, q);
     } catch (err) {

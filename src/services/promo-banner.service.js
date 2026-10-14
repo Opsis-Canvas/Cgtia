@@ -41,6 +41,7 @@ export async function loadActivePromotions() {
     const now = Date.now();
     snap.forEach((d) => {
       const data = { id: d.id, ...d.data() };
+      if (data.trashed === true) return;
       if (data.hibernated) return;
       if (!data.active) return;
       if (data.endsAt) {
@@ -103,7 +104,7 @@ function renderPromoBannerOnly(list) {
   }
   if (sessionStorage.getItem("cgtiaPromoBannerClosed") === "1") {
     window.__cgtiaPromoMinimized = true;
-    if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+    /* promotions do not use the bell */
     return;
   }
   if (!bar) {
@@ -122,7 +123,7 @@ function renderPromoBannerOnly(list) {
       else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
       else window.location.href = "/tuition";
       setTimeout(function () {
-        if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+        /* promotions do not use the bell */
         if (window.__cgtiaApplyTuitionPromoPricing) {
           window.__cgtiaApplyTuitionPromoPricing(window.__cgtiaActivePromos || []);
         }
@@ -160,11 +161,11 @@ function renderPromoBannerOnly(list) {
   const fullHtml = bar.innerHTML;
   bar.innerHTML =
     '<div data-promo-full style="position:relative">' + fullHtml +
-    '<button type="button" data-promo-collapse aria-label="Collapse" style="position:absolute;left:0;bottom:-4px;background:transparent;border:0;color:#94a3b8;font-size:14px;cursor:pointer">▲</button></div>' +
+    '<button type="button" data-promo-collapse aria-label="Collapse" style="position:absolute;left:0;bottom:-4px;background:transparent;border:0;color:#94a3b8;cursor:pointer;padding:2px;display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"></polyline></svg></button></div>' +
     '<div data-promo-strip style="display:none;align-items:center;justify-content:space-between;gap:10px;height:34px">' +
     '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">' +
     esc2((list || []).map(function (p) { return p.title || "Offer"; }).join(" · ")) + "</span>" +
-    '<button type="button" data-promo-expand aria-label="Show offer" style="background:transparent;border:0;color:#fff;font-size:16px;cursor:pointer;padding:0 4px">▼</button></div>';
+    '<button type="button" data-promo-expand aria-label="Show offer" style="background:transparent;border:0;color:#fff;cursor:pointer;padding:2px 4px;display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div>';
   installPromoStrip(bar);
   if (window.__cgtiaSetPromoState) window.__cgtiaSetPromoState(window.scrollY < 40 ? "full" : "strip");
   bar.style.position = "sticky";
@@ -179,7 +180,7 @@ function renderPromoBannerOnly(list) {
       window.__cgtiaPromoMinimized = true;
       setTimeout(function () {
         if (bar && bar.parentNode) bar.remove();
-        if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+        /* promotions do not use the bell */
       }, 500);
     };
   }
@@ -366,7 +367,7 @@ function openPromoSheet(list) {
   sheet = document.createElement("div");
   sheet.id = "cgtiaPromoSheet";
   sheet.style.cssText = "position:fixed;inset:0;z-index:95;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;";
-  const cards = (list || []).map(function (p) {
+  const cards = (list || []).filter(function (p) { return p.type === "announcement"; }).map(function (p) {
     const amount = p.promoAmount ? "₦" + (Number(p.promoAmount) >= 1000 ? Math.round(Number(p.promoAmount) / 1000) + "k" : p.promoAmount) : "";
     return '<div style="padding:.9rem 0;border-top:1px solid #e2e8f0">' +
       '<h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin:0 0 .35rem">' + esc2(p.title || "Special offer") + "</h3>" +
