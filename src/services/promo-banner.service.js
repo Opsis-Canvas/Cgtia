@@ -94,10 +94,11 @@ function tickCountdowns() {
   });
 }
 
-export function renderPromoBanner(list) {
+function renderPromoBannerOnly(list) {
   let bar = document.getElementById("cgtiaPromoBanner");
   if (!list || !list.length) {
     if (bar) bar.remove();
+    document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
     return;
   }
   if (sessionStorage.getItem("cgtiaPromoBannerClosed") === "1") {
@@ -113,7 +114,7 @@ export function renderPromoBanner(list) {
       "position:sticky;top:0;z-index:90;background:#0f172a;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;transform:translateY(-100%);transition:transform 0.55s cubic-bezier(0.16,1,0.3,1);cursor:pointer;"
     );
     bar.addEventListener("click", function (e) {
-      if (e.target && e.target.closest && e.target.closest("[data-promo-close]")) return;
+      if (e.target && e.target.closest && e.target.closest("[data-promo-close],[data-promo-expand],[data-promo-collapse]")) return;
       // Close top banner and show solid bottom bar after navigation
       sessionStorage.setItem("cgtiaPromoBannerClosed", "1");
       window.__cgtiaPromoMinimized = true;
@@ -155,6 +156,17 @@ export function renderPromoBanner(list) {
     })
     .join("") + '<button type="button" data-promo-close aria-label="Close" style="position:absolute;right:10px;top:8px;background:transparent;border:0;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer;padding:4px 8px">×</button>';
 
+  // Full banner + thin strip: the strip shows after scrolling, so the header stays visible
+  const fullHtml = bar.innerHTML;
+  bar.innerHTML =
+    '<div data-promo-full style="position:relative">' + fullHtml +
+    '<button type="button" data-promo-collapse aria-label="Collapse" style="position:absolute;left:0;bottom:-4px;background:transparent;border:0;color:#94a3b8;font-size:14px;cursor:pointer">▲</button></div>' +
+    '<div data-promo-strip style="display:none;align-items:center;justify-content:space-between;gap:10px;height:34px">' +
+    '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">' +
+    esc2((list || []).map(function (p) { return p.title || "Offer"; }).join(" · ")) + "</span>" +
+    '<button type="button" data-promo-expand aria-label="Show offer" style="background:transparent;border:0;color:#fff;font-size:16px;cursor:pointer;padding:0 4px">▼</button></div>';
+  installPromoStrip(bar);
+  if (window.__cgtiaSetPromoState) window.__cgtiaSetPromoState(window.scrollY < 40 ? "full" : "strip");
   bar.style.position = "sticky";
   bar.onclick = bar.onclick;
   var closeBtn = bar.querySelector("[data-promo-close]");
@@ -360,7 +372,7 @@ function openPromoSheet(list) {
       '<h3 style="font-size:1.05rem;font-weight:800;color:#0f172a;margin:0 0 .35rem">' + esc2(p.title || "Special offer") + "</h3>" +
       (amount ? '<p style="font-size:1.3rem;font-weight:800;color:#1e3a8a;margin:0 0 .35rem">' + amount + "</p>" : "") +
       '<p style="font-size:.9rem;color:#475569;line-height:1.5;margin:0 0 .75rem">' + esc2(p.bellText || p.description || "") + "</p>" +
-      '<button type="button" data-promo-go="' + esc2(p.bellButtonUrl || "/tuition") + '" style="width:100%;padding:.85rem;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">' + esc2(p.bellButtonLabel || "View tuition") + "</button></div>";
+      '<button type="button" data-promo-go="' + esc2(p.bellButtonUrl || (p.type === "announcement" ? (p.linkUrl || "/") : "/tuition")) + '" style="width:100%;padding:.85rem;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">' + esc2(p.bellButtonLabel || (p.type === "announcement" ? (p.linkLabel || "Read more") : "View tuition")) + "</button></div>";
   }).join("");
   sheet.innerHTML =
     '<div style="width:100%;max-width:28rem;background:#fff;border-radius:1.75rem 1.75rem 0 0;padding:1.25rem 1.35rem 2rem;box-shadow:0 -12px 40px rgba(0,0,0,.2);max-height:80vh;overflow:auto">' +
@@ -381,4 +393,105 @@ function openPromoSheet(list) {
     }
   });
   document.body.appendChild(sheet);
+}
+
+
+/** Top bar: promotions only. Announcements have their own card. */
+export function renderPromoBanner(list) {
+  const all = list || [];
+  renderPromoBannerOnly(all.filter(function (p) { return p.type !== "announcement"; }));
+  setTimeout(function () { renderAnnouncement(all); }, 700);
+}
+
+/** Collapses the top bar into a strip after scrolling; the ▼ opens it again */
+function installPromoStrip(bar) {
+  if (window.__cgtiaStripInstalled) return;
+  window.__cgtiaStripInstalled = true;
+  const style = document.createElement("style");
+  style.textContent = ".faded-sticky-header{top:var(--cgtia-strip-h,0px)!important}";
+  document.head.appendChild(style);
+  let expanded = false;
+  let lastY = window.scrollY || 0;
+  const setState = function (state) {
+    const el = document.getElementById("cgtiaPromoBanner");
+    if (!el) return;
+    const full = el.querySelector("[data-promo-full]");
+    const strip = el.querySelector("[data-promo-strip]");
+    if (!full || !strip) return;
+    const showStrip = state === "strip";
+    full.style.display = showStrip ? "none" : "block";
+    strip.style.display = showStrip ? "flex" : "none";
+    el.style.padding = showStrip ? "0 14px" : "12px 18px";
+    el.dataset.state = state;
+    requestAnimationFrame(function () {
+      document.documentElement.style.setProperty("--cgtia-strip-h", el.offsetHeight + "px");
+    });
+  };
+  window.__cgtiaSetPromoState = setState;
+  window.addEventListener("scroll", function () {
+    const y = window.scrollY || 0;
+    const delta = Math.abs(y - lastY);
+    lastY = y;
+    if (y < 40) { expanded = false; setState("full"); return; }
+    if (expanded && delta > 6) { expanded = false; setState("strip"); return; }
+    if (!expanded) setState("strip");
+  }, { passive: true });
+  bar.addEventListener("click", function (e) {
+    if (e.target.closest && e.target.closest("[data-promo-expand]")) { expanded = true; setState("full"); }
+    if (e.target.closest && e.target.closest("[data-promo-collapse]")) { expanded = false; setState("strip"); }
+  });
+}
+
+/** Announcements: a card at the bottom left, closed to the bell */
+function announcementKey(a) { return "cgtiaAnn:" + a.id; }
+function shouldShowAnnouncement(a) {
+  let rec = null;
+  try { rec = JSON.parse(localStorage.getItem(announcementKey(a)) || "null"); } catch (e) { rec = null; }
+  if (!rec || !rec.closedAt) return true;
+  const hours = Number(a.repeatHours) || 0;
+  if (!hours) return false;
+  return Date.now() - rec.closedAt > hours * 3600000;
+}
+function markAnnouncementSeen(a) {
+  try { localStorage.setItem(announcementKey(a), JSON.stringify({ closedAt: Date.now() })); } catch (e) { /* storage blocked */ }
+}
+function renderAnnouncement(all) {
+  const anns = (all || []).filter(function (p) { return p.type === "announcement" && p.id; });
+  const pick = anns.find(shouldShowAnnouncement);
+  const existing = document.getElementById("cgtiaAnnouncement");
+  if (!pick) {
+    if (existing) existing.remove();
+    if (anns.length && window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+    return;
+  }
+  if (existing && existing.dataset.id === pick.id) return;
+  if (existing) existing.remove();
+  const card = document.createElement("div");
+  card.id = "cgtiaAnnouncement";
+  card.dataset.id = pick.id;
+  card.setAttribute("role", "status");
+  card.style.cssText =
+    "position:fixed;left:16px;bottom:16px;z-index:97;max-width:22rem;width:calc(100% - 32px);box-sizing:border-box;" +
+    "background:#0f172a;color:#fff;border-radius:1.25rem;padding:1rem 2.25rem 1.1rem 1.1rem;box-shadow:0 18px 40px rgba(15,23,42,.35);" +
+    "font-size:14px;line-height:1.5;transform:translateY(20px);opacity:0;transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s";
+  const link = pick.linkUrl
+    ? '<a href="' + esc2(pick.linkUrl) + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:.75rem;padding:.55rem 1rem;border-radius:999px;background:#fff;color:#0f172a;font-weight:700;font-size:12px;text-decoration:none">' + esc2(pick.linkLabel || "Read more") + "</a>"
+    : "";
+  card.innerHTML =
+    '<button type="button" aria-label="Close" data-ann-close style="position:absolute;right:10px;top:8px;background:transparent;border:0;color:#94a3b8;font-size:20px;line-height:1;cursor:pointer">×</button>' +
+    '<div style="font-weight:800;font-size:15px">' + esc2(pick.title || "Announcement") + "</div>" +
+    (pick.description ? '<div style="margin-top:.35rem;color:#cbd5e1">' + esc2(pick.description) + "</div>" : "") +
+    link;
+  document.body.appendChild(card);
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      card.style.transform = "translateY(0)";
+      card.style.opacity = "1";
+    });
+  });
+  card.querySelector("[data-ann-close]").onclick = function () {
+    markAnnouncementSeen(pick);
+    card.remove();
+    if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+  };
 }
