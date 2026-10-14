@@ -115,7 +115,7 @@ function renderPromoBannerOnly(list) {
     bar.id = "cgtiaPromoBanner";
     bar.setAttribute(
       "style",
-      "position:sticky;top:0;z-index:90;background:#0f172a;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;transform:translateY(-100%);transition:transform 0.55s cubic-bezier(0.16,1,0.3,1);cursor:pointer;"
+      "position:fixed;top:0;left:0;right:0;z-index:90;background:#0f172a;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;transform:translateY(-100%);transition:transform 0.55s cubic-bezier(0.16,1,0.3,1);cursor:pointer;"
     );
     bar.addEventListener("click", function (e) {
       if (e.target && e.target.closest && e.target.closest("[data-promo-close],[data-promo-expand],[data-promo-collapse]")) return;
@@ -132,6 +132,12 @@ function renderPromoBannerOnly(list) {
       }, 400);
     });
     document.body.prepend(bar);
+    if (!document.getElementById("cgtiaPromoSpacer")) {
+      const sp = document.createElement("div");
+      sp.id = "cgtiaPromoSpacer";
+      sp.style.height = "var(--cgtia-strip-h,0px)";
+      document.body.prepend(sp);
+    }
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         bar.style.transform = "translateY(0)";
@@ -170,7 +176,7 @@ function renderPromoBannerOnly(list) {
     '<button type="button" data-promo-expand aria-label="Show offer" style="background:transparent;border:0;color:#fff;cursor:pointer;padding:2px 4px;display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div>';
   installPromoStrip(bar);
   if (window.__cgtiaSetPromoState) window.__cgtiaSetPromoState(window.scrollY < 40 ? "full" : "strip");
-  bar.style.position = "sticky";
+  bar.style.position = "fixed";
   bar.onclick = bar.onclick;
   var closeBtn = bar.querySelector("[data-promo-close]");
   if (closeBtn) {
@@ -422,7 +428,7 @@ function installPromoStrip(bar) {
   style.textContent = ".faded-sticky-header{top:var(--cgtia-strip-h,0px)!important}";
   document.head.appendChild(style);
   let expanded = false;
-  let lastY = window.scrollY || 0;
+  let expandY = 0;
   const setState = function (state) {
     const el = document.getElementById("cgtiaPromoBanner");
     if (!el) return;
@@ -435,20 +441,29 @@ function installPromoStrip(bar) {
     el.style.padding = showStrip ? "0 14px" : "12px 18px";
     el.dataset.state = state;
     requestAnimationFrame(function () {
-      document.documentElement.style.setProperty("--cgtia-strip-h", el.offsetHeight + "px");
+      document.documentElement.style.setProperty("--cgtia-strip-h", "34px");
     });
   };
   window.__cgtiaSetPromoState = setState;
   window.addEventListener("scroll", function () {
     const y = window.scrollY || 0;
-    const delta = Math.abs(y - lastY);
-    lastY = y;
-    if (y < 40) { expanded = false; setState("full"); return; }
-    if (expanded && delta > 6) { expanded = false; setState("strip"); return; }
-    if (!expanded) setState("strip");
+    if (y < 40) {
+      expanded = false;
+      setState("full");
+      return;
+    }
+    if (expanded) {
+      // The full banner stays open until the visitor scrolls down a little
+      if (y - expandY > 40) {
+        expanded = false;
+        setState("strip");
+      }
+      return;
+    }
+    setState("strip");
   }, { passive: true });
   bar.addEventListener("click", function (e) {
-    if (e.target.closest && e.target.closest("[data-promo-expand]")) { expanded = true; setState("full"); }
+    if (e.target.closest && e.target.closest("[data-promo-expand]")) { expanded = true; expandY = window.scrollY || 0; setState("full"); }
     if (e.target.closest && e.target.closest("[data-promo-collapse]")) { expanded = false; setState("strip"); }
   });
 }
@@ -517,50 +532,106 @@ function renderAnnouncement(all) {
 }
 
 
-/* ---- Two bells: promotions (when the top bar is closed) and announcements (when the card is closed) ---- */
+/* ---- One notification bell: opens a sheet with Announcements and Promotions sections ---- */
 const BELL_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
+const CHEVRON_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="cgtia-chev"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
-function ensureBell(id, bottom, label, color, onTap) {
-  let b = document.getElementById(id);
-  if (!b) {
-    b = document.createElement("button");
-    b.id = id;
-    b.type = "button";
-    b.setAttribute("aria-label", label);
-    b.innerHTML = BELL_SVG;
-    b.style.cssText = "position:fixed;left:16px;width:56px;height:56px;border-radius:50%;border:0;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(15,23,42,.35);cursor:pointer;z-index:96;background:" + color;
-    b.addEventListener("click", onTap);
-    document.body.appendChild(b);
-  }
-  b.style.bottom = bottom + "px";
-}
-function removeBell(id) {
-  const b = document.getElementById(id);
+function promoItems(all) { return all.filter(function (p) { return p.type !== "announcement" && !p.hibernated && p.active !== false; }); }
+function annItems(all) { return all.filter(function (p) { return p.type === "announcement" && !p.hibernated && p.active !== false; }); }
+
+function removeNotifyBell() {
+  const b = document.getElementById("cgtiaNotifyBell");
   if (b) b.remove();
 }
-function reopenPromoBanner() {
-  sessionStorage.removeItem("cgtiaPromoBannerClosed");
-  removeBell("cgtiaPromoBell");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  renderPromoBanner(window.__cgtiaActivePromos || []);
+function ensureNotifyBell() {
+  let b = document.getElementById("cgtiaNotifyBell");
+  if (b) return;
+  b = document.createElement("button");
+  b.id = "cgtiaNotifyBell";
+  b.type = "button";
+  b.setAttribute("aria-label", "Notifications");
+  b.innerHTML = BELL_SVG;
+  b.style.cssText = "position:fixed;left:16px;bottom:16px;width:56px;height:56px;border-radius:50%;border:0;color:#fff;background:#0f172a;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(15,23,42,.35);cursor:pointer;z-index:96";
+  b.addEventListener("click", openNotifySheet);
+  document.body.appendChild(b);
 }
 
 export function showSolidBottomPromoBar() {
   const all = window.__cgtiaActivePromos || [];
-  const promos = all.filter(function (p) { return p.type !== "announcement" && !p.hibernated && p.active !== false; });
-  const anns = all.filter(function (p) { return p.type === "announcement" && !p.hibernated && p.active !== false; });
   const promoClosed = sessionStorage.getItem("cgtiaPromoBannerClosed") === "1";
+  const hasPromo = promoItems(all).length > 0;
+  const hasAnn = annItems(all).length > 0;
+  // While an announcement card is on screen, it is the notification, so the bell waits
+  if (window.__cgtiaAnnShown) { removeNotifyBell(); return; }
+  const promoPending = promoClosed && hasPromo;
+  const annPending = hasAnn;
+  if (promoPending || annPending) ensureNotifyBell();
+  else removeNotifyBell();
+}
 
-  if (promos.length && promoClosed) {
-    ensureBell("cgtiaPromoBell", 84, "Show the offer", "#1e3a8a", reopenPromoBanner);
-  } else {
-    removeBell("cgtiaPromoBell");
-  }
+function notifySection(title, rows, empty) {
+  return '<details open style="border-top:1px solid #e2e8f0;padding:.6rem 0">' +
+    '<summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#334155">' +
+    esc2(title) + CHEVRON_SVG + "</summary>" +
+    '<div style="padding-top:.5rem">' + (rows.length ? rows.join("") : '<p style="color:#64748b;font-size:.9rem;margin:.25rem 0">' + esc2(empty) + "</p>") + "</div></details>";
+}
+function notifyRow(title, amount, body, label, dest) {
+  const button = label && dest
+    ? '<button type="button" data-notify-go="' + esc2(dest) + '" style="width:100%;margin-top:.6rem;padding:.8rem;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">' + esc2(label) + "</button>"
+    : "";
+  return '<div style="padding:.7rem 0;border-top:1px solid #f1f5f9">' +
+    '<h3 style="font-size:1rem;font-weight:800;color:#0f172a;margin:0 0 .25rem">' + esc2(title || "Notice") + "</h3>" +
+    (amount ? '<p style="font-size:1.15rem;font-weight:800;color:#1e3a8a;margin:0 0 .25rem">' + esc2(amount) + "</p>" : "") +
+    (body ? '<p style="font-size:.9rem;color:#475569;line-height:1.5;margin:0">' + esc2(body) + "</p>" : "") +
+    button + "</div>";
+}
 
-  if (anns.length && !window.__cgtiaAnnShown) {
-    ensureBell("cgtiaAnnBell", 16, "Show the announcement", "#0f172a", function () { openPromoSheet(anns); });
-  } else {
-    removeBell("cgtiaAnnBell");
-  }
+function openNotifySheet() {
+  const all = window.__cgtiaActivePromos || [];
+  const anns = annItems(all).map(function (p) {
+    return notifyRow(p.title, "", p.bellText || p.description || "", p.bellButtonLabel || p.linkLabel || "", p.bellButtonUrl || p.linkUrl || "");
+  });
+  const promos = promoItems(all).map(function (p) {
+    const amount = p.promoAmount ? "\u20A6" + (Number(p.promoAmount) >= 1000 ? Math.round(Number(p.promoAmount) / 1000) + "k" : p.promoAmount) : "";
+    return notifyRow(p.title, amount, p.bellText || p.description || "", p.bellButtonLabel || "View tuition", p.bellButtonUrl || "/tuition");
+  });
+  let sheet = document.getElementById("cgtiaNotifySheet");
+  if (sheet) sheet.remove();
+  sheet = document.createElement("div");
+  sheet.id = "cgtiaNotifySheet";
+  sheet.style.cssText = "position:fixed;inset:0;z-index:95;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;";
+  sheet.innerHTML =
+    "<style>.cgtia-chev{transition:transform .2s}details[open]>summary .cgtia-chev{transform:rotate(180deg)}summary::-webkit-details-marker{display:none}</style>" +
+    '<div style="width:100%;max-width:28rem;background:#fff;border-radius:1.75rem 1.75rem 0 0;padding:1.1rem 1.25rem 1.6rem;box-shadow:0 -12px 40px rgba(0,0,0,.2);max-height:82vh;overflow:auto">' +
+    '<div style="width:2.5rem;height:4px;background:#e2e8f0;border-radius:999px;margin:0 auto 1rem"></div>' +
+    '<h2 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin:0 0 .25rem">Notifications</h2>' +
+    notifySection("Announcements", anns, "No announcements right now.") +
+    notifySection("Promotions", promos, "No offers right now.") +
+    '<button type="button" data-notify-close style="width:100%;margin-top:.5rem;padding:.7rem;border:0;background:transparent;color:#64748b;font-size:12px;cursor:pointer">Close</button></div>';
+  sheet.addEventListener("click", function (e) {
+    if (e.target === sheet || (e.target.closest && e.target.closest("[data-notify-close]"))) { sheet.remove(); return; }
+    const go = e.target.closest && e.target.closest("[data-notify-go]");
+    if (!go) return;
+    const dest = go.getAttribute("data-notify-go");
+    sheet.remove();
+    if (dest === "apply") {
+      if (window.toggleApplyScreen) window.toggleApplyScreen();
+      return;
+    }
+    if (dest.indexOf("/") === 0) {
+      if (window.__cgtiaNavigate) window.__cgtiaNavigate(dest);
+      else window.location.href = dest;
+    } else {
+      window.open(dest, "_blank", "noopener");
+    }
+  });
+  document.body.appendChild(sheet);
+}
+
+function reopenPromoBanner() {
+  sessionStorage.removeItem("cgtiaPromoBannerClosed");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  renderPromoBanner(window.__cgtiaActivePromos || []);
+  showSolidBottomPromoBar();
 }
 window.__cgtiaShowSolidBottomPromoBar = showSolidBottomPromoBar;
