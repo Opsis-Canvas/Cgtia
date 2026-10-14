@@ -138,6 +138,39 @@ async function recordFeePayment(data, body) {
   return { recorded: true, payId, studentId };
 }
 
+async function recordProgramPayment(data, body) {
+  const fail = (code, error) => ({ statusCode: code, body: JSON.stringify({ success: false, error }) });
+  const programId = String(body.programId || '');
+  if (!programId) return fail(400, 'Programme is missing.');
+  const snap = await db.collection('programs').doc(programId).get();
+  if (!snap.exists) return fail(400, 'This programme could not be found.');
+  const prog = snap.data() || {};
+  if (prog.active === false || prog.trashed === true) return fail(400, 'This programme is not open for payment.');
+  const price = Number(prog.amount) || 0;
+  if (prog.priceText || price <= 0) return fail(400, 'This programme is not priced for online payment.');
+  if (Number(data.amount) !== Math.round(price * 100)) return fail(400, 'The amount paid does not match the programme price.');
+  const ref = String(body.reference);
+  const existing = await db.collection('payments').doc(ref).get();
+  if (existing.exists) {
+    return { statusCode: 200, body: JSON.stringify({ success: true, recorded: true, reference: ref, duplicate: true }) };
+  }
+  const payer = String((data.customer && data.customer.email) || body.email || '').toLowerCase().trim();
+  await db.collection('payments').doc(ref).set({
+    reference: ref,
+    source: 'program',
+    programId: programId,
+    programName: prog.name || prog.headline || programId,
+    amount: price,
+    amountPaid: Number(data.amount) / 100,
+    email: payer,
+    fullName: String(body.fullName || '').slice(0, 120),
+    phone: String(body.phone || '').slice(0, 40),
+    status: 'paid',
+    paidAt: new Date().toISOString()
+  });
+  return { statusCode: 200, body: JSON.stringify({ success: true, recorded: true, reference: ref }) };
+}
+
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -159,6 +192,9 @@ export const handler = async (event) => {
     const data = await verifyPaystackReference(reference);
     if (!data) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Payment not verified' }) };
+    }
+    if (body.source === 'program') {
+      return await recordProgramPayment(data, body);
     }
 
     const meta = data.metadata || {};

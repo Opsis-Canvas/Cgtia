@@ -341,6 +341,7 @@ export function loadSiteSettings() {
   if (!settingsPromise) {
     settingsPromise = loadSiteSettingsNow().then((out) => {
       window.__cgtiaApplyAllContent = reapplyDynamicContent;
+      try { reapplyDynamicContent(); } catch (e) { /* ignore */ }
       return out;
     });
   }

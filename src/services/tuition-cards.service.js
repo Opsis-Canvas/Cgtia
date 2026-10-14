@@ -36,13 +36,14 @@ function cardHtml(p, withPromo) {
   const cta = p.ctaLabel || "Apply for This Program";
   const ctaAction = p.ctaAction === "licensing"
     ? `navigateWithPill('Licensing', 'licensing.html')`
-    : `toggleApplyScreen()`;
+    : p.ctaAction === "pay"
+      ? `openProgramPayment('${p.id}')`
+      : `toggleApplyScreen()`;
 
   const ribbon = p.ribbon
-    ? `<div class="absolute -top-3.5 right-8 bg-blue-950 text-white text-[9px] font-bold tracking-widest uppercase px-4 py-1.5 rounded-full shadow-md">${p.ribbon}</div>`
+    ? `<div style="top:0;transform:translateY(-30%);z-index:20" class="absolute right-8 bg-blue-950 text-white text-[9px] font-bold tracking-widest uppercase px-4 py-1.5 rounded-full shadow-md">${p.ribbon}</div>`
     : "";
-  return `<div class="soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/60 flex flex-col justify-between group smooth-transition bg-white/90 relative" data-program-card="${p.id}">
-    ${ribbon}
+  return `<div class="relative pt-3">${ribbon}<div class="soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/60 flex flex-col justify-between group smooth-transition bg-white/90 relative" data-program-card="${p.id}">
     <div>
       <div class="flex justify-between items-start mb-6">
         <div>
@@ -60,7 +61,7 @@ function cardHtml(p, withPromo) {
       </ul>
     </div>
     <button type="button" onclick="${ctaAction}" class="w-full mt-10 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">${cta}</button>
-  </div>`;
+  </div></div>`;
 }
 
 export function renderProgramCards(settings) {

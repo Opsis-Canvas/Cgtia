@@ -13,6 +13,7 @@ import { createRouter } from "./router/router.js";
 import { ROUTES } from "./config/routes.config.js";
 import { installApplyFlow } from "./services/apply-flow.service.js";
 import { loadPageControl, pageKeyFor } from "./services/page-control.service.js";
+import "./services/program-payment.service.js";
 import { PageStatus, NotFoundPage } from "./pages/page-status.page.js";
 import { installAuthFlow } from "./services/auth.service.js";
 import { installPromoBanner, loadActivePromotions, renderPromoBanner } from "./services/promo-banner.service.js";
@@ -64,9 +65,14 @@ const root = createRoot(document.getElementById("root"));
 
 const pageControlReady = loadPageControl();
 const settingsReady = loadSiteSettings().catch(() => null);
+// Never hold a page back for more than 2.5 seconds, even on a slow or blocked connection
+const renderGate = Promise.race([
+  Promise.all([pageControlReady, settingsReady]),
+  new Promise((resolve) => setTimeout(() => resolve([null, null]), 2500))
+]);
 
 function renderPage(PageComponent) {
-  Promise.all([pageControlReady, settingsReady]).then(([control]) => {
+  renderGate.then(([control]) => {
     const key = pageKeyFor(window.location.pathname);
     const rule = control && key ? control[key] : null;
     if (rule && rule.mode && rule.mode !== "live") {
