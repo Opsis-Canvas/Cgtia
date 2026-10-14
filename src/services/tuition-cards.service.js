@@ -18,7 +18,7 @@ function cardHtml(p, withPromo) {
   const promo = withPromo && withPromo.promoAmount && !p.priceText ? withPromo : null;
   const priceBlock = promo
     ? `<div data-tuition-program="${p.id}" data-full-amount="${Number(p.amount) || 0}">
-        <span data-tuition-price>
+        <span data-tuition-price class="font-editorial text-5xl font-bold text-blue-950 tracking-tight">
           <span style="text-decoration:line-through;opacity:.4;font-size:.55em;font-weight:500;margin-right:.35em">${amount}</span>
           <span style="font-weight:700">${formatShort(promo.promoAmount)}</span>
           <span style="display:block;font-size:11px;font-weight:400;color:#1e3a8a;margin-top:8px">${promo.title || "Promo"}</span>
