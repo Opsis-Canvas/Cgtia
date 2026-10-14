@@ -1,19 +1,56 @@
 /**
- * Public verification lookup. Returns only the fields the verify page shows,
- * and never returns a record that is in Trash.
+ * Public verification lookup. Returns only the fields ticked in the admin's
+ * "Verification display" page, and never returns a record that is in Trash.
  */
 import { db } from './firebaseAdmin.js';
 
-const PUBLIC_FIELDS = [
-  'code', 'certificateCode', 'regNumber', 'studentName', 'fullName', 'fullLegalName', 'holderName',
-  'program', 'programName', 'cohort', 'grade', 'category', 'status', 'issueDate', 'expiryDate',
-  'renewedAt', 'photo', 'photoUrl', 'licenceNumber', 'revoked', 'suspended', 'banned'
-];
+// Admin field keys -> the stored field names they cover
+const CATALOGUE = {
+  name: ['studentName', 'fullName', 'fullLegalName', 'holderName'],
+  regNumber: ['regNumber'],
+  program: ['program', 'programName'],
+  cohort: ['cohort'],
+  grade: ['grade'],
+  category: ['category'],
+  status: ['status'],
+  issueDate: ['issueDate'],
+  expiryDate: ['expiryDate'],
+  renewedAt: ['renewedAt'],
+  code: ['certificateCode', 'code'],
+  licenceNumber: ['licenceNumber'],
+  photo: ['photo', 'photoUrl']
+};
 
-function publicRecord(id, data) {
+// Status flags are always returned so the page can show a revoked or suspended record
+const ALWAYS = ['revoked', 'suspended', 'banned'];
+
+const DEFAULT_SHOWN = {
+  certificate: ['name', 'regNumber', 'program', 'issueDate', 'code', 'status'],
+  'id-card': ['name', 'regNumber', 'program', 'issueDate', 'expiryDate', 'code', 'status', 'photo'],
+  licence: ['name', 'licenceNumber', 'category', 'expiryDate', 'renewedAt', 'status'],
+  student: ['name', 'regNumber', 'program', 'cohort', 'status', 'photo']
+};
+
+async function shownKeys(kind) {
+  try {
+    const snap = await db.collection('siteContent').doc('verifySettings').get();
+    const data = snap.exists ? (snap.data() || {}) : {};
+    if (Array.isArray(data[kind])) return data[kind];
+  } catch (e) {
+    // fall back to the defaults if settings cannot be read
+  }
+  return DEFAULT_SHOWN[kind] || [];
+}
+
+function publicRecord(id, data, keys) {
   const out = { id };
-  PUBLIC_FIELDS.forEach((k) => {
-    if (data[k] !== undefined && data[k] !== null) out[k] = data[k];
+  keys.forEach((key) => {
+    (CATALOGUE[key] || []).forEach((field) => {
+      if (data[field] !== undefined && data[field] !== null && out[field] === undefined) out[field] = data[field];
+    });
+  });
+  ALWAYS.forEach((field) => {
+    if (data[field] !== undefined && data[field] !== null) out[field] = data[field];
   });
   return out;
 }
@@ -62,7 +99,8 @@ export const handler = async (event) => {
     if (!hit || hit.data.trashed === true || hit.data.deleted === true) {
       return json(200, { valid: false });
     }
-    return json(200, { valid: true, record: publicRecord(hit.id, hit.data) });
+    const keys = await shownKeys(kind);
+    return json(200, { valid: true, record: publicRecord(hit.id, hit.data, keys) });
   } catch (e) {
     return json(500, { valid: false, error: 'Verification is unavailable right now. Please try again.' });
   }
