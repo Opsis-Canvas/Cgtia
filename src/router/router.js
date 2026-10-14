@@ -16,7 +16,7 @@ export function createRouter(routeTable, renderFn) {
     if (routeTable[n]) return routeTable[n];
     const noHtml = n.replace(/\.html$/, "");
     if (routeTable[noHtml]) return routeTable[noHtml];
-    return routeTable["/"] || null;
+    return routeTable.__notfound__ || routeTable["/"] || null;
   }
 
   async function renderCurrent() {

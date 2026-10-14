@@ -32,3 +32,8 @@ export function PageStatus({ rule }) {
     </div>
   `;
 }
+
+/** Used for any address the site doesn't have */
+export function NotFoundPage() {
+  return html`<${PageStatus} rule=${{ mode: "notfound" }} />`;
+}

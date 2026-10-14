@@ -13,7 +13,7 @@ import { createRouter } from "./router/router.js";
 import { ROUTES } from "./config/routes.config.js";
 import { installApplyFlow } from "./services/apply-flow.service.js";
 import { loadPageControl, pageKeyFor } from "./services/page-control.service.js";
-import { PageStatus } from "./pages/page-status.page.js";
+import { PageStatus, NotFoundPage } from "./pages/page-status.page.js";
 import { installAuthFlow } from "./services/auth.service.js";
 import { installPromoBanner, loadActivePromotions, renderPromoBanner } from "./services/promo-banner.service.js";
 import { loadSiteSettings, getProgramStartDate, getProgramModality, getProgramStudyOptions } from "./services/site-settings.service.js";
@@ -56,7 +56,8 @@ const routeTable = {
   [ROUTES.LICENSING_COMPLETE]: lazy(() => import("./pages/licensing-complete.page.js"), "LicensingCompletePage"),
   [ROUTES.DASHBOARD]: lazy(() => import("./pages/dashboard.page.js"), "DashboardPage"),
   [ROUTES.WALL_OF_FAME]: lazy(() => import("./pages/wall-of-fame.page.js"), "WallOfFamePage"),
-  "/index": lazy(() => import("./pages/home.page.js"), "HomePage")
+  "/index": lazy(() => import("./pages/home.page.js"), "HomePage"),
+  __notfound__: () => NotFoundPage
 };
 
 const root = createRoot(document.getElementById("root"));

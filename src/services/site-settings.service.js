@@ -93,6 +93,7 @@ export async function loadSiteSettings() {
   applyTuitionPage(Object.assign({}, out.tuitionPage || {}, out.applyForm || {}));
   applyLegalPages(out.legalPages);
   applyCustomFields(out.applyForm);
+  installDomWatcher();
   applyTuitionCardCopy(out);
   try { renderProgramCards(out); } catch (e) { console.warn(e); }
   // Sync tuition card base amounts from admin (always)
@@ -295,4 +296,39 @@ export function applyTuitionPage(tp) {
       : [];
     if (items.length) el.innerHTML = items.map((t) => "<p>" + escapeText(t) + "</p>").join("");
   });
+}
+
+/**
+ * Pages are rendered after startup (lazy routes), so saved wording, programme
+ * cards, terms and the apply form must be applied again each time a page appears.
+ */
+const WATCH_SELECTOR = "[data-cms],[data-cms-list],[data-cms-sections],#applyCustomFields,#cgtiaTuitionProgramCards,#cgtiaHomeProgramCards";
+
+export function reapplyDynamicContent() {
+  const s = window.__cgtiaSiteSettings;
+  if (!s) return;
+  applySiteSettingsToDom(s);
+  applyTuitionPage(Object.assign({}, s.tuitionPage || {}, s.applyForm || {}));
+  applyLegalPages(s.legalPages);
+  applyCustomFields(s.applyForm);
+  try { renderProgramCards(s); } catch (e) { /* ignore */ }
+}
+
+let domWatcherInstalled = false;
+function installDomWatcher() {
+  if (domWatcherInstalled || typeof MutationObserver === "undefined") return;
+  domWatcherInstalled = true;
+  let timer = null;
+  const target = document.getElementById("root") || document.body;
+  const observer = new MutationObserver((mutations) => {
+    const hit = mutations.some((m) => Array.from(m.addedNodes).some((n) =>
+      n.nodeType === 1 && (n.matches(WATCH_SELECTOR) || n.querySelector(WATCH_SELECTOR))
+    ));
+    if (!hit) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      try { reapplyDynamicContent(); } catch (e) { console.warn("reapply", e); }
+    }, 60);
+  });
+  observer.observe(target, { childList: true, subtree: true });
 }
