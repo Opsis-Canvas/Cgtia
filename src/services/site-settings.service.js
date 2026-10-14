@@ -27,7 +27,7 @@ const DEFAULT_PROGRAMS = {
   }
 };
 
-export async function loadSiteSettings() {
+async function loadSiteSettingsNow() {
   const out = {
     cohortLabel: "Enrolling Now / 2026 Cohort",
     footerYear: "2026",
@@ -331,4 +331,16 @@ function installDomWatcher() {
     }, 60);
   });
   observer.observe(target, { childList: true, subtree: true });
+}
+
+let settingsPromise = null;
+/** Loads site settings once. Every caller (startup and page render) shares the same promise. */
+export function loadSiteSettings() {
+  if (!settingsPromise) {
+    settingsPromise = loadSiteSettingsNow().then((out) => {
+      window.__cgtiaApplyAllContent = reapplyDynamicContent;
+      return out;
+    });
+  }
+  return settingsPromise;
 }

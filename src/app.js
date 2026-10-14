@@ -63,9 +63,10 @@ const routeTable = {
 const root = createRoot(document.getElementById("root"));
 
 const pageControlReady = loadPageControl();
+const settingsReady = loadSiteSettings().catch(() => null);
 
 function renderPage(PageComponent) {
-  pageControlReady.then((control) => {
+  Promise.all([pageControlReady, settingsReady]).then(([control]) => {
     const key = pageKeyFor(window.location.pathname);
     const rule = control && key ? control[key] : null;
     if (rule && rule.mode && rule.mode !== "live") {

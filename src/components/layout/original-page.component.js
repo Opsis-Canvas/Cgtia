@@ -5,7 +5,7 @@
  * --------------------------------------------------------
  */
 
-import { createElement, useEffect, useRef } from "react";
+import { createElement, useEffect, useLayoutEffect, useRef } from "react";
 import htm from "htm";
 import { hydrateWallOfFameUI } from "../../services/wall-of-fame.service.js";
 
@@ -13,6 +13,11 @@ const html = htm.bind(createElement);
 
 export const OriginalPage = ({ markup }) => {
   const ref = useRef(null);
+
+  useLayoutEffect(() => {
+    // Saved wording and cards go in before the browser paints, so no hard-coded text flashes
+    try { if (window.__cgtiaApplyAllContent) window.__cgtiaApplyAllContent(); } catch (e) {}
+  }, [markup]);
 
   useEffect(() => {
     // Unlock body scroll (bottom sheet may have frozen it)
