@@ -13,6 +13,7 @@ export const index_html = `
         <a href="/programs" class="hover:text-blue-950 smooth-transition">Programs</a>
         <a href="/gallery" class="hover:text-blue-950 smooth-transition">Gallery</a>
         <a href="/tuition" class="hover:text-blue-950 smooth-transition">Tuition</a>
+        <a href="/licensing" class="hover:text-blue-950 smooth-transition">Licensing</a>
         <a href="/contact" class="hover:text-blue-950 smooth-transition">Contact</a>
       </nav>
       

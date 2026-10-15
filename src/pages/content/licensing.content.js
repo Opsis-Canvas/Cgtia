@@ -13,6 +13,7 @@ export const licensing_html = `
         <a href="/programs" class="hover:text-blue-950 smooth-transition">Programs</a>
         <a href="/gallery" class="hover:text-blue-950 smooth-transition">Gallery</a>
         <a href="/tuition" class="hover:text-blue-950 smooth-transition">Tuition</a>
+        <a href="/licensing" class="hover:text-blue-950 smooth-transition">Licensing</a>
         <a href="/contact" class="hover:text-blue-950 smooth-transition">Contact</a>
       </nav>
 
@@ -96,68 +97,51 @@ export const licensing_html = `
       <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Submit Your Details</h2>
     </div>
 
-    <form id="licensingForm" class="soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/60 space-y-6" onsubmit="handleLicensingSubmit(event)">
+    <form id="licensingForm" class="soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/60 space-y-6" onsubmit="return false;">
       <div class="hidden" aria-hidden="true">
         <label for="licensingWebsiteField">Leave this field empty</label>
         <input type="text" id="licensingWebsiteField" name="website" tabindex="-1" autocomplete="off">
       </div>
+      <p class="text-sm text-slate-500 font-light leading-relaxed">Tell us who you are. After review we may schedule a short conversation. If you need to upload certificates and a selfie, that happens later on a secure one-time link from the academy.</p>
       <div>
-        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Full Name</label>
-        <input required type="text" placeholder="e.g. Ada Okonkwo" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Full Name *</label>
+        <input required type="text" id="licensingFullName" name="fullName" placeholder="e.g. Ada Okonkwo" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Phone Number</label>
-          <input required type="tel" placeholder="080X XXX XXXX" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Mobile Number *</label>
+          <input required type="tel" id="licensingPhone" name="phone" placeholder="080X XXX XXXX" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Email Address</label>
-          <input required type="email" id="licensingEmail" placeholder="you@email.com" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Email Address *</label>
+          <input required type="email" id="licensingEmail" name="email" placeholder="you@email.com" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
         </div>
       </div>
-
       <div>
-        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Training Certificate (PDF or PNG)</label>
-        <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-2xl py-8 px-4 cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 smooth-transition text-center">
+        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Residential Address *</label>
+        <input required type="text" id="licensingAddress" name="address" placeholder="Street, city, state" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+      </div>
+      <div>
+        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Identification *</label>
+        <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">Upload a government ID (NIN slip, national ID, or international passport), <span class="font-medium text-slate-600">or</span> enter your 11-digit NIN if you prefer not to upload a file.</p>
+        <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-2xl py-6 px-4 cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 smooth-transition text-center mb-3">
           <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <span id="certFileName" class="text-xs text-slate-500">Tap to upload &mdash; PDF or PNG, max 10MB</span>
-          <input required type="file" id="certFileInput" accept=".pdf,.png,image/png,application/pdf" class="hidden" onchange="handleFileSelect(event, 'certFileName')">
+          <span id="idFileName" class="text-xs text-slate-500">Government ID — PDF or image (optional if NIN below)</span>
+          <input type="file" id="idFileInput" accept=".pdf,.png,.jpg,.jpeg,image/*,application/pdf" class="hidden" onchange="if(window.handleFileSelect)handleFileSelect(event,'idFileName')">
         </label>
+        <input type="text" id="licensingNin" name="nin" inputmode="numeric" maxlength="11" placeholder="NIN — 11 digits (if no ID upload)" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
       </div>
-
       <div>
-        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Government ID &mdash; NIN Slip or International Passport</label>
-        <label class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-2xl py-8 px-4 cursor-pointer hover:border-blue-300 hover:bg-blue-50/30 smooth-transition text-center">
-          <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <span id="idFileName" class="text-xs text-slate-500">Tap to upload &mdash; PDF or image, max 10MB</span>
-          <input required type="file" id="idFileInput" accept=".pdf,.png,.jpg,.jpeg,image/*,application/pdf" class="hidden" onchange="handleFileSelect(event, 'idFileName')">
-        </label>
+        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Are you a CGTIA student / graduate?</label>
+        <select id="licensingIsStudent" name="isCgtiaStudent" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+          <option value="">Select…</option>
+          <option value="yes">Yes</option>
+          <option value="no">No — external applicant</option>
+        </select>
       </div>
-
-      <div>
-        <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Live Selfie Photo</label>
-        <div id="selfieCaptureArea" class="rounded-[1.75rem] overflow-hidden bg-slate-950 relative aspect-[3/4] max-w-[260px] mx-auto flex items-center justify-center">
-          <video id="selfieVideo" autoplay playsinline muted class="w-full h-full object-cover hidden"></video>
-          <canvas id="selfieCanvas" class="hidden"></canvas>
-          <img id="selfiePreview" class="w-full h-full object-cover hidden" alt="Captured selfie">
-          <div id="selfiePlaceholder" class="text-center text-white/50 p-6">
-            <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.174C3.023 7.556 2.25 8.507 2.25 9.615v9.14c0 1.243 1.007 2.25 2.25 2.25h15c1.243 0 2.25-1.007 2.25-2.25v-9.14c0-1.108-.773-2.059-1.802-2.212a48.11 48.11 0 00-1.134-.173 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-4.582 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/></svg>
-            <p class="text-[11px]">No photo yet</p>
-          </div>
-        </div>
-        <div class="flex gap-2.5 mt-4 justify-center flex-wrap">
-          <button type="button" onclick="startSelfieCamera()" id="openCameraBtn" class="px-5 py-2.5 rounded-full bg-blue-950 text-white text-[11px] font-semibold tracking-wide uppercase">Open Camera</button>
-          <button type="button" onclick="captureSelfie()" id="captureSelfieBtn" class="hidden px-5 py-2.5 rounded-full bg-emerald-600 text-white text-[11px] font-semibold tracking-wide uppercase">Capture</button>
-          <button type="button" onclick="retakeSelfie()" id="retakeSelfieBtn" class="hidden px-5 py-2.5 rounded-full border border-slate-300 text-[11px] font-semibold tracking-wide uppercase text-slate-600">Retake</button>
-          <label class="px-5 py-2.5 rounded-full border border-slate-300 text-[11px] font-semibold tracking-wide uppercase text-slate-600 cursor-pointer">
-            Upload Instead
-            <input type="file" accept="image/*" id="selfieFileInput" onchange="handleSelfieFileUpload(event)" class="hidden">
-          </label>
-        </div>
-        <p class="text-[11px] text-slate-400 mt-3 text-center max-w-xs mx-auto leading-relaxed">Good lighting, no glasses, plain background, and look directly at the camera.</p>
-      </div>
-
-      <button type="submit" class="w-full mt-4 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
+      <p id="licensingFormErr" class="hidden text-sm text-red-600"></p>
+      <p id="licensingFormOk" class="hidden text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-2xl p-4"></p>
+      <button type="submit" id="licensingSubmitBtn" class="w-full mt-2 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
         Submit Licensing Application
       </button>
     </form>
@@ -259,6 +243,10 @@ export const licensing_html = `
         <div onclick="navigateWithPill('Contact', 'contact.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
           <span class="font-sans-clean text-sm font-medium text-slate-700">Contact</span>
           <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">06</span>
+        </div>
+        <div onclick="navigateWithPill('Licensing', 'licensing.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
+          <span class="font-sans-clean text-sm font-medium text-slate-700">Licensing</span>
+          <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">07</span>
         </div>
       </div>
       <div class="pt-6 mt-4 border-t border-slate-100 shrink-0 space-y-3">

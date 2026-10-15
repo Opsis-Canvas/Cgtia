@@ -418,6 +418,10 @@ export const contact_html = `
           <span class="font-editorial text-lg font-bold text-blue-950">Contact</span>
           <span class="text-[10px] font-bold tracking-widest text-blue-800 uppercase">06</span>
         </div>
+        <div onclick="navigateWithPill('Licensing', 'licensing.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
+          <span class="font-sans-clean text-sm font-medium text-slate-700">Licensing</span>
+          <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">07</span>
+        </div>
       </div>
       <div class="pt-6 mt-4 border-t border-slate-100 shrink-0 space-y-3">
         <button onclick="toggleMobileBottomSheet(); setTimeout(() => toggleAuthScreen('signin'), 450);" class="w-full py-4 rounded-2xl bg-slate-950 text-white font-sans-clean text-xs font-semibold tracking-widest uppercase shadow-md active:scale-[0.99] transition-transform">

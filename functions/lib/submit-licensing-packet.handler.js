@@ -1,6 +1,6 @@
 /**
- * One-time licensing packet (documents + notes) after staff invite.
- * Payment can be handled separately / later via Paystack on same flow.
+ * One-time licensing packet after staff invite.
+ * Expects uploaded file URLs (client uploads to Storage).
  */
 import { db, admin } from './firebaseAdmin.js';
 const CORS = {
@@ -34,23 +34,27 @@ export const handler = async (event) => {
   const fullName = String(body.fullName || inv.fullName || '').trim();
   const email = String(body.email || inv.email || '').trim().toLowerCase();
   const phone = String(body.phone || '').trim();
-  const nin = String(body.nin || '').replace(/\D/g, '');
   const trainingBackground = String(body.trainingBackground || '').trim();
-  const firstAidCert = String(body.firstAidCert || '').trim();
   const clinicalHours = String(body.clinicalHours || '').trim();
-  const documentLinks = String(body.documentLinks || '').trim(); // user pastes Drive/links for now
   const notes = String(body.notes || '').trim();
+  const certificateFileUrl = String(body.certificateFileUrl || '').trim();
+  const selfieFileUrl = String(body.selfieFileUrl || '').trim();
+  // Legacy field kept for old clients
+  const documentLinks = String(body.documentLinks || '').trim();
 
   if (!fullName || !email) return bad(400, 'Name and email required');
-  if (nin && nin.length !== 11) return bad(400, 'NIN must be 11 digits if provided');
+  if (!certificateFileUrl && !documentLinks) return bad(400, 'Training certificate is required');
+  if (!selfieFileUrl && !documentLinks) return bad(400, 'Selfie photo is required');
 
   const id = email.replace(/[^a-z0-9]+/g, '-') + '-pkt-' + Date.now().toString(36);
   try {
     await db.collection('licensingPackets').doc(id).set({
       inviteToken: token,
-      fullName, email, phone, nin,
-      trainingBackground, firstAidCert, clinicalHours,
-      documentLinks, notes,
+      fullName, email, phone,
+      trainingBackground, clinicalHours, notes,
+      certificateFileUrl: certificateFileUrl || null,
+      selfieFileUrl: selfieFileUrl || null,
+      documentLinks: documentLinks || null,
       isCgtiaStudent: !!inv.isCgtiaStudent,
       status: 'submitted',
       paymentStatus: 'unpaid',

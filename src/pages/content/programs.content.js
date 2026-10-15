@@ -13,6 +13,7 @@ export const programs_html = `
         <a href="/programs" class="text-blue-950 hover:text-blue-950 smooth-transition">Programs</a>
         <a href="/gallery" class="hover:text-blue-950 smooth-transition">Gallery</a>
         <a href="/tuition" class="hover:text-blue-950 smooth-transition">Tuition</a>
+        <a href="/licensing" class="hover:text-blue-950 smooth-transition">Licensing</a>
         <a href="/contact" class="hover:text-blue-950 smooth-transition">Contact</a>
       </nav>
 
@@ -255,6 +256,10 @@ export const programs_html = `
         <div onclick="navigateWithPill('Contact', 'contact.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
           <span class="font-sans-clean text-sm font-medium text-slate-700">Contact</span>
           <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">06</span>
+        </div>
+        <div onclick="navigateWithPill('Licensing', 'licensing.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
+          <span class="font-sans-clean text-sm font-medium text-slate-700">Licensing</span>
+          <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">07</span>
         </div>
       </div>
       <div class="pt-6 mt-4 border-t border-slate-100 shrink-0 space-y-3">
