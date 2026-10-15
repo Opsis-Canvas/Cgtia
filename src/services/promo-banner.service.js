@@ -96,41 +96,43 @@ function tickCountdowns() {
 }
 
 function renderPromoBannerOnly(list) {
+  const tuitionPromos = (list || []).filter((p) => p.type !== "announcement");
   let bar = document.getElementById("cgtiaPromoBanner");
-  if (!list || !list.length) {
+  if (!tuitionPromos.length) {
     if (bar) bar.remove();
     document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
+    ensureHeaderPromoChip(false);
     return;
   }
   if (sessionStorage.getItem("cgtiaPromoBannerClosed") === "1") {
     window.__cgtiaPromoMinimized = true;
-    const barNow = document.getElementById("cgtiaPromoBanner");
-    if (barNow) barNow.remove();
+    if (bar) bar.remove();
     document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
-    if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+    ensureHeaderPromoChip(true, tuitionPromos);
     return;
   }
+  ensureHeaderPromoChip(false);
+
+  // Slim one-line bar (reference-style toast strip)
+  const bits = tuitionPromos.map((p) => {
+    const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).map(programLabel);
+    const label = progs.length ? progs.join("/") : (p.title || "Offer");
+    const amt = p.promoAmount ? formatNairaShort(p.promoAmount) : "";
+    return amt ? (label + " " + amt) : label;
+  });
+  const line = bits.join(" · ");
+  let timer = "";
+  const ends = tuitionPromos.map((p) => p.endsAt).filter(Boolean);
+  if (ends.length) {
+    const earliest = ends.map((e) => (e.toMillis ? e.toMillis() : new Date(e).getTime())).filter(Boolean).sort((a, b) => a - b)[0];
+    if (earliest) timer = countdownHtml(earliest);
+  }
+
   if (!bar) {
     bar = document.createElement("div");
     bar.id = "cgtiaPromoBanner";
-    bar.setAttribute(
-      "style",
-      "position:fixed;top:0;left:0;right:0;z-index:90;background:#0f172a;color:#fff;padding:12px 18px;font-size:13px;line-height:1.5;transform:translateY(-100%);transition:transform 0.55s cubic-bezier(0.16,1,0.3,1);cursor:pointer;"
-    );
-    bar.addEventListener("click", function (e) {
-      if (e.target && e.target.closest && e.target.closest("[data-promo-close],[data-promo-expand],[data-promo-collapse]")) return;
-      // Close top banner and show solid bottom bar after navigation
-      window.__cgtiaPromoMinimized = true;
-      if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
-      else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
-      else window.location.href = "/tuition";
-      setTimeout(function () {
-        /* promotions do not use the bell */
-        if (window.__cgtiaApplyTuitionPromoPricing) {
-          window.__cgtiaApplyTuitionPromoPricing(window.__cgtiaActivePromos || []);
-        }
-      }, 400);
-    });
+    bar.setAttribute("role", "region");
+    bar.setAttribute("aria-label", "Tuition offers");
     document.body.prepend(bar);
     if (!document.getElementById("cgtiaPromoSpacer")) {
       const sp = document.createElement("div");
@@ -138,77 +140,55 @@ function renderPromoBannerOnly(list) {
       sp.style.height = "var(--cgtia-strip-h,0px)";
       document.body.prepend(sp);
     }
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        bar.style.transform = "translateY(0)";
-      });
-    });
   }
 
-  // Professional layout: at most ONE announcement + ONE consolidated tuition line
-  // (individual promo prices still appear on each programme card — no stacked banners)
-  const announcements = list.filter((p) => p.type === "announcement");
-  const tuitionPromos = list.filter((p) => p.type !== "announcement");
-  const parts = [];
-  if (announcements.length) {
-    const p = announcements[0]; // primary announcement only
-    const title = p.title || p.badge || "Notice";
-    const desc = p.description ? ` — ${p.description}` : "";
-    const timer = p.endsAt ? ` · Ends in ${countdownHtml(p.endsAt)}` : "";
-    const link = p.linkUrl
-      ? ` <a href="${p.linkUrl}" target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:underline">${p.linkLabel || "Read more"}</a>`
-      : "";
-    const extra = announcements.length > 1
-      ? ` <span style="opacity:.7">(+${announcements.length - 1} more)</span>`
-      : "";
-    parts.push(`<div style="margin-bottom:4px"><strong>${title}</strong>${desc}${timer}${link}${extra}</div>`);
-  }
-  if (tuitionPromos.length) {
-    const bits = tuitionPromos.map((p) => {
-      const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).map(programLabel);
-      const label = progs.length ? progs.join("/") : "selected programmes";
-      return `${label} ${formatNairaShort(p.promoAmount)}`;
-    });
-    const ends = tuitionPromos.map((p) => p.endsAt).filter(Boolean);
-    let timer = "";
-    if (ends.length) {
-      const earliest = ends.map((e) => (e.toMillis ? e.toMillis() : new Date(e).getTime())).filter(Boolean).sort((a, b) => a - b)[0];
-      if (earliest) timer = ` · Ends in ${countdownHtml(earliest)}`;
-    }
-    parts.push(
-      `<div style="margin-bottom:2px"><strong>Tuition offers</strong> · ${bits.join(" · ")}${timer}` +
-      `<br/><span style="opacity:.85">Promo prices show on each programme card. Tap to view Tuition.</span></div>`
-    );
-  }
-  bar.innerHTML = parts.join("") +
-    '<button type="button" data-promo-close aria-label="Close" style="position:absolute;right:10px;top:8px;background:transparent;border:0;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer;padding:4px 8px">×</button>';
+  bar.style.cssText =
+    "position:fixed;top:0;left:0;right:0;z-index:90;display:flex;align-items:center;gap:8px;" +
+    "min-height:36px;padding:6px 10px 6px 12px;box-sizing:border-box;" +
+    "background:linear-gradient(90deg,#0f172a 0%,#1e3a8a 100%);color:#fff;" +
+    "font-size:12px;line-height:1.3;transform:translateY(0);transition:transform .4s cubic-bezier(.16,1,.3,1);" +
+    "box-shadow:0 4px 16px rgba(15,23,42,.2)";
 
-  // Full banner + thin strip: the strip shows after scrolling, so the header stays visible
-  const fullHtml = bar.innerHTML;
   bar.innerHTML =
-    '<div data-promo-full style="position:relative">' + fullHtml +
-    '<button type="button" data-promo-collapse aria-label="Collapse" style="position:absolute;left:0;bottom:-4px;background:transparent;border:0;color:#94a3b8;cursor:pointer;padding:2px;display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"></polyline></svg></button></div>' +
-    '<div data-promo-strip style="display:none;align-items:center;justify-content:space-between;gap:10px;height:34px">' +
-    '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">' +
-    esc2((function(){ var a=(list||[]).filter(function(p){return p.type==="announcement";}); var t=(list||[]).filter(function(p){return p.type!=="announcement";}); var s=[]; if(a[0]) s.push(a[0].title||"Notice"); if(t.length) s.push("Tuition offers"); return s.join(" · ")||"Offers"; })()) + "</span>" +
-    '<button type="button" data-promo-expand aria-label="Show offer" style="background:transparent;border:0;color:#fff;cursor:pointer;padding:2px 4px;display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div>';
-  installPromoStrip(bar);
-  if (window.__cgtiaSetPromoState) window.__cgtiaSetPromoState(window.scrollY < 40 ? "full" : "strip");
-  bar.style.position = "fixed";
-  bar.onclick = bar.onclick;
-  var closeBtn = bar.querySelector("[data-promo-close]");
+    '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;cursor:pointer" data-promo-go-tuition>' +
+    '<span style="flex-shrink:0;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Promo</span>' +
+    '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc2(line) +
+    (timer ? ' <span style="opacity:.85">· Ends in ' + timer + "</span>" : "") +
+    "</span></div>" +
+    '<button type="button" data-promo-cta style="flex-shrink:0;border:0;border-radius:999px;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap">View</button>' +
+    '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
+
+  document.documentElement.style.setProperty("--cgtia-strip-h", "36px");
+
+  function goTuition(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
+    else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
+    else window.location.href = "/tuition";
+    setTimeout(function () {
+      if (window.__cgtiaApplyTuitionPromoPricing) {
+        window.__cgtiaApplyTuitionPromoPricing(window.__cgtiaActivePromos || []);
+      }
+    }, 400);
+  }
+
+  const goEl = bar.querySelector("[data-promo-go-tuition]");
+  const cta = bar.querySelector("[data-promo-cta]");
+  const closeBtn = bar.querySelector("[data-promo-close]");
+  if (goEl) goEl.onclick = goTuition;
+  if (cta) cta.onclick = goTuition;
   if (closeBtn) {
     closeBtn.onclick = function (e) {
       e.preventDefault();
       e.stopPropagation();
-      bar.style.transform = "translateY(-100%)";
       sessionStorage.setItem("cgtiaPromoBannerClosed", "1");
       window.__cgtiaPromoMinimized = true;
+      bar.style.transform = "translateY(-100%)";
       setTimeout(function () {
         if (bar && bar.parentNode) bar.remove();
         document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
-        if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
-      }, 500);
+        ensureHeaderPromoChip(true, tuitionPromos);
+      }, 400);
     };
   }
 
@@ -216,8 +196,47 @@ function renderPromoBannerOnly(list) {
   if (!window.__cgtiaPromoTimer) {
     window.__cgtiaPromoTimer = setInterval(tickCountdowns, 1000);
   }
+}
 
-  applyTuitionPromoPricing(list);
+/** Small shimmer chip in the header area when the promo strip is closed */
+function ensureHeaderPromoChip(show, promos) {
+  let chip = document.getElementById("cgtiaPromoChip");
+  if (!show) {
+    if (chip) chip.remove();
+    return;
+  }
+  if (!chip) {
+    chip = document.createElement("button");
+    chip.id = "cgtiaPromoChip";
+    chip.type = "button";
+    chip.setAttribute("aria-label", "Show tuition offers");
+    chip.style.cssText =
+      "position:fixed;top:max(8px,env(safe-area-inset-top));right:12px;z-index:91;" +
+      "display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:0;border-radius:999px;" +
+      "background:linear-gradient(90deg,#0f172a,#1e3a8a,#0f172a);background-size:200% 100%;" +
+      "color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;" +
+      "cursor:pointer;box-shadow:0 6px 18px rgba(15,23,42,.3);" +
+      "animation:cgtiaPromoShimmer 2.4s ease-in-out infinite,cgtiaPromoJiggle 3s ease-in-out infinite";
+    if (!document.getElementById("cgtiaPromoChipStyle")) {
+      const st = document.createElement("style");
+      st.id = "cgtiaPromoChipStyle";
+      st.textContent =
+        "@keyframes cgtiaPromoShimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}" +
+        "@keyframes cgtiaPromoJiggle{0%,88%,100%{transform:rotate(0)}90%{transform:rotate(-6deg)}92%{transform:rotate(6deg)}94%{transform:rotate(-4deg)}96%{transform:rotate(4deg)}98%{transform:rotate(0)}}" +
+        "@media (max-width:380px){#cgtiaPromoChip{top:max(6px,env(safe-area-inset-top));right:8px;padding:5px 9px;font-size:9px}" +
+        "#cgtiaAnnouncement{left:8px!important;bottom:8px!important;max-width:calc(100vw - 16px)!important}}";
+      document.head.appendChild(st);
+    }
+    chip.onclick = function () {
+      sessionStorage.removeItem("cgtiaPromoBannerClosed");
+      window.__cgtiaPromoMinimized = false;
+      chip.remove();
+      renderPromoBanner(window.__cgtiaActivePromos || []);
+    };
+    document.body.appendChild(chip);
+  }
+  const n = (promos || []).length;
+  chip.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;background:#fbbf24;box-shadow:0 0 0 3px rgba(251,191,36,.25)"></span>Promo' + (n > 1 ? " · " + n : "");
 }
 
 /** Strikethrough full price + bold promo on tuition cards */
@@ -534,22 +553,48 @@ function renderAnnouncement(all) {
   }
   if (existing && existing.dataset.id === pick.id) { window.__cgtiaAnnShown = true; return; }
   if (existing) existing.remove();
+
+  const bg = pick.bgColor || pick.backgroundColor || "";
+  const grad = pick.bgGradient || pick.gradient || "";
+  let background;
+  if (grad && grad.indexOf("gradient") >= 0) background = grad;
+  else if (grad && grad.indexOf(",") >= 0) background = "linear-gradient(135deg," + grad + ")";
+  else if (bg) background = bg;
+  else background = "linear-gradient(135deg,#1e3a8a 0%,#0f172a 100%)";
+
+  const textColor = pick.textColor || "#ffffff";
+  const btnBg = pick.buttonColor || "#ffffff";
+  const btnFg = pick.buttonTextColor || "#0f172a";
+
   const card = document.createElement("div");
   card.id = "cgtiaAnnouncement";
   card.dataset.id = pick.id;
   card.setAttribute("role", "status");
+  // Compact bottom-left — smaller than a Netlify toast so it does not block nav
   card.style.cssText =
-    "position:fixed;left:12px;bottom:12px;z-index:97;width:min(20rem,calc(100vw - 24px));box-sizing:border-box;" +
-    "background:#0f172a;color:#fff;border-radius:1.25rem;padding:1rem 2.25rem 1.1rem 1.1rem;box-shadow:0 18px 40px rgba(15,23,42,.35);" +
-    "font-size:14px;line-height:1.5;transform:translateY(20px);opacity:0;transition:transform .5s cubic-bezier(.16,1,.3,1),opacity .5s";
-  const link = pick.linkUrl
-    ? '<a href="' + esc2(pick.linkUrl) + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:.75rem;padding:.55rem 1rem;border-radius:999px;background:#fff;color:#0f172a;font-weight:700;font-size:12px;text-decoration:none">' + esc2(pick.linkLabel || "Read more") + "</a>"
+    "position:fixed;left:10px;bottom:10px;z-index:97;" +
+    "width:min(16.5rem,calc(100vw - 20px));box-sizing:border-box;" +
+    "background:" + background + ";color:" + textColor + ";" +
+    "border-radius:14px;padding:10px 12px 11px;" +
+    "box-shadow:0 10px 28px rgba(15,23,42,.28);" +
+    "font-size:12px;line-height:1.35;" +
+    "transform:translateY(12px);opacity:0;" +
+    "transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s";
+
+  const title = esc2(pick.title || "Announcement");
+  const desc = pick.description ? esc2(pick.description) : "";
+  const label = esc2(pick.linkLabel || pick.bellButtonLabel || "Open");
+  const href = pick.linkUrl || pick.bellButtonUrl || "";
+  const cta = href
+    ? '<a href="' + esc2(href) + '" data-ann-cta style="display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:' + btnBg + ";color:" + btnFg + ';font-weight:700;font-size:10px;text-decoration:none;letter-spacing:.04em">' + label + "</a>"
     : "";
+
   card.innerHTML =
-    '<button type="button" aria-label="Close" data-ann-close style="position:absolute;right:10px;top:8px;background:transparent;border:0;color:#94a3b8;font-size:20px;line-height:1;cursor:pointer">×</button>' +
-    '<div style="font-weight:800;font-size:15px">' + esc2(pick.title || "Announcement") + "</div>" +
-    (pick.description ? '<div style="margin-top:.35rem;color:#cbd5e1">' + esc2(pick.description) + "</div>" : "") +
-    link;
+    '<button type="button" aria-label="Close" data-ann-close style="position:absolute;right:6px;top:4px;background:transparent;border:0;color:inherit;opacity:.65;font-size:16px;line-height:1;cursor:pointer;padding:2px 5px">×</button>' +
+    '<div style="font-weight:800;font-size:13px;padding-right:18px;line-height:1.25">' + title + "</div>" +
+    (desc ? '<div style="margin-top:3px;opacity:.88;font-size:11px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + desc + "</div>" : "") +
+    cta;
+
   document.body.appendChild(card);
   window.__cgtiaAnnShown = true;
   if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
@@ -561,12 +606,27 @@ function renderAnnouncement(all) {
   });
   card.querySelector("[data-ann-close]").onclick = function () {
     markAnnouncementSeen(pick);
-    card.remove();
-    window.__cgtiaAnnShown = false;
-    if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+    card.style.transform = "translateY(12px)";
+    card.style.opacity = "0";
+    setTimeout(function () {
+      card.remove();
+      window.__cgtiaAnnShown = false;
+      if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+    }, 280);
   };
+  const ctaEl = card.querySelector("[data-ann-cta]");
+  if (ctaEl) {
+    ctaEl.addEventListener("click", function (e) {
+      const url = pick.linkUrl || pick.bellButtonUrl || "";
+      if (url && url.indexOf("/") === 0) {
+        e.preventDefault();
+        markAnnouncementSeen(pick);
+        if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
+        else window.location.href = url;
+      }
+    });
+  }
 }
-
 
 /* ---- One notification bell: opens a sheet with Announcements and Promotions sections ---- */
 const BELL_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
@@ -595,14 +655,22 @@ function ensureNotifyBell() {
 export function showSolidBottomPromoBar() {
   const all = window.__cgtiaActivePromos || [];
   const promoClosed = sessionStorage.getItem("cgtiaPromoBannerClosed") === "1";
-  const hasPromo = promoItems(all).length > 0;
+  const promos = promoItems(all);
+  const hasPromo = promos.length > 0;
+  // Tuition promos → header shimmer chip (not bottom bell)
+  if (typeof ensureHeaderPromoChip === "function") {
+    ensureHeaderPromoChip(promoClosed && hasPromo, promos);
+  }
+  // Bottom bell only if there are announcements waiting and no card is open
   const hasAnn = annItems(all).length > 0;
-  // While an announcement card is on screen, it is the notification, so the bell waits
   if (window.__cgtiaAnnShown) { removeNotifyBell(); return; }
-  const promoPending = promoClosed && hasPromo;
-  const annPending = hasAnn;
-  if (promoPending || annPending) ensureNotifyBell();
-  else removeNotifyBell();
+  // Prefer the compact announcement card over a generic bell when possible
+  if (hasAnn && !window.__cgtiaAnnShown) {
+    // card will render via renderAnnouncement; no need for bell
+    removeNotifyBell();
+    return;
+  }
+  removeNotifyBell();
 }
 
 function notifySection(title, rows, empty, startOpen) {
