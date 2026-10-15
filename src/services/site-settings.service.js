@@ -38,6 +38,7 @@ async function loadSiteSettingsNow() {
     // All reads start together, each with a time limit and one retry, so one stalled request can't block the rest
     const pSite = readDoc(api, db, "settings");
     const pTp = readDoc(api, db, "tuitionPage");
+    const pPp = readDoc(api, db, "programsPage");
     const pLg = readDoc(api, db, "legalPages");
     const pAf = readDoc(api, db, "applyForm");
     const pProg = readCollection(api, db, "programs");
@@ -51,6 +52,10 @@ async function loadSiteSettingsNow() {
       const tp = await pTp;
       out.tuitionPage = tp.exists() ? tp.data() : null;
     } catch (e) { out.tuitionPage = null; }
+    try {
+      const pp = await pPp;
+      out.programsPage = pp.exists() ? pp.data() : null;
+    } catch (e) { out.programsPage = null; }
     try {
       const lg = await pLg;
       out.legalPages = lg.exists() ? lg.data() : null;
@@ -99,6 +104,7 @@ async function loadSiteSettingsNow() {
   window.__cgtiaSiteSettings = out;
   applySiteSettingsToDom(out);
   applyTuitionPage(Object.assign({}, out.tuitionPage || {}, out.applyForm || {}));
+  try { applyProgramsPage(out.programsPage); } catch (e) {}
   applyLegalPages(out.legalPages);
   applyCustomFields(out.applyForm);
   installDomWatcher();
@@ -291,6 +297,56 @@ window.__cgtiaCollectCustomAnswers = function () {
   return out;
 };
 
+
+function applyProgramsPage(pp) {
+  if (!pp) return;
+  const set = (sel, val) => {
+    if (val == null || val === "") return;
+    document.querySelectorAll(sel).forEach((el) => { el.textContent = val; });
+  };
+  set('[data-cms="ppEyebrow"]', pp.eyebrow);
+  set('[data-cms="ppTitle"]', pp.title);
+  set('[data-cms="ppIntro"]', pp.intro);
+  set('[data-cms="ppTrackEyebrow"]', pp.trackEyebrow);
+  set('[data-cms="ppTrackTitle"]', pp.trackTitle);
+  set('[data-cms="ppDeliveryEyebrow"]', pp.deliveryEyebrow);
+  set('[data-cms="ppDeliveryTitle"]', pp.deliveryTitle);
+  set('[data-cms="ppCtaEyebrow"]', pp.ctaEyebrow);
+  set('[data-cms="ppCtaTitle"]', pp.ctaTitle);
+  set('[data-cms="ppCtaBody"]', pp.ctaBody);
+  set('[data-cms="ppCtaLabel"]', pp.ctaLabel);
+
+  const trackHost = document.querySelector('[data-cms-sections="ppTrackCards"]');
+  if (trackHost && Array.isArray(pp.trackCards) && pp.trackCards.length) {
+    trackHost.innerHTML = pp.trackCards.map((c) => {
+      const bullets = (c.bullets || []).map((b) =>
+        '<li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>' + String(b).replace(/</g, "&lt;") + "</li>"
+      ).join("");
+      return (
+        '<div class="soft-component-card p-8 md:p-10 rounded-[2.5rem] flex flex-col justify-between gap-8 group smooth-transition">' +
+        "<div>" +
+        (c.badge ? '<span class="text-[10px] font-bold tracking-widest text-blue-800 uppercase block mb-2">' + String(c.badge).replace(/</g, "&lt;") + "</span>" : "") +
+        '<h3 class="font-editorial text-2xl md:text-3xl text-blue-950 font-bold leading-tight mb-4">' + String(c.title || "").replace(/</g, "&lt;") + "</h3>" +
+        '<p class="text-slate-500 font-light text-sm md:text-base leading-relaxed">' + String(c.body || "").replace(/</g, "&lt;") + "</p>" +
+        "</div>" +
+        (bullets ? '<ul class="space-y-3 pt-6 border-t border-slate-200/40 text-sm text-slate-600 font-light">' + bullets + "</ul>" : "") +
+        "</div>"
+      );
+    }).join("");
+  }
+
+  const delHost = document.querySelector('[data-cms-sections="ppDeliveryCards"]');
+  if (delHost && Array.isArray(pp.deliveryCards) && pp.deliveryCards.length) {
+    delHost.innerHTML = pp.deliveryCards.map((c) => (
+      '<div class="soft-component-card p-8 md:p-10 rounded-[2.5rem] flex flex-col gap-4">' +
+      (c.label ? '<span class="text-xs font-bold tracking-widest text-slate-400 uppercase">' + String(c.label).replace(/</g, "&lt;") + "</span>" : "") +
+      '<h3 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold">' + String(c.title || "").replace(/</g, "&lt;") + "</h3>" +
+      '<p class="text-slate-500 font-light text-sm leading-relaxed">' + String(c.body || "").replace(/</g, "&lt;") + "</p>" +
+      "</div>"
+    )).join("");
+  }
+}
+
 /** Applies admin-edited tuition wording to any element marked data-cms / data-cms-list */
 export function applyTuitionPage(tp) {
   if (!tp) return;
@@ -313,6 +369,7 @@ export function applyTuitionPage(tp) {
 const WATCH_SELECTOR = "[data-cms],[data-cms-list],[data-cms-sections],#applyCustomFields,#cgtiaTuitionProgramCards,#cgtiaHomeProgramCards";
 
 export function reapplyDynamicContent() {
+  try { applyProgramsPage((window.__cgtiaSiteSettings || {}).programsPage); } catch (e) {}
   const s = window.__cgtiaSiteSettings;
   if (!s) return;
   applySiteSettingsToDom(s);

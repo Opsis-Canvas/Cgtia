@@ -152,13 +152,14 @@ function renderPromoBannerOnly(list) {
   bar.innerHTML =
     '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;cursor:pointer" data-promo-go-tuition>' +
     '<span style="flex-shrink:0;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Promo</span>' +
-    '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc2(line) +
-    (timer ? ' <span style="opacity:.85">· Ends in ' + timer + "</span>" : "") +
-    "</span></div>" +
+    '<div style="flex:1;min-width:0">' +
+    '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">' + esc2(line) + "</div>" +
+    (timer ? '<div style="font-size:10px;opacity:.8;margin-top:1px;white-space:nowrap">Ends in ' + timer + "</div>" : "") +
+    "</div></div>" +
     '<button type="button" data-promo-cta style="flex-shrink:0;border:0;border-radius:999px;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap">View</button>' +
     '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
 
-  document.documentElement.style.setProperty("--cgtia-strip-h", "36px");
+  document.documentElement.style.setProperty("--cgtia-strip-h", timer ? "44px" : "36px");
 
   function goTuition(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -211,8 +212,9 @@ function ensureHeaderPromoChip(show, promos) {
     chip.type = "button";
     chip.setAttribute("aria-label", "Show tuition offers");
     chip.style.cssText =
-      "position:fixed;top:max(8px,env(safe-area-inset-top));right:12px;z-index:91;" +
-      "display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:0;border-radius:999px;" +
+      "position:fixed;top:max(10px,env(safe-area-inset-top));left:50%;z-index:91;" +
+      "transform:translateX(-50%);" +
+      "display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:0;border-radius:999px;" +
       "background:linear-gradient(90deg,#0f172a,#1e3a8a,#0f172a);background-size:200% 100%;" +
       "color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;" +
       "cursor:pointer;box-shadow:0 6px 18px rgba(15,23,42,.3);" +
@@ -222,8 +224,8 @@ function ensureHeaderPromoChip(show, promos) {
       st.id = "cgtiaPromoChipStyle";
       st.textContent =
         "@keyframes cgtiaPromoShimmer{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}" +
-        "@keyframes cgtiaPromoJiggle{0%,88%,100%{transform:rotate(0)}90%{transform:rotate(-6deg)}92%{transform:rotate(6deg)}94%{transform:rotate(-4deg)}96%{transform:rotate(4deg)}98%{transform:rotate(0)}}" +
-        "@media (max-width:380px){#cgtiaPromoChip{top:max(6px,env(safe-area-inset-top));right:8px;padding:5px 9px;font-size:9px}" +
+        "@keyframes cgtiaPromoJiggle{0%,88%,100%{transform:translateX(-50%) rotate(0)}90%{transform:translateX(-50%) rotate(-6deg)}92%{transform:translateX(-50%) rotate(6deg)}94%{transform:translateX(-50%) rotate(-4deg)}96%{transform:translateX(-50%) rotate(4deg)}98%{transform:translateX(-50%) rotate(0)}}" +
+        "@media (max-width:380px){#cgtiaPromoChip{top:max(8px,env(safe-area-inset-top));padding:5px 10px;font-size:9px}" +
         "#cgtiaAnnouncement{left:8px!important;bottom:8px!important;max-width:calc(100vw - 16px)!important}}";
       document.head.appendChild(st);
     }

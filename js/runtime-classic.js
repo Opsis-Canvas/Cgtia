@@ -961,14 +961,16 @@ window.closeApplyScreen = typeof closeApplyScreen === "function" ? closeApplyScr
 window.toggleApplyScreen = function () {
   try {
     var container = document.getElementById("applyScreen");
-    var opening = !container || container.classList.contains("pointer-events-none") || container.style.pointerEvents === "none";
+    // Never leave the current page for Apply — only open the overlay form
+    if (!container) {
+      console.warn("[cgtia] applyScreen missing on this view");
+      return;
+    }
+    var opening = container.classList.contains("pointer-events-none") || container.style.pointerEvents === "none";
     if (opening) {
       try { if (window.ensurePaystack) window.ensurePaystack(); } catch (e) {}
     }
-    if (typeof toggleApplyScreen === "function") {
-      // call inner classic function if still in scope — always use setSheetOpen
-    }
-    if (typeof setSheetOpen === "function" && container) {
+    if (typeof setSheetOpen === "function") {
       setSheetOpen("applyScreen", "applyDrawer", opening);
       return;
     }

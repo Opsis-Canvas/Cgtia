@@ -34,7 +34,7 @@ export const programs_html = `
 
   <!-- Hero -->
   <section class="w-full max-w-5xl mx-auto px-6 pt-16 md:pt-24 pb-16 md:pb-20 text-center">
-    <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">Institutional Offerings</span>
+    <span data-cms="ppEyebrow" class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">Institutional Offerings</span>
     <h1 class="font-editorial text-4xl sm:text-6xl md:text-7xl text-blue-950 font-bold tracking-tight leading-[1.1] mb-8 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
       Academic <span class="italic font-normal text-blue-900/90">Programs</span>.
     </h1>
@@ -45,7 +45,7 @@ export const programs_html = `
 
   <!-- Program Modules Grid -->
   <section id="programs" class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-36">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+    <div data-cms-sections="ppTrackCards" class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
       <div class="soft-component-card p-8 md:p-10 rounded-[2.5rem] flex flex-col justify-between gap-8 group smooth-transition">
         <div>
           <span class="text-[10px] font-bold tracking-widest text-blue-800 uppercase block mb-2">Diploma I</span>
@@ -103,10 +103,10 @@ export const programs_html = `
   <!-- How Delivery Works -->
   <section class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-36">
     <div class="text-left mb-12 md:mb-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">How It's Delivered</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Three Parts, One Program</h2>
+      <span data-cms="ppDeliveryEyebrow" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">How It's Delivered</span>
+      <h2 data-cms="ppDeliveryTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Three Parts, One Program</h2>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+    <div data-cms-sections="ppDeliveryCards" class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
       <div class="soft-component-card p-8 md:p-10 rounded-[2.5rem] flex flex-col gap-4">
         <span class="text-xs font-bold tracking-widest text-slate-400 uppercase">Classroom</span>
         <h3 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold">Lecture Sessions</h3>
