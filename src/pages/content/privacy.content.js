@@ -226,12 +226,14 @@ export const privacy_html = `
     </div>
   </div>
 
-  <!-- Apply Screen Overlay -->
+    <!-- Apply Screen Overlay -->
   <div id="applyScreen" class="fixed inset-0 z-[60] pointer-events-none transition-all duration-500 bg-slate-950/0 backdrop-blur-0 flex items-end md:items-center md:justify-center">
     <div id="applyDrawer" class="w-full md:w-[560px] md:max-h-[88vh] max-h-[92vh] bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-[0_-15px_40px_rgba(15,23,42,0.15)] md:shadow-2xl border-t md:border border-slate-100 p-8 md:p-10 pointer-events-auto transform translate-y-full md:translate-y-8 md:opacity-0 transition-transform md:transition-all duration-500 flex flex-col overflow-y-auto no-scrollbar">
+      
       <div class="w-full py-2 mb-2 md:hidden">
         <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto"></div>
       </div>
+
       <div class="flex justify-between items-start mb-6 shrink-0">
         <div>
           <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-2">Admissions</span>
@@ -239,6 +241,7 @@ export const privacy_html = `
         </div>
         <button onclick="toggleApplyScreen()" class="text-xs font-bold tracking-widest text-slate-400 uppercase mt-2">Close</button>
       </div>
+
       <form id="applyForm" class="space-y-5" onsubmit="handleApplySubmit(event)">
         <div class="hidden" aria-hidden="true">
           <label for="applyWebsiteField">Leave this field empty</label>
@@ -246,16 +249,30 @@ export const privacy_html = `
         </div>
         <div>
           <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Full Name</label>
-          <input required type="text" placeholder="e.g. Ada Okonkwo" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+          <input required type="text" id="fullNameInput" placeholder="e.g. Ada Okonkwo" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Phone Number</label>
-            <input required type="tel" placeholder="080X XXX XXXX" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+            <div class="flex gap-2">
+            <select id="countryCodeSelect" class="w-[7.5rem] shrink-0 px-2 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-800 outline-none focus:border-blue-900/40">
+              <option value="+234" selected>NG +234</option>
+              <option value="+1">US +1</option>
+              <option value="+44">UK +44</option>
+              <option value="+233">GH +233</option>
+              <option value="+254">KE +254</option>
+              <option value="+27">ZA +27</option>
+              <option value="+250">RW +250</option>
+              <option value="+260">ZM +260</option>
+              <option value="+91">IN +91</option>
+              <option value="+971">AE +971</option>
+            </select>
+            <input required type="tel" id="phoneInput" placeholder="801 234 5678" class="flex-1 px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition" />
+          </div>
           </div>
           <div>
             <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Email Address</label>
-            <input required type="email" placeholder="you@email.com" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+            <input required type="email" id="emailInput" placeholder="you@email.com" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
           </div>
         </div>
         <div>
@@ -268,15 +285,35 @@ export const privacy_html = `
             <option value="licensing">Licensing</option>
           </select>
         </div>
+        <div id="studyModeWrap" class="hidden">
+          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">How do you want to study?</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="studyModeOptions">
+            <label class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer has-[:checked]:border-blue-900 has-[:checked]:bg-blue-50">
+              <input type="radio" name="studyMode" id="studyModeOnline" value="online" class="accent-blue-900" />
+              <span class="text-sm font-medium text-blue-950">Online</span>
+            </label>
+            <label class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer has-[:checked]:border-blue-900 has-[:checked]:bg-blue-50">
+              <input type="radio" name="studyMode" id="studyModeInPerson" value="in-person" class="accent-blue-900" />
+              <span class="text-sm font-medium text-blue-950">In person</span>
+            </label>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2">Certificate, Diploma, and Higher Diploma can be taken online or in person.</p>
+        </div>
         <div>
           <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program Start Date</label>
-          <div id="startDateDisplay" class="w-full px-5 py-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-sm text-slate-400">Select a program to see its fixed start date</div>
-          <p class="text-[11px] text-slate-400 mt-2">Each cohort has one fixed start date &mdash; there's no need to pick your own.</p>
+          <div id="programModalityDisplay" class="text-xs text-slate-500 mb-2"></div>
+          <div id="startDateDisplay" class="w-full px-5 py-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-sm text-slate-400">Select a programme to see the next start date</div>
+          <p class="text-[11px] text-slate-400 mt-2">Each cohort has one fixed start date set by the academy.</p>
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Tell us a little about you</label>
+          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2"> (Optional) Tell us a little about you</label>
           <textarea rows="3" placeholder="Why are you interested in caregiving training?" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition resize-none"></textarea>
         </div>
+
+        <label class="flex items-start gap-3 text-xs text-slate-600 leading-relaxed cursor-pointer">
+          <input required type="checkbox" id="ageConfirm18" class="mt-1 rounded border-slate-300 accent-blue-900" />
+          <span>I confirm that I am <strong>18 years of age or older</strong> and eligible to enrol.</span>
+        </label>
         <button type="submit" class="w-full mt-4 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
           Submit Application
         </button>
@@ -284,7 +321,7 @@ export const privacy_html = `
     </div>
   </div>
 
-  <!-- Submission Status Overlay (mobile bottom-sheet style) -->
+<!-- Submission Status Overlay (mobile bottom-sheet style) -->
   <div id="statusScreen" class="fixed inset-0 z-[70] pointer-events-none transition-all duration-500 bg-slate-950/0 backdrop-blur-0 flex items-end md:items-center md:justify-center">
     <div id="statusDrawer" class="w-full md:w-[420px] bg-white rounded-t-[2.5rem] md:rounded-[2.5rem] shadow-[0_-15px_40px_rgba(15,23,42,0.15)] md:shadow-2xl border-t md:border border-slate-100 p-8 md:p-10 pb-10 pointer-events-auto transform translate-y-full md:translate-y-8 md:opacity-0 transition-transform md:transition-all duration-500 flex flex-col items-center text-center">
       <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-4 md:hidden"></div>
