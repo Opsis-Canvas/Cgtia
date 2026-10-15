@@ -587,45 +587,61 @@ export function showSolidBottomPromoBar() {
   else removeNotifyBell();
 }
 
-function notifySection(title, rows, empty) {
-  return '<details open style="border-top:1px solid #e2e8f0;padding:.6rem 0">' +
-    '<summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#334155">' +
-    esc2(title) + CHEVRON_SVG + "</summary>" +
-    '<div style="padding-top:.5rem">' + (rows.length ? rows.join("") : '<p style="color:#64748b;font-size:.9rem;margin:.25rem 0">' + esc2(empty) + "</p>") + "</div></details>";
+function notifySection(title, rows, empty, startOpen) {
+  const openAttr = startOpen ? " open" : "";
+  return '<details' + openAttr + ' style="border-top:1px solid #e2e8f0;padding:.45rem 0">' +
+    '<summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;padding:.35rem 0">' +
+    '<span>' + esc2(title) + (rows.length ? ' <span style="color:#94a3b8;font-weight:600">(' + rows.length + ')</span>' : '') + '</span>' + CHEVRON_SVG + "</summary>" +
+    '<div style="padding:.15rem 0 .35rem">' + (rows.length ? rows.join("") : '<p style="color:#94a3b8;font-size:.85rem;margin:.2rem 0">' + esc2(empty) + "</p>") + "</div></details>";
 }
 function notifyRow(title, amount, body, label, dest) {
   const button = label && dest
-    ? '<button type="button" data-notify-go="' + esc2(dest) + '" style="width:100%;margin-top:.6rem;padding:.8rem;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer">' + esc2(label) + "</button>"
+    ? '<button type="button" data-notify-go="' + esc2(dest) + '" style="margin-top:.45rem;padding:.55rem 1rem;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">' + esc2(label) + "</button>"
     : "";
-  return '<div style="padding:.7rem 0;border-top:1px solid #f1f5f9">' +
-    '<h3 style="font-size:1rem;font-weight:800;color:#0f172a;margin:0 0 .25rem">' + esc2(title || "Notice") + "</h3>" +
-    (amount ? '<p style="font-size:1.15rem;font-weight:800;color:#1e3a8a;margin:0 0 .25rem">' + esc2(amount) + "</p>" : "") +
-    (body ? '<p style="font-size:.9rem;color:#475569;line-height:1.5;margin:0">' + esc2(body) + "</p>" : "") +
+  return '<div style="padding:.55rem 0;border-top:1px solid #f1f5f9">' +
+    '<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline">' +
+    '<h3 style="font-size:.95rem;font-weight:700;color:#0f172a;margin:0">' + esc2(title || "Notice") + "</h3>" +
+    (amount ? '<span style="font-size:.95rem;font-weight:800;color:#1e3a8a;white-space:nowrap">' + esc2(amount) + "</span>" : "") +
+    "</div>" +
+    (body ? '<p style="font-size:.82rem;color:#64748b;line-height:1.4;margin:.25rem 0 0">' + esc2(body) + "</p>" : "") +
     button + "</div>";
 }
 
 function openNotifySheet() {
   const all = window.__cgtiaActivePromos || [];
   const anns = annItems(all).map(function (p) {
-    return notifyRow(p.title, "", p.bellText || p.description || "", p.bellButtonLabel || p.linkLabel || "", p.bellButtonUrl || p.linkUrl || "");
+    return notifyRow(p.title, "", p.bellText || p.description || "", p.bellButtonLabel || p.linkLabel || "Open", p.bellButtonUrl || p.linkUrl || "");
   });
-  const promos = promoItems(all).map(function (p) {
-    const amount = p.promoAmount ? "\u20A6" + (Number(p.promoAmount) >= 1000 ? Math.round(Number(p.promoAmount) / 1000) + "k" : p.promoAmount) : "";
-    return notifyRow(p.title, amount, p.bellText || p.description || "", p.bellButtonLabel || "View tuition", p.bellButtonUrl || "/tuition");
-  });
+  // One compact promo block (not three large cards)
+  const promoList = promoItems(all);
+  const promos = promoList.length
+    ? [notifyRow(
+        "Tuition offers",
+        "",
+        promoList.map(function (p) {
+          const n = Number(p.promoAmount) || 0;
+          const amt = n >= 1000 ? ("₦" + Math.round(n / 1000) + "k") : (n ? ("₦" + n) : "");
+          const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).join("/") || p.title || "Offer";
+          return progs + (amt ? " " + amt : "");
+        }).join(" · "),
+        "View tuition",
+        "/tuition"
+      )]
+    : [];
   let sheet = document.getElementById("cgtiaNotifySheet");
   if (sheet) sheet.remove();
   sheet = document.createElement("div");
   sheet.id = "cgtiaNotifySheet";
   sheet.style.cssText = "position:fixed;inset:0;z-index:95;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;";
   sheet.innerHTML =
-    "<style>.cgtia-chev{transition:transform .2s}details[open]>summary .cgtia-chev{transform:rotate(180deg)}summary::-webkit-details-marker{display:none}</style>" +
-    '<div style="width:100%;max-width:28rem;background:#fff;border-radius:1.75rem 1.75rem 0 0;padding:1.1rem 1.25rem 1.6rem;box-shadow:0 -12px 40px rgba(0,0,0,.2);max-height:82vh;overflow:auto">' +
-    '<div style="width:2.5rem;height:4px;background:#e2e8f0;border-radius:999px;margin:0 auto 1rem"></div>' +
-    '<h2 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin:0 0 .25rem">Notifications</h2>' +
-    notifySection("Announcements", anns, "No announcements right now.") +
-    notifySection("Promotions", promos, "No offers right now.") +
-    '<button type="button" data-notify-close style="width:100%;margin-top:.5rem;padding:.7rem;border:0;background:transparent;color:#64748b;font-size:12px;cursor:pointer">Close</button></div>';
+    "<style>.cgtia-chev{transition:transform .2s;flex:0 0 auto}details[open]>summary .cgtia-chev{transform:rotate(180deg)}summary::-webkit-details-marker{display:none}</style>" +
+    '<div style="width:100%;max-width:26rem;background:#fff;border-radius:1.5rem 1.5rem 0 0;padding:1rem 1.15rem 1.4rem;box-shadow:0 -12px 40px rgba(0,0,0,.2);max-height:75vh;overflow:auto">' +
+    '<div style="width:2.25rem;height:4px;background:#e2e8f0;border-radius:999px;margin:0 auto .85rem"></div>' +
+    '<h2 style="font-size:1rem;font-weight:800;color:#0f172a;margin:0 0 .15rem">Notices</h2>' +
+    '<p style="font-size:.75rem;color:#94a3b8;margin:0 0 .35rem">Tap a section to expand</p>' +
+    notifySection("Announcements", anns, "No announcements right now.", anns.length === 1) +
+    notifySection("Tuition offers", promos, "No offers right now.", promos.length === 1 && !anns.length) +
+    '<button type="button" data-notify-close style="width:100%;margin-top:.35rem;padding:.65rem;border:0;background:transparent;color:#64748b;font-size:12px;cursor:pointer">Close</button></div>';
   sheet.addEventListener("click", function (e) {
     if (e.target === sheet || (e.target.closest && e.target.closest("[data-notify-close]"))) { sheet.remove(); return; }
     const go = e.target.closest && e.target.closest("[data-notify-go]");
