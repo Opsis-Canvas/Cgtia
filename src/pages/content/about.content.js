@@ -268,7 +268,7 @@ export const about_html = `
           <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">01</span>
         </div>
         <div onclick="navigateWithPill('About', 'about.html')" class="px-6 py-4 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 flex justify-between items-center cursor-pointer transition-colors">
-          <span class="font-editorial text-lg font-bold text-blue-950">About</span>
+          <span class="font-editorial text-lg font-bold text-blue-950">About Academy</span>
           <span class="text-[10px] font-bold tracking-widest text-blue-800 uppercase">02</span>
         </div>
         <div onclick="navigateWithPill('Tuition', 'tuition.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">

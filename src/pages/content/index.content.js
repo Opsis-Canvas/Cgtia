@@ -758,7 +758,7 @@ export const index_html = `
       <!-- Scrollable Navigation Points -->
       <div class="overflow-y-auto no-scrollbar py-2 space-y-2 grow">
         <div onclick="navigateWithPill('Home', 'index.html')" class="px-6 py-4 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 flex justify-between items-center cursor-pointer transition-colors">
-          <span class="font-editorial text-lg font-bold text-blue-950">Academy Home</span>
+          <span class="font-editorial text-lg font-bold text-blue-950">Home</span>
           <span class="text-[10px] font-bold tracking-widest text-blue-800 uppercase">01</span>
         </div>
         <div onclick="navigateWithPill('About', 'about.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
@@ -770,7 +770,7 @@ export const index_html = `
           <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">03</span>
         </div>
         <div onclick="navigateWithPill('Programs', 'programs.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
-          <span class="font-sans-clean text-sm font-medium text-slate-700">Academic Programs</span>
+          <span class="font-sans-clean text-sm font-medium text-slate-700">Programs</span>
           <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">04</span>
         </div>
         <div onclick="navigateWithPill('Gallery', 'gallery.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
@@ -780,6 +780,10 @@ export const index_html = `
         <div onclick="navigateWithPill('Contact', 'contact.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
           <span class="font-sans-clean text-sm font-medium text-slate-700">Contact</span>
           <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">06</span>
+        </div>
+        <div onclick="navigateWithPill('Licensing', 'licensing.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
+          <span class="font-sans-clean text-sm font-medium text-slate-700">Licensing</span>
+          <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">07</span>
         </div>
       </div>
 

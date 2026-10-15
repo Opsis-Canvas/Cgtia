@@ -244,9 +244,9 @@ export const licensing_html = `
           <span class="font-sans-clean text-sm font-medium text-slate-700">Contact</span>
           <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">06</span>
         </div>
-        <div onclick="navigateWithPill('Licensing', 'licensing.html')" class="px-6 py-4 rounded-2xl hover:bg-slate-50 flex justify-between items-center cursor-pointer transition-colors">
-          <span class="font-sans-clean text-sm font-medium text-slate-700">Licensing</span>
-          <span class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">07</span>
+        <div onclick="navigateWithPill('Licensing', 'licensing.html')" class="px-6 py-4 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 flex justify-between items-center cursor-pointer transition-colors">
+          <span class="font-editorial text-lg font-bold text-blue-950">Licensing</span>
+          <span class="text-[10px] font-bold tracking-widest text-blue-800 uppercase">07</span>
         </div>
       </div>
       <div class="pt-6 mt-4 border-t border-slate-100 shrink-0 space-y-3">
