@@ -145,25 +145,43 @@ function renderPromoBannerOnly(list) {
     });
   }
 
-  bar.innerHTML = list
-    .map((p) => {
-      const title = p.title || p.badge || "Notice";
-      const desc = p.description ? ` — ${p.description}` : "";
-      const timer = p.endsAt ? ` · Ends in ${countdownHtml(p.endsAt)}` : "";
-      if (p.type === "announcement") {
-        const link = p.linkUrl
-          ? ` <a href="${p.linkUrl}" target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:underline">${p.linkLabel || "Read more"}</a>`
-          : "";
-        return `<div style="margin-bottom:6px"><strong>${title}</strong>${desc}${timer}${link}</div>`;
-      }
-      const progs = (p.programs || []).map(programLabel).join(", ") || "selected programmes";
-      const amount = formatNairaShort(p.promoAmount);
-      const auto = p.requiresCode
-        ? "Enter your promo code at payment."
-        : "Applies automatically when you apply for these programmes.";
-      return `<div style="margin-bottom:6px"><strong>${title}</strong>${desc}<br/>${amount} for ${progs}${timer}<br/><span style="opacity:.85">${auto}</span></div>`;
-    })
-    .join("") + '<button type="button" data-promo-close aria-label="Close" style="position:absolute;right:10px;top:8px;background:transparent;border:0;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer;padding:4px 8px">×</button>';
+  // Professional layout: at most ONE announcement + ONE consolidated tuition line
+  // (individual promo prices still appear on each programme card — no stacked banners)
+  const announcements = list.filter((p) => p.type === "announcement");
+  const tuitionPromos = list.filter((p) => p.type !== "announcement");
+  const parts = [];
+  if (announcements.length) {
+    const p = announcements[0]; // primary announcement only
+    const title = p.title || p.badge || "Notice";
+    const desc = p.description ? ` — ${p.description}` : "";
+    const timer = p.endsAt ? ` · Ends in ${countdownHtml(p.endsAt)}` : "";
+    const link = p.linkUrl
+      ? ` <a href="${p.linkUrl}" target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:underline">${p.linkLabel || "Read more"}</a>`
+      : "";
+    const extra = announcements.length > 1
+      ? ` <span style="opacity:.7">(+${announcements.length - 1} more)</span>`
+      : "";
+    parts.push(`<div style="margin-bottom:4px"><strong>${title}</strong>${desc}${timer}${link}${extra}</div>`);
+  }
+  if (tuitionPromos.length) {
+    const bits = tuitionPromos.map((p) => {
+      const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).map(programLabel);
+      const label = progs.length ? progs.join("/") : "selected programmes";
+      return `${label} ${formatNairaShort(p.promoAmount)}`;
+    });
+    const ends = tuitionPromos.map((p) => p.endsAt).filter(Boolean);
+    let timer = "";
+    if (ends.length) {
+      const earliest = ends.map((e) => (e.toMillis ? e.toMillis() : new Date(e).getTime())).filter(Boolean).sort((a, b) => a - b)[0];
+      if (earliest) timer = ` · Ends in ${countdownHtml(earliest)}`;
+    }
+    parts.push(
+      `<div style="margin-bottom:2px"><strong>Tuition offers</strong> · ${bits.join(" · ")}${timer}` +
+      `<br/><span style="opacity:.85">Promo prices show on each programme card. Tap to view Tuition.</span></div>`
+    );
+  }
+  bar.innerHTML = parts.join("") +
+    '<button type="button" data-promo-close aria-label="Close" style="position:absolute;right:10px;top:8px;background:transparent;border:0;color:#94a3b8;font-size:18px;line-height:1;cursor:pointer;padding:4px 8px">×</button>';
 
   // Full banner + thin strip: the strip shows after scrolling, so the header stays visible
   const fullHtml = bar.innerHTML;
@@ -172,7 +190,7 @@ function renderPromoBannerOnly(list) {
     '<button type="button" data-promo-collapse aria-label="Collapse" style="position:absolute;left:0;bottom:-4px;background:transparent;border:0;color:#94a3b8;cursor:pointer;padding:2px;display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 15 12 9 18 15"></polyline></svg></button></div>' +
     '<div data-promo-strip style="display:none;align-items:center;justify-content:space-between;gap:10px;height:34px">' +
     '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px">' +
-    esc2((list || []).map(function (p) { return p.title || "Offer"; }).join(" · ")) + "</span>" +
+    esc2((function(){ var a=(list||[]).filter(function(p){return p.type==="announcement";}); var t=(list||[]).filter(function(p){return p.type!=="announcement";}); var s=[]; if(a[0]) s.push(a[0].title||"Notice"); if(t.length) s.push("Tuition offers"); return s.join(" · ")||"Offers"; })()) + "</span>" +
     '<button type="button" data-promo-expand aria-label="Show offer" style="background:transparent;border:0;color:#fff;cursor:pointer;padding:2px 4px;display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button></div>';
   installPromoStrip(bar);
   if (window.__cgtiaSetPromoState) window.__cgtiaSetPromoState(window.scrollY < 40 ? "full" : "strip");
