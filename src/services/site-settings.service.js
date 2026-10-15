@@ -342,8 +342,10 @@ function installDomWatcher() {
 }
 
 let settingsPromise = null;
-/** Loads site settings once. Every caller (startup and page render) shares the same promise. */
-export function loadSiteSettings() {
+/** Loads site settings once. Pass { force: true } to re-fetch (admin edits while visitor stays on page). */
+export function loadSiteSettings(opts) {
+  const force = opts && opts.force;
+  if (force) settingsPromise = null;
   if (!settingsPromise) {
     settingsPromise = loadSiteSettingsNow().then((out) => {
       window.__cgtiaApplyAllContent = reapplyDynamicContent;
@@ -352,6 +354,15 @@ export function loadSiteSettings() {
     });
   }
   return settingsPromise;
+}
+
+/** Soft refresh of CMS data only — never reloads the browser tab. */
+export async function refreshSiteSettingsLive() {
+  try {
+    await loadSiteSettings({ force: true });
+  } catch (e) {
+    console.warn("[cgtia] live settings refresh", e);
+  }
 }
 
 

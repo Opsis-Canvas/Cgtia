@@ -269,6 +269,24 @@ export function matchPromoForProgram(programKey, codeInput) {
 
 window.__cgtiaApplyTuitionPromoPricing = applyTuitionPromoPricing;
 
+export async function refreshPromoBannerLive() {
+  try {
+    const list = await loadActivePromotions();
+    window.__cgtiaActivePromos = list;
+    if (sessionStorage.getItem("cgtiaPromoBannerClosed") === "1") {
+      window.__cgtiaPromoMinimized = true;
+      if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+    } else {
+      renderPromoBanner(list);
+    }
+    if (window.__cgtiaApplyTuitionPromoPricing) {
+      window.__cgtiaApplyTuitionPromoPricing(list);
+    }
+  } catch (e) {
+    console.warn("[cgtia] live promo refresh", e);
+  }
+}
+
 export async function installPromoBanner() {
   const list = await loadActivePromotions();
   window.__cgtiaMatchPromo = matchPromoForProgram;

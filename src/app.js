@@ -16,8 +16,8 @@ import { loadPageControl, pageKeyFor } from "./services/page-control.service.js"
 import "./services/program-payment.service.js";
 import { PageStatus, NotFoundPage } from "./pages/page-status.page.js";
 import { installAuthFlow } from "./services/auth.service.js";
-import { installPromoBanner, loadActivePromotions, renderPromoBanner } from "./services/promo-banner.service.js";
-import { loadSiteSettings, getProgramStartDate, getProgramModality, getProgramStudyOptions } from "./services/site-settings.service.js";
+import { installPromoBanner, loadActivePromotions, renderPromoBanner, refreshPromoBannerLive } from "./services/promo-banner.service.js";
+import { loadSiteSettings, refreshSiteSettingsLive, getProgramStartDate, getProgramModality, getProgramStudyOptions } from "./services/site-settings.service.js";
 import { getActivePromotion, getProgramPricing } from "./services/firebase.service.js";
 
 const html = htm.bind(createElement);
@@ -133,10 +133,41 @@ window.__cgtiaGetActivePromotion = getActivePromotion;
 window.__cgtiaGetProgramPricing = getProgramPricing;
 
 
-/* Pause CSS marquees when tab is hidden */
+/**
+ * Soft live updates: when admin changes promos / programmes / page copy,
+ * visitors pick it up without a full browser refresh (safe during payment).
+ */
+let __cgtiaLiveBusy = false;
+async function softLiveRefresh(reason) {
+  if (__cgtiaLiveBusy) return;
+  // Never interrupt an open Paystack iframe / fee payment confirm
+  if (document.querySelector('iframe[src*="paystack"], #paymentScreen:not(.pointer-events-none), [data-cgtia-paying="1"]')) {
+    return;
+  }
+  __cgtiaLiveBusy = true;
+  try {
+    await Promise.all([
+      refreshSiteSettingsLive().catch(() => {}),
+      refreshPromoBannerLive().catch(() => {})
+    ]);
+  } finally {
+    __cgtiaLiveBusy = false;
+  }
+}
+
+/* Pause CSS marquees when tab is hidden; refresh CMS when user returns */
 document.addEventListener("visibilitychange", () => {
   const paused = document.hidden;
   document.querySelectorAll(".animate-marquee-left, .animate-marquee-right").forEach((el) => {
     el.style.animationPlayState = paused ? "paused" : "running";
   });
+  if (!document.hidden) softLiveRefresh("visible");
 });
+
+/* While the tab stays open, re-check every 90s */
+setInterval(() => {
+  if (!document.hidden) softLiveRefresh("interval");
+}, 90000);
+
+window.__cgtiaSoftLiveRefresh = softLiveRefresh;
+
