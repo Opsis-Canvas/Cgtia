@@ -57,6 +57,7 @@ const routeTable = {
   [ROUTES.LICENSING_COMPLETE]: lazy(() => import("./pages/licensing-complete.page.js"), "LicensingCompletePage"),
   [ROUTES.DASHBOARD]: lazy(() => import("./pages/dashboard.page.js"), "DashboardPage"),
   [ROUTES.WALL_OF_FAME]: lazy(() => import("./pages/wall-of-fame.page.js"), "WallOfFamePage"),
+  [ROUTES.PAY_FEE]: async () => function PayFeePage() { return null; },
   "/index": lazy(() => import("./pages/home.page.js"), "HomePage"),
   __notfound__: () => NotFoundPage
 };
@@ -73,6 +74,14 @@ const renderGate = Promise.race([
 
 function renderPage(PageComponent) {
   renderGate.then(([control]) => {
+    const path = (window.location.pathname || "").replace(/\/$/, "") || "/";
+    // Fee-payment links are owned by runtime-classic.js (not a React page)
+    if (path === "/pay-fee" || path.endsWith("/pay-fee")) {
+      if (typeof window.__cgtiaBootPayFee === "function") {
+        try { window.__cgtiaBootPayFee(); } catch (e) { console.error(e); }
+      }
+      return;
+    }
     const key = pageKeyFor(window.location.pathname);
     const rule = control && key ? control[key] : null;
     if (rule && rule.mode && rule.mode !== "live") {

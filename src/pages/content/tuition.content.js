@@ -67,7 +67,7 @@ export const tuition_html = `
             <li class="flex items-center gap-3 opacity-40 line-through"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span> Clinical Practice Access</li>
           </ul>
         </div>
-        <button onclick="toggleApplyScreen()" class="w-full mt-10 py-4 rounded-full border border-slate-200 text-xs font-semibold tracking-widest uppercase text-slate-700 hover:bg-slate-950 hover:text-white smooth-transition">
+        <button onclick="openApplyForProgram('orientation')" class="w-full mt-10 py-4 rounded-full border border-slate-200 text-xs font-semibold tracking-widest uppercase text-slate-700 hover:bg-slate-950 hover:text-white smooth-transition">
           Reserve a Seat
         </button>
       </div>
@@ -96,7 +96,7 @@ export const tuition_html = `
             <li class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-blue-600 shadow-sm"></span> CGTIA Certificate</li>
           </ul>
         </div>
-        <button onclick="toggleApplyScreen()" class="w-full mt-10 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
+        <button onclick="openApplyForProgram('certificate')" class="w-full mt-10 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
           Apply for This Program
         </button>
       </div>
@@ -123,7 +123,7 @@ export const tuition_html = `
             <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Nanny Training</li>
           </ul>
         </div>
-        <button onclick="toggleApplyScreen()" class="w-full mt-10 py-4 rounded-full border border-slate-200 text-xs font-semibold tracking-widest uppercase text-slate-700 hover:bg-slate-950 hover:text-white smooth-transition">
+        <button onclick="openApplyForProgram('diploma')" class="w-full mt-10 py-4 rounded-full border border-slate-200 text-xs font-semibold tracking-widest uppercase text-slate-700 hover:bg-slate-950 hover:text-white smooth-transition">
           Apply for This Program
         </button>
       </div>
@@ -150,7 +150,7 @@ export const tuition_html = `
             <li class="flex items-center gap-3"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Dedicated Program Coordinator</li>
           </ul>
         </div>
-        <button onclick="toggleApplyScreen()" class="w-full mt-10 py-4 rounded-full border border-slate-200 text-xs font-semibold tracking-widest uppercase text-slate-700 hover:bg-slate-950 hover:text-white smooth-transition">
+        <button onclick="openApplyForProgram('higher-diploma')" class="w-full mt-10 py-4 rounded-full border border-slate-200 text-xs font-semibold tracking-widest uppercase text-slate-700 hover:bg-slate-950 hover:text-white smooth-transition">
           Apply for This Program
         </button>
       </div>

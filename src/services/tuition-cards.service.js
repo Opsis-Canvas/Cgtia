@@ -10,7 +10,9 @@ function formatShort(n) {
 function formatPrice(p) {
   if (p.priceText) return String(p.priceText);
   const n = Number(p.amount) || 0;
-  return n > 0 ? "₦" + n.toLocaleString("en-NG") : "Free";
+  if (n <= 0) return "Free";
+  // Always use compact ₦20k / ₦300k style so CMS cards match static markup (no 20,000 flicker)
+  return formatShort(n);
 }
 
 function cardHtml(p, withPromo) {
@@ -38,7 +40,7 @@ function cardHtml(p, withPromo) {
     ? `navigateWithPill('Licensing', 'licensing.html')`
     : p.ctaAction === "pay"
       ? `openProgramPayment('${p.id}')`
-      : `toggleApplyScreen()`;
+      : `openApplyForProgram('${p.id}')`;
 
   const ribbon = p.ribbon
     ? `<div style="top:0;transform:translateY(-30%);z-index:20" class="absolute right-8 bg-blue-950 text-white text-[9px] font-bold tracking-widest uppercase px-4 py-1.5 rounded-full shadow-md">${p.ribbon}</div>`

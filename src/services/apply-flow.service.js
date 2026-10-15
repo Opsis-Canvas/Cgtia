@@ -172,12 +172,13 @@ export async function handleApplySubmitFlow(event) {
         const paid =
           existing.paymentStatus === "paid" ||
           existing.status === "paid" ||
-          existing.status === "enrolled";
+          existing.status === "enrolled" ||
+          existing.status === "completed";
 
         if (paid) {
           statusSuccess(
-            "You are already registered",
-            "This email already has a completed application with us. Please sign in to the student portal, or contact admissions if you need help with another programme."
+            "This email is already registered",
+            "An application with this email already exists and payment is complete. Please sign in to the student portal, or contact admissions if you need help with another programme."
           );
           const btn = document.getElementById("statusActionBtn");
           if (btn) {
@@ -188,10 +189,10 @@ export async function handleApplySubmitFlow(event) {
           Array.from(form.querySelectorAll("input, select, textarea, button")).forEach((el) => {
             el.disabled = false;
           });
-          return;
+          return; // do NOT open WhatsApp for existing applications
         }
 
-        // Unpaid — resume payment
+        // Unpaid — resume payment only (no WhatsApp re-notify)
         const token = existing.resumeToken || makeResumeToken();
         if (!existing.resumeToken) {
           try {
@@ -216,8 +217,8 @@ export async function handleApplySubmitFlow(event) {
         });
 
         statusSuccess(
-          "Welcome back",
-          "You already started an application with this email. Please complete payment to secure your seat."
+          "Application already on file",
+          "This email already has an application that still needs payment. Continue to payment to secure your seat — no new application was created."
         );
         const btn = document.getElementById("statusActionBtn");
         if (btn) {
@@ -231,7 +232,7 @@ export async function handleApplySubmitFlow(event) {
         Array.from(form.querySelectorAll("input, select, textarea, button")).forEach((el) => {
           el.disabled = false;
         });
-        return;
+        return; // do NOT notify WhatsApp again
       }
 
       // --- New application ---
@@ -252,30 +253,30 @@ export async function handleApplySubmitFlow(event) {
         await saveApplication(app);
       } catch (e) {
         console.error("Save application failed", e);
+        // Do NOT fire WhatsApp on failed save — application is not on file
         statusError(
           "We could not save your application",
-          "We could not save your application online right now. You can still continue to payment on this device, or try again in a moment."
+          "We could not save your application online right now. Please try again in a moment. If this keeps happening, contact admissions."
         );
         Array.from(form.querySelectorAll("input, select, textarea, button")).forEach((el) => {
           el.disabled = false;
         });
-        // Still allow local pending + payment so user is not stuck
-        savePending(app);
-        notifyWhatsApp(app);
         const btn = document.getElementById("statusActionBtn");
         if (btn) {
           btn.classList.remove("hidden");
-          btn.innerText = "Continue to payment";
+          btn.innerText = "Try again";
           btn.onclick = () => {
             closeStatus();
-            setTimeout(() => openPayment(programKey, email), 400);
+            setTimeout(() => {
+              if (typeof window.toggleApplyScreen === "function") window.toggleApplyScreen();
+            }, 300);
           };
         }
         return;
       }
 
       savePending(app);
-      notifyWhatsApp(app);
+      notifyWhatsApp(app); // only for genuinely new successful saves
       // Fire-and-forget email with unique resume link
       emailResumeLink(app, token);
 

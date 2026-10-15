@@ -1245,9 +1245,12 @@ window.handleApplySubmit = async function (event) {
     if (typeof setStatusLoading === "function") setStatusLoading();
 
     try {
+      // Prefer module apply-flow when installed (handles existing-email + no WhatsApp on fail)
+      if (typeof window.__cgtiaHandleApplySubmit === "function" && window.handleApplySubmit === window.__cgtiaHandleApplySubmit) {
+        // Already routed through apply-flow; should not reach here
+      }
+
       var saved = await persistApplicationToFirebase(app);
-      savePendingPayment(app);
-      notifyWhatsAppApplication(app);
 
       if (!saved) {
         if (typeof setStatusError === "function") {
@@ -1260,20 +1263,24 @@ window.handleApplySubmit = async function (event) {
             }
           );
         }
-        // Still allow payment so user is not stranded
+        // Do NOT notify WhatsApp when save failed
         var btnFail = document.getElementById("statusActionBtn");
         if (btnFail) {
           btnFail.classList.remove("hidden");
-          btnFail.innerText = "Continue to payment";
+          btnFail.innerText = "Try again";
           btnFail.onclick = function () {
             if (typeof closeStatusScreen === "function") closeStatusScreen();
             setTimeout(function () {
-              if (typeof openPaymentScreen === "function") openPaymentScreen(programKey, email);
-            }, 400);
+              if (typeof toggleApplyScreen === "function") toggleApplyScreen();
+            }, 300);
           };
         }
+        Array.from(form.querySelectorAll("input, select, textarea, button")).forEach(function (el) { el.disabled = false; });
         return;
       }
+
+      savePendingPayment(app);
+      notifyWhatsAppApplication(app);
 
       setTimeout(function () {
         if (typeof setStatusSuccess === "function") {
@@ -1685,6 +1692,40 @@ document.addEventListener("DOMContentLoaded", function () {
     window.handleApplySubmit = window.__cgtiaHandleApplySubmit;
   }
 });
+
+/** Open the same Apply sheet as the header, with a programme pre-selected */
+window.openApplyForProgram = function (programId) {
+  try {
+    if (typeof window.toggleApplyScreen === "function") {
+      window.toggleApplyScreen();
+    }
+    setTimeout(function () {
+      var sel = document.getElementById("programSelect");
+      if (sel && programId) {
+        // Match option by value (id) or by containing the id
+        var found = false;
+        for (var i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === programId || sel.options[i].value.indexOf(programId) === 0) {
+            sel.value = sel.options[i].value;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          // Try setting value directly in case options were loaded dynamically
+          sel.value = programId;
+        }
+        if (typeof window.handleProgramChange === "function") {
+          try { window.handleProgramChange(); } catch (e) {}
+        }
+        sel.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    }, 120);
+  } catch (e) {
+    console.warn("openApplyForProgram", e);
+    if (typeof window.toggleApplyScreen === "function") window.toggleApplyScreen();
+  }
+};
 
 /* Admin-driven programme start dates */
 (function () {
@@ -2513,6 +2554,9 @@ document.addEventListener("DOMContentLoaded", function () {
       showError("Could not verify the payment link. Please try again later.");
     });
   }
+
+  // Expose for SPA router (app.js) so React does not overwrite with 404
+  window.__cgtiaBootPayFee = boot;
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
