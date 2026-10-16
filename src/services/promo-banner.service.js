@@ -101,6 +101,7 @@ function renderPromoBannerOnly(list) {
   if (!tuitionPromos.length) {
     if (bar) bar.remove();
     document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
+    if (window.__cgtiaPromoRotateTimer) { clearInterval(window.__cgtiaPromoRotateTimer); window.__cgtiaPromoRotateTimer = null; }
     ensureHeaderPromoChip(false);
     return;
   }
@@ -108,25 +109,11 @@ function renderPromoBannerOnly(list) {
     window.__cgtiaPromoMinimized = true;
     if (bar) bar.remove();
     document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
+    if (window.__cgtiaPromoRotateTimer) { clearInterval(window.__cgtiaPromoRotateTimer); window.__cgtiaPromoRotateTimer = null; }
     ensureHeaderPromoChip(true, tuitionPromos);
     return;
   }
   ensureHeaderPromoChip(false);
-
-  // Slim one-line bar (reference-style toast strip)
-  const bits = tuitionPromos.map((p) => {
-    const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).map(programLabel);
-    const label = progs.length ? progs.join("/") : (p.title || "Offer");
-    const amt = p.promoAmount ? formatNairaShort(p.promoAmount) : "";
-    return amt ? (label + " " + amt) : label;
-  });
-  const line = bits.join(" · ");
-  let timer = "";
-  const ends = tuitionPromos.map((p) => p.endsAt).filter(Boolean);
-  if (ends.length) {
-    const earliest = ends.map((e) => (e.toMillis ? e.toMillis() : new Date(e).getTime())).filter(Boolean).sort((a, b) => a - b)[0];
-    if (earliest) timer = countdownHtml(earliest);
-  }
 
   if (!bar) {
     bar = document.createElement("div");
@@ -142,58 +129,117 @@ function renderPromoBannerOnly(list) {
     }
   }
 
-  bar.style.cssText =
-    "position:fixed;top:0;left:0;right:0;z-index:90;display:flex;align-items:center;gap:8px;" +
-    "min-height:36px;padding:6px 10px 6px 12px;box-sizing:border-box;" +
-    "background:linear-gradient(90deg,#0f172a 0%,#1e3a8a 100%);color:#fff;" +
-    "font-size:12px;line-height:1.3;transform:translateY(0);transition:transform .4s cubic-bezier(.16,1,.3,1);" +
-    "box-shadow:0 4px 16px rgba(15,23,42,.2)";
+  // Professional: one full promo at a time, auto-rotate when several exist
+  let idx = Number(window.__cgtiaPromoRotateIdx) || 0;
+  if (idx >= tuitionPromos.length) idx = 0;
+  window.__cgtiaPromoRotateIdx = idx;
 
-  bar.innerHTML =
-    '<div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;cursor:pointer" data-promo-go-tuition>' +
-    '<span style="flex-shrink:0;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Promo</span>' +
-    '<div style="flex:1;min-width:0">' +
-    '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">' + esc2(line) + "</div>" +
-    (timer ? '<div style="font-size:10px;opacity:.8;margin-top:1px;white-space:nowrap">Ends in ' + timer + "</div>" : "") +
-    "</div></div>" +
-    '<button type="button" data-promo-cta style="flex-shrink:0;border:0;border-radius:999px;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap">View</button>' +
-    '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
+  function paint(i) {
+    const p = tuitionPromos[i];
+    if (!p) return;
+    const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).map(programLabel);
+    const label = progs.length ? progs.join(" · ") : (p.title || "Offer");
+    const amt = p.promoAmount ? formatNairaShort(p.promoAmount) : "";
+    const title = p.title || label;
+    let timer = "";
+    if (p.endsAt) {
+      const ms = p.endsAt.toMillis ? p.endsAt.toMillis() : new Date(p.endsAt).getTime();
+      if (ms) timer = countdownHtml(ms);
+    }
+    const multi = tuitionPromos.length > 1;
+    const dots = multi
+      ? '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">' +
+        tuitionPromos.map((_, di) =>
+          '<button type="button" data-promo-dot="' + di + '" aria-label="Offer ' + (di + 1) + '" style="width:6px;height:6px;border-radius:50%;border:0;padding:0;cursor:pointer;background:' +
+          (di === i ? "#fff" : "rgba(255,255,255,.35)") + '"></button>'
+        ).join("") + "</div>"
+      : "";
 
-  document.documentElement.style.setProperty("--cgtia-strip-h", timer ? "44px" : "36px");
+    bar.style.cssText =
+      "position:fixed;top:0;left:0;right:0;z-index:90;display:flex;align-items:center;gap:8px;" +
+      "min-height:40px;padding:7px 10px 7px 12px;box-sizing:border-box;" +
+      "background:linear-gradient(90deg,#0f172a 0%,#1e3a8a 100%);color:#fff;" +
+      "font-size:12px;line-height:1.3;" +
+      "box-shadow:0 4px 16px rgba(15,23,42,.2)";
 
-  function goTuition(e) {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
-    else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
-    else window.location.href = "/tuition";
-    setTimeout(function () {
-      if (window.__cgtiaApplyTuitionPromoPricing) {
-        window.__cgtiaApplyTuitionPromoPricing(window.__cgtiaActivePromos || []);
-      }
-    }, 400);
-  }
+    bar.innerHTML =
+      '<div style="flex:1;min-width:0;cursor:pointer" data-promo-go-tuition>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="flex-shrink:0;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Promo</span>' +
+      '<div style="flex:1;min-width:0">' +
+      '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">' + esc2(title) +
+      (amt ? ' · <span style="font-weight:800">' + esc2(amt) + "</span>" : "") + "</div>" +
+      '<div style="font-size:10px;opacity:.8;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+      esc2(label) + (timer ? " · Ends in " + timer : "") +
+      "</div></div></div></div>" +
+      dots +
+      '<button type="button" data-promo-cta style="flex-shrink:0;border:0;border-radius:999px;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap">View</button>' +
+      '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
 
-  const goEl = bar.querySelector("[data-promo-go-tuition]");
-  const cta = bar.querySelector("[data-promo-cta]");
-  const closeBtn = bar.querySelector("[data-promo-close]");
-  if (goEl) goEl.onclick = goTuition;
-  if (cta) cta.onclick = goTuition;
-  if (closeBtn) {
-    closeBtn.onclick = function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      sessionStorage.setItem("cgtiaPromoBannerClosed", "1");
-      window.__cgtiaPromoMinimized = true;
-      bar.style.transform = "translateY(-100%)";
+    document.documentElement.style.setProperty("--cgtia-strip-h", "44px");
+
+    function goTuition(e) {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
+      else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
+      else window.location.href = "/tuition";
       setTimeout(function () {
-        if (bar && bar.parentNode) bar.remove();
-        document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
-        ensureHeaderPromoChip(true, tuitionPromos);
+        if (window.__cgtiaApplyTuitionPromoPricing) {
+          window.__cgtiaApplyTuitionPromoPricing(window.__cgtiaActivePromos || []);
+        }
       }, 400);
-    };
+    }
+    const goEl = bar.querySelector("[data-promo-go-tuition]");
+    const cta = bar.querySelector("[data-promo-cta]");
+    const closeBtn = bar.querySelector("[data-promo-close]");
+    if (goEl) goEl.onclick = goTuition;
+    if (cta) cta.onclick = goTuition;
+    if (closeBtn) {
+      closeBtn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        sessionStorage.setItem("cgtiaPromoBannerClosed", "1");
+        window.__cgtiaPromoMinimized = true;
+        if (window.__cgtiaPromoRotateTimer) { clearInterval(window.__cgtiaPromoRotateTimer); window.__cgtiaPromoRotateTimer = null; }
+        bar.style.transition = "transform .4s cubic-bezier(.16,1,.3,1)";
+        bar.style.transform = "translateY(-100%)";
+        setTimeout(function () {
+          if (bar && bar.parentNode) bar.remove();
+          document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
+          ensureHeaderPromoChip(true, tuitionPromos);
+        }, 400);
+      };
+    }
+    bar.querySelectorAll("[data-promo-dot]").forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const di = Number(btn.getAttribute("data-promo-dot"));
+        window.__cgtiaPromoRotateIdx = di;
+        paint(di);
+        // reset auto-rotate cadence
+        if (window.__cgtiaPromoRotateTimer) {
+          clearInterval(window.__cgtiaPromoRotateTimer);
+          window.__cgtiaPromoRotateTimer = setInterval(function () {
+            window.__cgtiaPromoRotateIdx = ((window.__cgtiaPromoRotateIdx || 0) + 1) % tuitionPromos.length;
+            paint(window.__cgtiaPromoRotateIdx);
+          }, 5000);
+        }
+      };
+    });
+    tickCountdowns();
   }
 
-  tickCountdowns();
+  paint(idx);
+
+  if (window.__cgtiaPromoRotateTimer) clearInterval(window.__cgtiaPromoRotateTimer);
+  if (tuitionPromos.length > 1) {
+    window.__cgtiaPromoRotateTimer = setInterval(function () {
+      window.__cgtiaPromoRotateIdx = ((window.__cgtiaPromoRotateIdx || 0) + 1) % tuitionPromos.length;
+      paint(window.__cgtiaPromoRotateIdx);
+    }, 5000);
+  }
+
   if (!window.__cgtiaPromoTimer) {
     window.__cgtiaPromoTimer = setInterval(tickCountdowns, 1000);
   }
