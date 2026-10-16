@@ -115,6 +115,7 @@ function renderPromoBannerOnly(list) {
   }
   ensureHeaderPromoChip(false);
 
+  // Build shell once: static "PROMO" label; only the middle text + CTA fades
   if (!bar) {
     bar = document.createElement("div");
     bar.id = "cgtiaPromoBanner";
@@ -129,14 +130,47 @@ function renderPromoBannerOnly(list) {
     }
   }
 
-  // Professional: one full promo at a time, auto-rotate when several exist
+  bar.style.cssText =
+    "position:fixed;top:0;left:0;right:0;z-index:90;display:flex;align-items:center;gap:8px;" +
+    "min-height:42px;padding:7px 10px 7px 12px;box-sizing:border-box;" +
+    "background:linear-gradient(90deg,#0f172a 0%,#1e3a8a 100%);color:#fff;" +
+    "font-size:12px;line-height:1.3;box-shadow:0 4px 16px rgba(15,23,42,.2)";
+
+  if (!bar.querySelector("[data-promo-shell]")) {
+    bar.innerHTML =
+      '<span data-promo-shell style="flex-shrink:0;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.95">Promo</span>' +
+      '<div data-promo-stage style="flex:1;min-width:0;opacity:1;transition:opacity .35s ease"></div>' +
+      '<div data-promo-dots style="display:flex;gap:4px;align-items:center;flex-shrink:0"></div>' +
+      '<button type="button" data-promo-cta style="flex-shrink:0;border:0;border-radius:999px;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap;opacity:1;transition:opacity .35s ease">View</button>' +
+      '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
+  }
+
+  document.documentElement.style.setProperty("--cgtia-strip-h", "44px");
+
   let idx = Number(window.__cgtiaPromoRotateIdx) || 0;
   if (idx >= tuitionPromos.length) idx = 0;
   window.__cgtiaPromoRotateIdx = idx;
 
-  function paint(i) {
+  const stage = bar.querySelector("[data-promo-stage]");
+  const dotsWrap = bar.querySelector("[data-promo-dots]");
+  const cta = bar.querySelector("[data-promo-cta]");
+  const closeBtn = bar.querySelector("[data-promo-close]");
+
+  function goTuition(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
+    else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
+    else window.location.href = "/tuition";
+    setTimeout(function () {
+      if (window.__cgtiaApplyTuitionPromoPricing) {
+        window.__cgtiaApplyTuitionPromoPricing(window.__cgtiaActivePromos || []);
+      }
+    }, 400);
+  }
+
+  function fillContent(i, animate) {
     const p = tuitionPromos[i];
-    if (!p) return;
+    if (!p || !stage) return;
     const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).map(programLabel);
     const label = progs.length ? progs.join(" · ") : (p.title || "Offer");
     const amt = p.promoAmount ? formatNairaShort(p.promoAmount) : "";
@@ -146,99 +180,88 @@ function renderPromoBannerOnly(list) {
       const ms = p.endsAt.toMillis ? p.endsAt.toMillis() : new Date(p.endsAt).getTime();
       if (ms) timer = countdownHtml(ms);
     }
-    const multi = tuitionPromos.length > 1;
-    const dots = multi
-      ? '<div style="display:flex;gap:4px;align-items:center;flex-shrink:0">' +
-        tuitionPromos.map((_, di) =>
-          '<button type="button" data-promo-dot="' + di + '" aria-label="Offer ' + (di + 1) + '" style="width:6px;height:6px;border-radius:50%;border:0;padding:0;cursor:pointer;background:' +
-          (di === i ? "#fff" : "rgba(255,255,255,.35)") + '"></button>'
-        ).join("") + "</div>"
-      : "";
 
-    bar.style.cssText =
-      "position:fixed;top:0;left:0;right:0;z-index:90;display:flex;align-items:center;gap:8px;" +
-      "min-height:40px;padding:7px 10px 7px 12px;box-sizing:border-box;" +
-      "background:linear-gradient(90deg,#0f172a 0%,#1e3a8a 100%);color:#fff;" +
-      "font-size:12px;line-height:1.3;" +
-      "box-shadow:0 4px 16px rgba(15,23,42,.2)";
+    function write() {
+      stage.innerHTML =
+        '<div style="cursor:pointer" data-promo-go-tuition>' +
+        '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">' + esc2(title) +
+        (amt ? ' · <span style="font-weight:800">' + esc2(amt) + "</span>" : "") + "</div>" +
+        '<div style="font-size:10px;opacity:.8;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+        esc2(label) + (timer ? " · Ends in " + timer : "") +
+        "</div></div>";
+      const goEl = stage.querySelector("[data-promo-go-tuition]");
+      if (goEl) goEl.onclick = goTuition;
+      if (cta) cta.onclick = goTuition;
 
-    bar.innerHTML =
-      '<div style="flex:1;min-width:0;cursor:pointer" data-promo-go-tuition>' +
-      '<div style="display:flex;align-items:center;gap:8px">' +
-      '<span style="flex-shrink:0;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.9">Promo</span>' +
-      '<div style="flex:1;min-width:0">' +
-      '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">' + esc2(title) +
-      (amt ? ' · <span style="font-weight:800">' + esc2(amt) + "</span>" : "") + "</div>" +
-      '<div style="font-size:10px;opacity:.8;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-      esc2(label) + (timer ? " · Ends in " + timer : "") +
-      "</div></div></div></div>" +
-      dots +
-      '<button type="button" data-promo-cta style="flex-shrink:0;border:0;border-radius:999px;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap">View</button>' +
-      '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
+      if (dotsWrap) {
+        if (tuitionPromos.length > 1) {
+          dotsWrap.innerHTML = tuitionPromos.map(function (_, di) {
+            return '<button type="button" data-promo-dot="' + di + '" aria-label="Offer ' + (di + 1) + '" style="width:6px;height:6px;border-radius:50%;border:0;padding:0;cursor:pointer;background:' +
+              (di === i ? "#fff" : "rgba(255,255,255,.35)") + '"></button>';
+          }).join("");
+          dotsWrap.querySelectorAll("[data-promo-dot]").forEach(function (btn) {
+            btn.onclick = function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              const di = Number(btn.getAttribute("data-promo-dot"));
+              window.__cgtiaPromoRotateIdx = di;
+              fillContent(di, true);
+              restartRotate();
+            };
+          });
+        } else {
+          dotsWrap.innerHTML = "";
+        }
+      }
+      tickCountdowns();
+    }
 
-    document.documentElement.style.setProperty("--cgtia-strip-h", "44px");
-
-    function goTuition(e) {
-      if (e) { e.preventDefault(); e.stopPropagation(); }
-      if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
-      else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
-      else window.location.href = "/tuition";
+    if (animate && tuitionPromos.length > 1) {
+      stage.style.opacity = "0";
+      if (cta) cta.style.opacity = "0";
       setTimeout(function () {
-        if (window.__cgtiaApplyTuitionPromoPricing) {
-          window.__cgtiaApplyTuitionPromoPricing(window.__cgtiaActivePromos || []);
-        }
+        write();
+        requestAnimationFrame(function () {
+          stage.style.opacity = "1";
+          if (cta) cta.style.opacity = "1";
+        });
+      }, 180);
+    } else {
+      write();
+      stage.style.opacity = "1";
+      if (cta) cta.style.opacity = "1";
+    }
+  }
+
+  if (closeBtn) {
+    closeBtn.onclick = function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      sessionStorage.setItem("cgtiaPromoBannerClosed", "1");
+      window.__cgtiaPromoMinimized = true;
+      if (window.__cgtiaPromoRotateTimer) { clearInterval(window.__cgtiaPromoRotateTimer); window.__cgtiaPromoRotateTimer = null; }
+      bar.style.transition = "transform .4s cubic-bezier(.16,1,.3,1)";
+      bar.style.transform = "translateY(-100%)";
+      setTimeout(function () {
+        if (bar && bar.parentNode) bar.remove();
+        document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
+        ensureHeaderPromoChip(true, tuitionPromos);
       }, 400);
-    }
-    const goEl = bar.querySelector("[data-promo-go-tuition]");
-    const cta = bar.querySelector("[data-promo-cta]");
-    const closeBtn = bar.querySelector("[data-promo-close]");
-    if (goEl) goEl.onclick = goTuition;
-    if (cta) cta.onclick = goTuition;
-    if (closeBtn) {
-      closeBtn.onclick = function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        sessionStorage.setItem("cgtiaPromoBannerClosed", "1");
-        window.__cgtiaPromoMinimized = true;
-        if (window.__cgtiaPromoRotateTimer) { clearInterval(window.__cgtiaPromoRotateTimer); window.__cgtiaPromoRotateTimer = null; }
-        bar.style.transition = "transform .4s cubic-bezier(.16,1,.3,1)";
-        bar.style.transform = "translateY(-100%)";
-        setTimeout(function () {
-          if (bar && bar.parentNode) bar.remove();
-          document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
-          ensureHeaderPromoChip(true, tuitionPromos);
-        }, 400);
-      };
-    }
-    bar.querySelectorAll("[data-promo-dot]").forEach(function (btn) {
-      btn.onclick = function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const di = Number(btn.getAttribute("data-promo-dot"));
-        window.__cgtiaPromoRotateIdx = di;
-        paint(di);
-        // reset auto-rotate cadence
-        if (window.__cgtiaPromoRotateTimer) {
-          clearInterval(window.__cgtiaPromoRotateTimer);
-          window.__cgtiaPromoRotateTimer = setInterval(function () {
-            window.__cgtiaPromoRotateIdx = ((window.__cgtiaPromoRotateIdx || 0) + 1) % tuitionPromos.length;
-            paint(window.__cgtiaPromoRotateIdx);
-          }, 5000);
-        }
-      };
-    });
-    tickCountdowns();
+    };
   }
 
-  paint(idx);
-
-  if (window.__cgtiaPromoRotateTimer) clearInterval(window.__cgtiaPromoRotateTimer);
-  if (tuitionPromos.length > 1) {
-    window.__cgtiaPromoRotateTimer = setInterval(function () {
-      window.__cgtiaPromoRotateIdx = ((window.__cgtiaPromoRotateIdx || 0) + 1) % tuitionPromos.length;
-      paint(window.__cgtiaPromoRotateIdx);
-    }, 5000);
+  function restartRotate() {
+    if (window.__cgtiaPromoRotateTimer) clearInterval(window.__cgtiaPromoRotateTimer);
+    if (tuitionPromos.length > 1) {
+      window.__cgtiaPromoRotateTimer = setInterval(function () {
+        window.__cgtiaPromoRotateIdx = ((window.__cgtiaPromoRotateIdx || 0) + 1) % tuitionPromos.length;
+        fillContent(window.__cgtiaPromoRotateIdx, true);
+      }, 5500);
+    }
   }
+
+  fillContent(idx, false);
+  restartRotate();
 
   if (!window.__cgtiaPromoTimer) {
     window.__cgtiaPromoTimer = setInterval(tickCountdowns, 1000);
@@ -590,90 +613,174 @@ function markAnnouncementSeen(a) {
   try { localStorage.setItem(announcementKey(a), JSON.stringify({ closedAt: Date.now() })); } catch (e) { /* storage blocked */ }
 }
 function renderAnnouncement(all) {
-  const anns = (all || []).filter(function (p) { return p.type === "announcement" && p.id; });
-  const pick = anns.find(shouldShowAnnouncement);
+  const anns = (all || []).filter(function (p) {
+    return p.type === "announcement" && p.id && shouldShowAnnouncement(p);
+  });
   const existing = document.getElementById("cgtiaAnnouncement");
-  if (!pick) {
+  if (!anns.length) {
     if (existing) existing.remove();
+    if (window.__cgtiaAnnRotateTimer) { clearInterval(window.__cgtiaAnnRotateTimer); window.__cgtiaAnnRotateTimer = null; }
     window.__cgtiaAnnShown = false;
     if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
     return;
   }
-  if (existing && existing.dataset.id === pick.id) { window.__cgtiaAnnShown = true; return; }
-  if (existing) existing.remove();
 
-  const bg = pick.bgColor || pick.backgroundColor || "";
-  const grad = pick.bgGradient || pick.gradient || "";
-  let background;
-  if (grad && grad.indexOf("gradient") >= 0) background = grad;
-  else if (grad && grad.indexOf(",") >= 0) background = "linear-gradient(135deg," + grad + ")";
-  else if (bg) background = bg;
-  else background = "linear-gradient(135deg,#1e3a8a 0%,#0f172a 100%)";
+  let idx = Number(window.__cgtiaAnnRotateIdx) || 0;
+  if (idx >= anns.length) idx = 0;
+  window.__cgtiaAnnRotateIdx = idx;
 
-  const textColor = pick.textColor || "#ffffff";
-  const btnBg = pick.buttonColor || "#ffffff";
-  const btnFg = pick.buttonTextColor || "#0f172a";
-
-  const card = document.createElement("div");
-  card.id = "cgtiaAnnouncement";
-  card.dataset.id = pick.id;
-  card.setAttribute("role", "status");
-  // Compact bottom-left — smaller than a Netlify toast so it does not block nav
-  card.style.cssText =
-    "position:fixed;left:10px;bottom:10px;z-index:97;" +
-    "width:min(16.5rem,calc(100vw - 20px));box-sizing:border-box;" +
-    "background:" + background + ";color:" + textColor + ";" +
-    "border-radius:14px;padding:10px 12px 11px;" +
-    "box-shadow:0 10px 28px rgba(15,23,42,.28);" +
-    "font-size:12px;line-height:1.35;" +
-    "transform:translateY(12px);opacity:0;" +
-    "transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s";
-
-  const title = esc2(pick.title || "Announcement");
-  const desc = pick.description ? esc2(pick.description) : "";
-  const label = esc2(pick.linkLabel || pick.bellButtonLabel || "Open");
-  const href = pick.linkUrl || pick.bellButtonUrl || "";
-  const cta = href
-    ? '<a href="' + esc2(href) + '" data-ann-cta style="display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:' + btnBg + ";color:" + btnFg + ';font-weight:700;font-size:10px;text-decoration:none;letter-spacing:.04em">' + label + "</a>"
-    : "";
-
-  card.innerHTML =
-    '<button type="button" aria-label="Close" data-ann-close style="position:absolute;right:6px;top:4px;background:transparent;border:0;color:inherit;opacity:.65;font-size:16px;line-height:1;cursor:pointer;padding:2px 5px">×</button>' +
-    '<div style="font-weight:800;font-size:13px;padding-right:18px;line-height:1.25">' + title + "</div>" +
-    (desc ? '<div style="margin-top:3px;opacity:.88;font-size:11px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + desc + "</div>" : "") +
-    cta;
-
-  document.body.appendChild(card);
-  window.__cgtiaAnnShown = true;
-  if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
-  requestAnimationFrame(function () {
-    requestAnimationFrame(function () {
-      card.style.transform = "translateY(0)";
-      card.style.opacity = "1";
-    });
-  });
-  card.querySelector("[data-ann-close]").onclick = function () {
-    markAnnouncementSeen(pick);
-    card.style.transform = "translateY(12px)";
-    card.style.opacity = "0";
-    setTimeout(function () {
-      card.remove();
-      window.__cgtiaAnnShown = false;
-      if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
-    }, 280);
-  };
-  const ctaEl = card.querySelector("[data-ann-cta]");
-  if (ctaEl) {
-    ctaEl.addEventListener("click", function (e) {
-      const url = pick.linkUrl || pick.bellButtonUrl || "";
-      if (url && url.indexOf("/") === 0) {
-        e.preventDefault();
-        markAnnouncementSeen(pick);
-        if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
-        else window.location.href = url;
-      }
-    });
+  function styleFor(pick) {
+    const bg = pick.bgColor || pick.backgroundColor || "";
+    const grad = pick.bgGradient || pick.gradient || "";
+    let background;
+    if (grad && grad.indexOf("gradient") >= 0) background = grad;
+    else if (grad && grad.indexOf(",") >= 0) background = "linear-gradient(135deg," + grad + ")";
+    else if (bg) background = bg;
+    else background = "linear-gradient(135deg,#1e3a8a 0%,#0f172a 100%)";
+    return {
+      background: background,
+      textColor: pick.textColor || "#ffffff",
+      btnBg: pick.buttonColor || "#ffffff",
+      btnFg: pick.buttonTextColor || "#0f172a"
+    };
   }
+
+  function ensureCard() {
+    let card = document.getElementById("cgtiaAnnouncement");
+    if (card) return card;
+    card = document.createElement("div");
+    card.id = "cgtiaAnnouncement";
+    card.setAttribute("role", "status");
+    card.style.cssText =
+      "position:fixed;left:10px;bottom:10px;z-index:97;" +
+      "width:min(16.5rem,calc(100vw - 20px));box-sizing:border-box;" +
+      "border-radius:14px;padding:10px 12px 11px;" +
+      "box-shadow:0 10px 28px rgba(15,23,42,.28);" +
+      "font-size:12px;line-height:1.35;" +
+      "transform:translateY(12px);opacity:0;" +
+      "transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s,background .35s ease";
+    card.innerHTML =
+      '<button type="button" aria-label="Close" data-ann-close style="position:absolute;right:6px;top:4px;background:transparent;border:0;color:inherit;opacity:.65;font-size:16px;line-height:1;cursor:pointer;padding:2px 5px">×</button>' +
+      '<div data-ann-stage style="padding-right:18px;opacity:1;transition:opacity .3s ease"></div>' +
+      '<div data-ann-dots style="display:flex;gap:4px;margin-top:8px"></div>';
+    document.body.appendChild(card);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        card.style.transform = "translateY(0)";
+        card.style.opacity = "1";
+      });
+    });
+    return card;
+  }
+
+  function paintAnn(i, animate) {
+    const pick = anns[i];
+    if (!pick) return;
+    const card = ensureCard();
+    const st = styleFor(pick);
+    card.style.background = st.background;
+    card.style.color = st.textColor;
+    card.dataset.id = pick.id;
+    window.__cgtiaAnnShown = true;
+
+    const stage = card.querySelector("[data-ann-stage]");
+    const dots = card.querySelector("[data-ann-dots]");
+    const title = esc2(pick.title || "Announcement");
+    const desc = pick.description ? esc2(pick.description) : "";
+    const label = esc2(pick.linkLabel || pick.bellButtonLabel || "Open");
+    const href = pick.linkUrl || pick.bellButtonUrl || "";
+    const cta = href
+      ? '<a href="' + esc2(href) + '" data-ann-cta style="display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:' + st.btnBg + ";color:" + st.btnFg + ';font-weight:700;font-size:10px;text-decoration:none;letter-spacing:.04em">' + label + "</a>"
+      : "";
+    const body =
+      '<div style="font-weight:800;font-size:13px;line-height:1.25">' + title + "</div>" +
+      (desc ? '<div style="margin-top:3px;opacity:.88;font-size:11px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + desc + "</div>" : "") +
+      cta;
+
+    function write() {
+      if (stage) stage.innerHTML = body;
+      if (dots) {
+        if (anns.length > 1) {
+          dots.innerHTML = anns.map(function (_, di) {
+            return '<button type="button" data-ann-dot="' + di + '" style="width:6px;height:6px;border-radius:50%;border:0;padding:0;cursor:pointer;background:' +
+              (di === i ? "currentColor" : "rgba(255,255,255,.35)") + '"></button>';
+          }).join("");
+          dots.querySelectorAll("[data-ann-dot]").forEach(function (btn) {
+            btn.onclick = function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              window.__cgtiaAnnRotateIdx = Number(btn.getAttribute("data-ann-dot"));
+              paintAnn(window.__cgtiaAnnRotateIdx, true);
+              restartAnnRotate();
+            };
+          });
+        } else {
+          dots.innerHTML = "";
+        }
+      }
+      const ctaEl = card.querySelector("[data-ann-cta]");
+      if (ctaEl) {
+        ctaEl.addEventListener("click", function (e) {
+          const url = pick.linkUrl || pick.bellButtonUrl || "";
+          if (url && url.indexOf("/") === 0) {
+            e.preventDefault();
+            markAnnouncementSeen(pick);
+            if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
+            else window.location.href = url;
+          }
+        });
+      }
+    }
+
+    if (animate && anns.length > 1 && stage) {
+      stage.style.opacity = "0";
+      setTimeout(function () {
+        write();
+        requestAnimationFrame(function () { stage.style.opacity = "1"; });
+      }, 160);
+    } else {
+      write();
+      if (stage) stage.style.opacity = "1";
+    }
+
+    const closeBtn = card.querySelector("[data-ann-close]");
+    if (closeBtn) {
+      closeBtn.onclick = function () {
+        // Close current; mark seen; show next if any still eligible
+        markAnnouncementSeen(pick);
+        const rest = anns.filter(function (a) { return a.id !== pick.id && shouldShowAnnouncement(a); });
+        if (rest.length) {
+          window.__cgtiaAnnRotateIdx = 0;
+          // re-render from full list
+          if (window.__cgtiaAnnRotateTimer) { clearInterval(window.__cgtiaAnnRotateTimer); window.__cgtiaAnnRotateTimer = null; }
+          renderAnnouncement(window.__cgtiaActivePromos || all);
+          return;
+        }
+        card.style.transform = "translateY(12px)";
+        card.style.opacity = "0";
+        setTimeout(function () {
+          card.remove();
+          window.__cgtiaAnnShown = false;
+          if (window.__cgtiaAnnRotateTimer) { clearInterval(window.__cgtiaAnnRotateTimer); window.__cgtiaAnnRotateTimer = null; }
+          if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
+        }, 280);
+      };
+    }
+  }
+
+  function restartAnnRotate() {
+    if (window.__cgtiaAnnRotateTimer) clearInterval(window.__cgtiaAnnRotateTimer);
+    if (anns.length > 1) {
+      window.__cgtiaAnnRotateTimer = setInterval(function () {
+        window.__cgtiaAnnRotateIdx = ((window.__cgtiaAnnRotateIdx || 0) + 1) % anns.length;
+        paintAnn(window.__cgtiaAnnRotateIdx, true);
+      }, 7000);
+    }
+  }
+
+  paintAnn(idx, false);
+  restartAnnRotate();
+  if (window.__cgtiaShowSolidBottomPromoBar) window.__cgtiaShowSolidBottomPromoBar();
 }
 
 /* ---- One notification bell: opens a sheet with Announcements and Promotions sections ---- */
