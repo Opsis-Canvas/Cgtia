@@ -723,6 +723,57 @@ function shouldShowAnnouncement(a) {
 function markAnnouncementSeen(a) {
   try { localStorage.setItem(announcementKey(a), JSON.stringify({ closedAt: Date.now() })); } catch (e) { /* storage blocked */ }
 }
+
+function openAnnouncementModal(pick) {
+  if (!pick) return;
+  let modal = document.getElementById("cgtiaAnnModal");
+  if (modal) modal.remove();
+  modal = document.createElement("div");
+  modal.id = "cgtiaAnnModal";
+  modal.style.cssText =
+    "position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center;" +
+    "background:rgba(15,23,42,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" +
+    "padding:16px;box-sizing:border-box;opacity:0;transition:opacity .25s ease";
+  const sheet = document.createElement("div");
+  sheet.style.cssText =
+    "width:min(22rem,100%);max-height:min(80vh,32rem);overflow:auto;background:#fff;color:#0f172a;" +
+    "border-radius:1.25rem;padding:1.25rem;box-shadow:0 24px 60px rgba(15,23,42,.35);" +
+    "transform:translateY(16px);transition:transform .3s cubic-bezier(.16,1,.3,1)";
+  const full = String(pick.bellText || pick.fullMessage || pick.description || "").trim();
+  const url = pick.linkUrl || pick.bellButtonUrl || "";
+  const btnLabel = pick.linkLabel || pick.bellButtonLabel || "Open page";
+  sheet.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
+    '<span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1e3a8a">Announcement</span>' +
+    '<button type="button" data-a-close style="border:0;background:transparent;font-size:20px;color:#94a3b8;cursor:pointer;line-height:1">×</button></div>' +
+    '<h3 style="margin:10px 0 8px;font-size:1.15rem;font-weight:800;line-height:1.3">' + esc2(pick.title || "Notice") + "</h3>" +
+    '<p style="margin:0;font-size:.9rem;color:#475569;line-height:1.5;white-space:pre-wrap">' + esc2(full) + "</p>" +
+    (url ? '<button type="button" data-a-go style="width:100%;margin-top:16px;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px;cursor:pointer">' + esc2(btnLabel) + "</button>" : "");
+  function close() {
+    modal.style.opacity = "0";
+    sheet.style.transform = "translateY(16px)";
+    setTimeout(function () { if (modal.parentNode) modal.remove(); }, 250);
+  }
+  sheet.querySelector("[data-a-close]").onclick = close;
+  const go = sheet.querySelector("[data-a-go]");
+  if (go) go.onclick = function () {
+    close();
+    if (url.indexOf("/") === 0) {
+      if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
+      else window.location.href = url;
+    } else window.open(url, "_blank", "noopener");
+  };
+  modal.onclick = function (e) { if (e.target === modal) close(); };
+  modal.appendChild(sheet);
+  document.body.appendChild(modal);
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      modal.style.opacity = "1";
+      sheet.style.transform = "translateY(0)";
+    });
+  });
+}
+
 function renderAnnouncement(all) {
   const anns = (all || []).filter(function (p) {
     return p.type === "announcement" && p.id && shouldShowAnnouncement(p);
@@ -798,10 +849,12 @@ function renderAnnouncement(all) {
     const dots = card.querySelector("[data-ann-dots]");
     const title = esc2(pick.title || "Announcement");
     const desc = pick.description ? esc2(pick.description) : "";
-    const label = esc2(pick.linkLabel || pick.bellButtonLabel || "Open");
+    const fullMsg = String(pick.bellText || pick.fullMessage || "").trim();
+    const label = esc2(pick.linkLabel || pick.bellButtonLabel || (fullMsg ? "Read more" : "Open"));
     const href = pick.linkUrl || pick.bellButtonUrl || "";
-    const cta = href
-      ? '<a href="' + esc2(href) + '" data-ann-cta style="display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;background:' + st.btnBg + ";color:" + st.btnFg + ';font-weight:700;font-size:10px;text-decoration:none;letter-spacing:.04em">' + label + "</a>"
+    // Full message → popup; otherwise direct link (or no button)
+    const cta = (fullMsg || href)
+      ? '<button type="button" data-ann-cta style="display:inline-block;margin-top:8px;padding:5px 12px;border-radius:999px;border:0;background:' + st.btnBg + ";color:" + st.btnFg + ';font-weight:700;font-size:10px;letter-spacing:.04em;cursor:pointer">' + label + "</button>"
       : "";
     const body =
       '<div style="font-weight:800;font-size:13px;line-height:1.25">' + title + "</div>" +
@@ -831,15 +884,24 @@ function renderAnnouncement(all) {
       }
       const ctaEl = card.querySelector("[data-ann-cta]");
       if (ctaEl) {
-        ctaEl.addEventListener("click", function (e) {
+        ctaEl.onclick = function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const full = String(pick.bellText || pick.fullMessage || "").trim();
           const url = pick.linkUrl || pick.bellButtonUrl || "";
-          if (url && url.indexOf("/") === 0) {
-            e.preventDefault();
-            markAnnouncementSeen(pick);
-            if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
-            else window.location.href = url;
+          if (full) {
+            openAnnouncementModal(pick);
+            return;
           }
-        });
+          if (url) {
+            if (url.indexOf("/") === 0) {
+              if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
+              else window.location.href = url;
+            } else {
+              window.open(url, "_blank", "noopener");
+            }
+          }
+        };
       }
     }
 

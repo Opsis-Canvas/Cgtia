@@ -133,7 +133,7 @@ export const handler = async (event) => {
     if (existing.exists && existing.data().profileCompleted) {
       return bad(409, 'A student profile already exists for this email. Contact the academy if you need a correction.');
     }
-    // Also block same NIN twice
+    // Block same NIN on another student
     const ninQ = await db.collection('students').where('nin', '==', nin).limit(1).get();
     if (!ninQ.empty) {
       const other = ninQ.docs[0];
@@ -141,6 +141,13 @@ export const handler = async (event) => {
         return bad(409, 'This NIN is already registered to another student.');
       }
     }
+    // Also block NIN already used on a licensing request
+    try {
+      const ninLic = await db.collection('licensingRequests').where('nin', '==', nin).limit(1).get();
+      if (!ninLic.empty) {
+        return bad(409, 'This NIN is already linked to a licensing request. Contact the academy if you need help.');
+      }
+    } catch (e2) { /* index may be missing */ }
   } catch (err) {
     console.error('dup check', err);
   }
