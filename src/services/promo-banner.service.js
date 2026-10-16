@@ -1107,3 +1107,4 @@ function reopenPromoBanner() {
   showSolidBottomPromoBar();
 }
 window.__cgtiaShowSolidBottomPromoBar = showSolidBottomPromoBar;
+ 
