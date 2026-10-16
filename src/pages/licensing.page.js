@@ -73,13 +73,19 @@ function installLicensingForm() {
         })
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.error) throw new Error(data.error || "Request failed");
+      if (!res.ok || data.error) {
+        const msg = data.error || "Request failed";
+        if (res.status === 409) throw new Error(msg);
+        if (res.status === 422) throw new Error(msg);
+        throw new Error(msg);
+      }
 
       form.reset();
       const nameEl = document.getElementById("idFileName");
       if (nameEl) nameEl.textContent = "Government ID — PDF or image (optional if NIN below)";
       if (ok) {
         let msg = "Application received. Our team will review and contact you about next steps.";
+        if (data.ninKycVerified === true) msg += " Your NIN was verified.";
         if (data.matchedStudent) msg += " We found a matching student record for this email.";
         else if (data.matchedApplication) msg += " We found a prior application with this email.";
         ok.textContent = msg;

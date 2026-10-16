@@ -95,6 +95,84 @@ function tickCountdowns() {
   });
 }
 
+
+function openPromoModal(promoList, startIdx) {
+  const list = promoList || [];
+  if (!list.length) return;
+  let i = startIdx || 0;
+  let modal = document.getElementById("cgtiaPromoModal");
+  if (modal) modal.remove();
+  modal = document.createElement("div");
+  modal.id = "cgtiaPromoModal";
+  modal.style.cssText =
+    "position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center;" +
+    "background:rgba(15,23,42,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);" +
+    "padding:16px;box-sizing:border-box;opacity:0;transition:opacity .25s ease";
+  const sheet = document.createElement("div");
+  sheet.style.cssText =
+    "width:min(22rem,100%);max-height:min(80vh,32rem);overflow:auto;background:#fff;color:#0f172a;" +
+    "border-radius:1.25rem;padding:1.25rem 1.25rem 1.4rem;box-shadow:0 24px 60px rgba(15,23,42,.35);" +
+    "transform:translateY(16px);transition:transform .3s cubic-bezier(.16,1,.3,1)";
+  function paintModal() {
+    const p = list[i];
+    if (!p) return;
+    const progs = (Array.isArray(p.programs) ? p.programs : [p.programs]).filter(Boolean).map(programLabel);
+    const amt = p.promoAmount ? formatNairaShort(p.promoAmount) : "";
+    let ends = "";
+    if (p.endsAt) {
+      const ms = p.endsAt.toMillis ? p.endsAt.toMillis() : new Date(p.endsAt).getTime();
+      if (ms) ends = countdownHtml(ms);
+    }
+    const dots = list.length > 1
+      ? '<div style="display:flex;gap:6px;justify-content:center;margin:12px 0 4px">' +
+        list.map(function (_, di) {
+          return '<button type="button" data-m-dot="' + di + '" style="width:7px;height:7px;border-radius:50%;border:0;background:' +
+            (di === i ? "#0f172a" : "#cbd5e1") + ';cursor:pointer;padding:0"></button>';
+        }).join("") + "</div>"
+      : "";
+    sheet.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
+      '<span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1e3a8a">Promo</span>' +
+      '<button type="button" data-m-close aria-label="Close" style="border:0;background:transparent;font-size:20px;line-height:1;color:#94a3b8;cursor:pointer;padding:0 2px">×</button></div>' +
+      '<h3 style="margin:10px 0 6px;font-size:1.2rem;font-weight:800;line-height:1.25;color:#0f172a">' + esc2(p.title || "Offer") + "</h3>" +
+      (amt ? '<p style="margin:0 0 8px;font-size:1.35rem;font-weight:800;color:#1e3a8a">' + esc2(amt) + "</p>" : "") +
+      (progs.length ? '<p style="margin:0 0 6px;font-size:.85rem;color:#475569">' + esc2(progs.join(" · ")) + "</p>" : "") +
+      (p.description ? '<p style="margin:0 0 8px;font-size:.9rem;color:#64748b;line-height:1.45">' + esc2(p.description) + "</p>" : "") +
+      (ends ? '<p style="margin:0 0 12px;font-size:.8rem;font-weight:600;color:#0f172a">Ends in ' + ends + "</p>" : "") +
+      dots +
+      '<button type="button" data-m-go style="width:100%;margin-top:8px;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px;cursor:pointer">View tuition</button>';
+    sheet.querySelector("[data-m-close]").onclick = closeModal;
+    const go = sheet.querySelector("[data-m-go]");
+    if (go) go.onclick = function () {
+      closeModal();
+      if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
+      else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
+      else window.location.href = "/tuition";
+    };
+    sheet.querySelectorAll("[data-m-dot]").forEach(function (btn) {
+      btn.onclick = function () {
+        i = Number(btn.getAttribute("data-m-dot"));
+        paintModal();
+      };
+    });
+  }
+  function closeModal() {
+    modal.style.opacity = "0";
+    sheet.style.transform = "translateY(16px)";
+    setTimeout(function () { if (modal.parentNode) modal.remove(); }, 250);
+  }
+  modal.onclick = function (e) { if (e.target === modal) closeModal(); };
+  modal.appendChild(sheet);
+  document.body.appendChild(modal);
+  paintModal();
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      modal.style.opacity = "1";
+      sheet.style.transform = "translateY(0)";
+    });
+  });
+}
+
 function renderPromoBannerOnly(list) {
   const tuitionPromos = (list || []).filter((p) => p.type !== "announcement");
   let bar = document.getElementById("cgtiaPromoBanner");
@@ -138,14 +216,27 @@ function renderPromoBannerOnly(list) {
 
   if (!bar.querySelector("[data-promo-shell]")) {
     bar.innerHTML =
-      '<span data-promo-shell style="flex-shrink:0;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.95">Promo</span>' +
+      '<span data-promo-shell style="flex-shrink:0;width:3.4rem;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.95;overflow:hidden;height:1.15rem;position:relative;display:inline-block">' +
+      '<span data-promo-label style="display:block;transition:transform .45s ease,opacity .45s ease">Promo</span>' +
+      '<span data-promo-timer-slot style="display:block;position:absolute;left:0;top:0;transform:translateY(110%);opacity:0;transition:transform .45s ease,opacity .45s ease;font-size:9px;letter-spacing:.04em;font-weight:700;white-space:nowrap"></span>' +
+      '</span>' +
       '<div data-promo-stage style="flex:1;min-width:0;opacity:1;transition:opacity .35s ease"></div>' +
       '<div data-promo-dots style="display:flex;gap:4px;align-items:center;flex-shrink:0"></div>' +
       '<button type="button" data-promo-cta style="flex-shrink:0;border:0;border-radius:999px;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap;opacity:1;transition:opacity .35s ease">View</button>' +
       '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
   }
 
-  document.documentElement.style.setProperty("--cgtia-strip-h", "44px");
+  // Gap under strip so logo / APPLY are not covered
+  document.documentElement.style.setProperty("--cgtia-strip-h", "48px");
+  const spacer = document.getElementById("cgtiaPromoSpacer");
+  if (spacer) spacer.style.height = "var(--cgtia-strip-h,48px)";
+  // Push sticky header down
+  if (!document.getElementById("cgtiaPromoGapStyle")) {
+    const st = document.createElement("style");
+    st.id = "cgtiaPromoGapStyle";
+    st.textContent = "html{scroll-padding-top:var(--cgtia-strip-h,0px)}.faded-sticky-header{top:var(--cgtia-strip-h,0px)!important}";
+    document.head.appendChild(st);
+  }
 
   let idx = Number(window.__cgtiaPromoRotateIdx) || 0;
   if (idx >= tuitionPromos.length) idx = 0;
@@ -190,8 +281,8 @@ function renderPromoBannerOnly(list) {
         esc2(label) + (timer ? " · Ends in " + timer : "") +
         "</div></div>";
       const goEl = stage.querySelector("[data-promo-go-tuition]");
-      if (goEl) goEl.onclick = goTuition;
-      if (cta) cta.onclick = goTuition;
+      if (goEl) goEl.onclick = function (e) { e.preventDefault(); openPromoModal(tuitionPromos, i); };
+      if (cta) cta.onclick = function (e) { e.preventDefault(); e.stopPropagation(); openPromoModal(tuitionPromos, i); };
 
       if (dotsWrap) {
         if (tuitionPromos.length > 1) {
@@ -214,6 +305,26 @@ function renderPromoBannerOnly(list) {
         }
       }
       tickCountdowns();
+
+      // Left slot: show "Promo" briefly, then slide to live countdown for this offer
+      const labelEl = bar.querySelector("[data-promo-label]");
+      const timerSlot = bar.querySelector("[data-promo-timer-slot]");
+      if (labelEl && timerSlot) {
+        labelEl.style.transform = "translateY(0)";
+        labelEl.style.opacity = "1";
+        timerSlot.style.transform = "translateY(110%)";
+        timerSlot.style.opacity = "0";
+        // countdownHtml already emits <span data-promo-countdown="…">
+        timerSlot.innerHTML = timer || "";
+        clearTimeout(window.__cgtiaPromoLabelTimer);
+        window.__cgtiaPromoLabelTimer = setTimeout(function () {
+          if (!timer) return;
+          labelEl.style.transform = "translateY(-110%)";
+          labelEl.style.opacity = "0";
+          timerSlot.style.transform = "translateY(0)";
+          timerSlot.style.opacity = "1";
+        }, 2800);
+      }
     }
 
     if (animate && tuitionPromos.length > 1) {

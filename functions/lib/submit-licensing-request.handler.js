@@ -40,6 +40,58 @@ export const handler = async (event) => {
   if (nin && nin.length !== 11) return bad(400, 'NIN must be 11 digits if provided');
   if (!hasIdUpload && !nin) return bad(400, 'Provide a government ID upload or an 11-digit NIN');
 
+  // NIN uniqueness across school records (before any external KYC)
+  if (nin) {
+    try {
+      const ninStudents = await db.collection('students').where('nin', '==', nin).limit(1).get();
+      if (!ninStudents.empty) {
+        return bad(409, 'This NIN is already linked to a student on our system. If this is you, contact the academy. If not, do not use another person’s NIN.');
+      }
+    } catch (e) { console.warn('nin student lookup', e); }
+    try {
+      const ninReq = await db.collection('licensingRequests').where('nin', '==', nin).limit(1).get();
+      if (!ninReq.empty) {
+        return bad(409, 'A licensing request with this NIN was already submitted. Our team will contact you, or use a different contact path if you need help.');
+      }
+    } catch (e) { console.warn('nin request lookup', e); }
+  }
+
+  // KYC provider hook (Prembly etc.) — only runs when NIN is new in Firebase
+  // Set PREMBLY_API_KEY in Cloudflare to enable live verification.
+  let ninKyc = { attempted: false, verified: null, message: '' };
+  if (nin && process.env.PREMBLY_API_KEY) {
+    ninKyc.attempted = true;
+    try {
+      const kycRes = await fetch('https://api.prembly.com/verification/vnin-basic', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.PREMBLY_API_KEY
+        },
+        body: JSON.stringify({ number: nin })
+      });
+      const kycData = await kycRes.json().catch(() => ({}));
+      const ok = kycRes.ok && (kycData.status === true || kycData.verification_status === 'verified' || (kycData.verification && kycData.verification.status === 'VERIFIED'));
+      if (ok) {
+        ninKyc.verified = true;
+        ninKyc.message = 'NIN verified with the national registry.';
+        ninKyc.firstName = (kycData.data && (kycData.data.firstname || kycData.data.first_name)) || '';
+        ninKyc.surname = (kycData.data && (kycData.data.surname || kycData.data.last_name)) || '';
+      } else {
+        ninKyc.verified = false;
+        ninKyc.message = 'We could not verify this NIN. Check the digits and try again, or upload a clear government ID instead.';
+        return bad(422, ninKyc.message);
+      }
+    } catch (e) {
+      console.error('kyc nin', e);
+      ninKyc.verified = null;
+      ninKyc.message = 'NIN verification service is temporarily unavailable. Your request was not saved — please try again shortly.';
+      return bad(503, ninKyc.message);
+    }
+  } else if (nin) {
+    ninKyc.message = 'NIN saved pending registry verification.';
+  }
+
   let matchedStudent = null;
   let matchedApplication = null;
   try {
@@ -87,6 +139,11 @@ export const handler = async (event) => {
       matchedStudentName: matchedStudent ? matchedStudent.name : null,
       matchedApplicationId: matchedApplication ? matchedApplication.id : null,
       studentClaimMismatch: !!studentClaimMismatch,
+      ninKycAttempted: !!ninKyc.attempted,
+      ninKycVerified: ninKyc.verified,
+      ninKycMessage: ninKyc.message || '',
+      ninKycFirstName: ninKyc.firstName || '',
+      ninKycSurname: ninKyc.surname || '',
       status: 'new',
       source: 'licensing-page',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -100,7 +157,9 @@ export const handler = async (event) => {
         id,
         matchedStudent: !!matchedStudent,
         matchedApplication: !!matchedApplication,
-        studentClaimMismatch: !!studentClaimMismatch
+        studentClaimMismatch: !!studentClaimMismatch,
+        ninKycVerified: ninKyc.verified,
+        ninKycMessage: ninKyc.message || ''
       })
     };
   } catch (err) {
