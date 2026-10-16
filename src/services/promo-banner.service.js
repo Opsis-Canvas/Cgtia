@@ -130,6 +130,8 @@ function openPromoModal(promoList, startIdx) {
             (di === i ? "#0f172a" : "#cbd5e1") + ';cursor:pointer;padding:0"></button>';
         }).join("") + "</div>"
       : "";
+    const full = String(p.bellText || p.fullMessage || "").trim();
+    const goLabel = p.bellButtonLabel || p.linkLabel || "View tuition";
     sheet.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
       '<span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1e3a8a">Promo</span>' +
@@ -138,16 +140,22 @@ function openPromoModal(promoList, startIdx) {
       (amt ? '<p style="margin:0 0 8px;font-size:1.35rem;font-weight:800;color:#1e3a8a">' + esc2(amt) + "</p>" : "") +
       (progs.length ? '<p style="margin:0 0 6px;font-size:.85rem;color:#475569">' + esc2(progs.join(" · ")) + "</p>" : "") +
       (p.description ? '<p style="margin:0 0 8px;font-size:.9rem;color:#64748b;line-height:1.45">' + esc2(p.description) + "</p>" : "") +
+      (full ? '<p style="margin:0 0 8px;font-size:.9rem;color:#334155;line-height:1.5;white-space:pre-wrap">' + esc2(full) + "</p>" : "") +
       (ends ? '<p style="margin:0 0 12px;font-size:.8rem;font-weight:600;color:#0f172a">Ends in ' + ends + "</p>" : "") +
       dots +
-      '<button type="button" data-m-go style="width:100%;margin-top:8px;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px;cursor:pointer">View tuition</button>';
+      '<button type="button" data-m-go style="width:100%;margin-top:8px;border:0;border-radius:999px;background:#0f172a;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px;cursor:pointer">' + esc2(goLabel) + "</button>";
     sheet.querySelector("[data-m-close]").onclick = closeModal;
     const go = sheet.querySelector("[data-m-go]");
     if (go) go.onclick = function () {
       closeModal();
-      if (window.__cgtiaNavigate) window.__cgtiaNavigate("/tuition");
-      else if (window.navigateWithPill) window.navigateWithPill("Tuition", "tuition.html");
-      else window.location.href = "/tuition";
+      const url = (p.linkUrl || p.bellButtonUrl || "/tuition").trim() || "/tuition";
+      if (url.indexOf("/") === 0) {
+        if (window.__cgtiaNavigate) window.__cgtiaNavigate(url);
+        else if (window.navigateWithPill && url.indexOf("tuition") >= 0) window.navigateWithPill("Tuition", "tuition.html");
+        else window.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener");
+      }
     };
     sheet.querySelectorAll("[data-m-dot]").forEach(function (btn) {
       btn.onclick = function () {
@@ -216,7 +224,7 @@ function renderPromoBannerOnly(list) {
 
   if (!bar.querySelector("[data-promo-shell]")) {
     bar.innerHTML =
-      '<span data-promo-shell style="flex-shrink:0;width:3.4rem;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.95;overflow:hidden;height:1.15rem;position:relative;display:inline-block">' +
+      '<span data-promo-shell style="flex-shrink:0;min-width:3.6rem;max-width:5.5rem;font-weight:800;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.95;overflow:hidden;height:1.15rem;position:relative;display:inline-block">' +
       '<span data-promo-label style="display:block;transition:transform .45s ease,opacity .45s ease">Promo</span>' +
       '<span data-promo-timer-slot style="display:block;position:absolute;left:0;top:0;transform:translateY(110%);opacity:0;transition:transform .45s ease,opacity .45s ease;font-size:9px;letter-spacing:.04em;font-weight:700;white-space:nowrap"></span>' +
       '</span>' +
@@ -226,17 +234,25 @@ function renderPromoBannerOnly(list) {
       '<button type="button" data-promo-close aria-label="Close" style="flex-shrink:0;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:18px;line-height:1;cursor:pointer;padding:2px 4px">×</button>';
   }
 
-  // Gap under strip so logo / APPLY are not covered
+  // Gap under strip so logo / APPLY sit below the promo bar
   document.documentElement.style.setProperty("--cgtia-strip-h", "48px");
-  const spacer = document.getElementById("cgtiaPromoSpacer");
-  if (spacer) spacer.style.height = "var(--cgtia-strip-h,48px)";
-  // Push sticky header down
-  if (!document.getElementById("cgtiaPromoGapStyle")) {
-    const st = document.createElement("style");
+  let spacer = document.getElementById("cgtiaPromoSpacer");
+  if (!spacer) {
+    spacer = document.createElement("div");
+    spacer.id = "cgtiaPromoSpacer";
+    document.body.prepend(spacer);
+  }
+  spacer.style.cssText = "height:48px;width:100%;flex-shrink:0;pointer-events:none";
+  let st = document.getElementById("cgtiaPromoGapStyle");
+  if (!st) {
+    st = document.createElement("style");
     st.id = "cgtiaPromoGapStyle";
-    st.textContent = "html{scroll-padding-top:var(--cgtia-strip-h,0px)}.faded-sticky-header{top:var(--cgtia-strip-h,0px)!important}";
     document.head.appendChild(st);
   }
+  st.textContent =
+    "html{scroll-padding-top:48px}" +
+    ".faded-sticky-header{top:48px!important;position:sticky!important}" +
+    "body{padding-top:0}";
 
   let idx = Number(window.__cgtiaPromoRotateIdx) || 0;
   if (idx >= tuitionPromos.length) idx = 0;
@@ -274,15 +290,19 @@ function renderPromoBannerOnly(list) {
 
     function write() {
       stage.innerHTML =
-        '<div style="cursor:pointer" data-promo-go-tuition>' +
+        '<div style="cursor:pointer" data-promo-open>' +
         '<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700">' + esc2(title) +
         (amt ? ' · <span style="font-weight:800">' + esc2(amt) + "</span>" : "") + "</div>" +
         '<div style="font-size:10px;opacity:.8;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-        esc2(label) + (timer ? " · Ends in " + timer : "") +
+        esc2(label) +
         "</div></div>";
-      const goEl = stage.querySelector("[data-promo-go-tuition]");
-      if (goEl) goEl.onclick = function (e) { e.preventDefault(); openPromoModal(tuitionPromos, i); };
-      if (cta) cta.onclick = function (e) { e.preventDefault(); e.stopPropagation(); openPromoModal(tuitionPromos, i); };
+      function openThis(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        openPromoModal(tuitionPromos, i);
+      }
+      const goEl = stage.querySelector("[data-promo-open]");
+      if (goEl) goEl.onclick = openThis;
+      if (cta) cta.onclick = openThis;
 
       if (dotsWrap) {
         if (tuitionPromos.length > 1) {
@@ -323,7 +343,7 @@ function renderPromoBannerOnly(list) {
           labelEl.style.opacity = "0";
           timerSlot.style.transform = "translateY(0)";
           timerSlot.style.opacity = "1";
-        }, 2800);
+        }, 2200);
       }
     }
 
@@ -356,6 +376,10 @@ function renderPromoBannerOnly(list) {
       setTimeout(function () {
         if (bar && bar.parentNode) bar.remove();
         document.documentElement.style.setProperty("--cgtia-strip-h", "0px");
+        const sp2 = document.getElementById("cgtiaPromoSpacer");
+        if (sp2) sp2.style.height = "0px";
+        const st2 = document.getElementById("cgtiaPromoGapStyle");
+        if (st2) st2.textContent = ".faded-sticky-header{top:0!important}";
         ensureHeaderPromoChip(true, tuitionPromos);
       }, 400);
     };
