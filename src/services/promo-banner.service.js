@@ -242,7 +242,10 @@ function renderPromoBannerOnly(list) {
     spacer.id = "cgtiaPromoSpacer";
     document.body.prepend(spacer);
   }
-  spacer.style.cssText = "height:48px;width:100%;flex-shrink:0;pointer-events:none";
+  // Solid white block — no page content bleeding through under the strip
+  spacer.style.cssText =
+    "height:48px;width:100%;flex-shrink:0;pointer-events:none;" +
+    "background:#ffffff;position:relative;z-index:89";
   let st = document.getElementById("cgtiaPromoGapStyle");
   if (!st) {
     st = document.createElement("style");
@@ -251,7 +254,9 @@ function renderPromoBannerOnly(list) {
   }
   st.textContent =
     "html{scroll-padding-top:48px}" +
-    ".faded-sticky-header{top:48px!important;position:sticky!important}" +
+    "#cgtiaPromoBanner{background:linear-gradient(90deg,#0f172a 0%,#1e3a8a 100%)!important}" +
+    ".faded-sticky-header{top:48px!important;position:sticky!important;background:rgba(255,255,255,.92)!important;" +
+    "backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:88}" +
     "body{padding-top:0}";
 
   let idx = Number(window.__cgtiaPromoRotateIdx) || 0;
@@ -1107,4 +1112,3 @@ function reopenPromoBanner() {
   showSolidBottomPromoBar();
 }
 window.__cgtiaShowSolidBottomPromoBar = showSolidBottomPromoBar;
- 
