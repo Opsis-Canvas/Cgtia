@@ -164,10 +164,10 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) softLiveRefresh("visible");
 });
 
-/* While the tab stays open, re-check every 30s */
+/* While the tab stays open, re-check every 20s */
 setInterval(() => {
   if (!document.hidden) softLiveRefresh("interval");
-}, 30000);
+}, 20000);
 
 window.__cgtiaSoftLiveRefresh = softLiveRefresh;
 
