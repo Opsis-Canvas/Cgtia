@@ -315,6 +315,9 @@ function applyProgramsPage(pp) {
   set('[data-cms="ppCtaTitle"]', pp.ctaTitle);
   set('[data-cms="ppCtaBody"]', pp.ctaBody);
   set('[data-cms="ppCtaLabel"]', pp.ctaLabel);
+  set('[data-cms="ppPathEyebrow"]', pp.pathEyebrow);
+  set('[data-cms="ppPathTitle"]', pp.pathTitle);
+  set('[data-cms="ppPathCtaLabel"]', pp.pathCtaLabel);
 
   const trackHost = document.querySelector('[data-cms-sections="ppTrackCards"]');
   if (trackHost && Array.isArray(pp.trackCards) && pp.trackCards.length) {
@@ -344,6 +347,22 @@ function applyProgramsPage(pp) {
       '<p class="text-slate-500 font-light text-sm leading-relaxed">' + String(c.body || "").replace(/</g, "&lt;") + "</p>" +
       "</div>"
     )).join("");
+  }
+
+  const pathHost = document.querySelector('[data-cms-sections="ppPathSteps"]');
+  if (pathHost && Array.isArray(pp.pathSteps) && pp.pathSteps.length) {
+    pathHost.innerHTML = pp.pathSteps.map((s, i) => {
+      const num = String(s.num || String(i + 1).padStart(2, "0")).replace(/</g, "&lt;");
+      const title = String(s.title || "").replace(/</g, "&lt;");
+      const body = String(s.body || "").replace(/</g, "&lt;");
+      return (
+        '<div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 py-8 border-b border-slate-200/60">' +
+        '<div class="md:col-span-1 font-editorial text-2xl text-blue-950 font-bold">' + num + "</div>" +
+        '<div class="md:col-span-3"><h4 class="font-editorial text-xl text-blue-950 font-bold">' + title + "</h4></div>" +
+        '<div class="md:col-span-8 text-slate-500 font-light text-base leading-relaxed">' + body + "</div>" +
+        "</div>"
+      );
+    }).join("");
   }
 }
 

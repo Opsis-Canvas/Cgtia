@@ -128,10 +128,10 @@ export const programs_html = `
   <!-- Progression Path -->
   <section class="w-full max-w-7xl mx-auto px-6 pb-32 md:pb-48">
     <div class="text-left mb-12 md:mb-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Your Path</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">From First Class to Certified Caregiver</h2>
+      <span data-cms="ppPathEyebrow" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Your Path</span>
+      <h2 data-cms="ppPathTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">From First Class to Certified Caregiver</h2>
     </div>
-    <div class="w-full border-t border-slate-200/60">
+    <div data-cms-sections="ppPathSteps" class="w-full border-t border-slate-200/60">
       <div class="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 py-8 border-b border-slate-200/60">
         <div class="md:col-span-1 font-editorial text-2xl text-blue-950 font-bold">01</div>
         <div class="md:col-span-3"><h4 class="font-editorial text-xl text-blue-950 font-bold">Certificate</h4></div>
@@ -154,7 +154,7 @@ export const programs_html = `
       </div>
     </div>
     <div class="text-center mt-12">
-      <a href="/tuition" class="inline-block soft-component-card px-8 py-4 rounded-full text-xs font-semibold tracking-widest uppercase text-blue-950 border border-transparent hover:border-slate-200/50 smooth-transition">
+      <a href="/tuition" data-cms="ppPathCtaLabel" class="inline-block soft-component-card px-8 py-4 rounded-full text-xs font-semibold tracking-widest uppercase text-blue-950 border border-transparent hover:border-slate-200/50 smooth-transition">
         View Tuition & Fees
       </a>
     </div>
