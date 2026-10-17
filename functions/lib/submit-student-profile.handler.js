@@ -199,8 +199,10 @@ export const handler = async (event) => {
       used: true,
       usedAt: admin.firestore.FieldValue.serverTimestamp(),
       usedByEmail: email,
+      usedByName: fullLegalName,
       studentId: id,
-      regNumber: payload.regNumber || regNumber
+      regNumber: payload.regNumber || regNumber,
+      program: payload.program || inv.program || ""
     }, { merge: true });
 
     // Mirror onto application if exists
