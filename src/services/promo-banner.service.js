@@ -182,7 +182,7 @@ function openPromoModal(promoList, startIdx) {
 }
 
 function renderPromoBannerOnly(list) {
-  const tuitionPromos = (list || []).filter((p) => p.type !== "announcement");
+  const tuitionPromos = (list || []).filter((p) => p.type !== "announcement" && p.type !== "announcement_link");
   let bar = document.getElementById("cgtiaPromoBanner");
   if (!tuitionPromos.length) {
     if (bar) bar.remove();
@@ -454,7 +454,7 @@ function ensureHeaderPromoChip(show, promos) {
 export function applyTuitionPromoPricing(list) {
   const byProgram = {};
   (list || []).forEach((p) => {
-    if (p.type === "announcement") return;
+    if (p.type === "announcement" || p.type === "announcement_link") return;
     if (p.requiresCode) return;
     (p.programs || []).forEach((key) => {
       byProgram[key] = p;
@@ -534,7 +534,7 @@ export async function installPromoBanner() {
 
 /** Bottom-left promo bell — does not cover the ⋮ menu */
 function legacyBellUnused() {
-  const list = (window.__cgtiaActivePromos || []).filter((p) => !p.hibernated && p.active !== false && p.type === "announcement");
+  const list = (window.__cgtiaActivePromos || []).filter((p) => !p.hibernated && p.active !== false && (p.type === "announcement" || p.type === "announcement_link"));
   if (!list.length) {
     const b = document.getElementById("cgtiaPromoBell");
     if (b) b.remove();
@@ -642,7 +642,7 @@ function openPromoSheet(list) {
   sheet = document.createElement("div");
   sheet.id = "cgtiaPromoSheet";
   sheet.style.cssText = "position:fixed;inset:0;z-index:95;background:rgba(15,23,42,.45);display:flex;align-items:flex-end;justify-content:center;";
-  const items = (list || []).filter(function (p) { return p.type === "announcement"; });
+  const items = (list || []).filter(function (p) { return p.type === "announcement" || p.type === "announcement_link"; });
   const cards = items.map(function (p) {
     const label = p.bellButtonLabel || p.linkLabel || "";
     const dest = p.bellButtonUrl || p.linkUrl || "";
@@ -682,7 +682,7 @@ function openPromoSheet(list) {
 /** Top bar: promotions only. Announcements have their own card. */
 export function renderPromoBanner(list) {
   const all = list || [];
-  renderPromoBannerOnly(all.filter(function (p) { return p.type !== "announcement"; }));
+  renderPromoBannerOnly(all.filter(function (p) { return p.type !== "announcement" && p.type !== "announcement_link"; }));
   setTimeout(function () { renderAnnouncement(all); }, 700);
 }
 
@@ -805,7 +805,7 @@ function openAnnouncementModal(pick) {
 
 function renderAnnouncement(all) {
   const anns = (all || []).filter(function (p) {
-    return p.type === "announcement" && p.id && shouldShowAnnouncement(p);
+    return (p.type === "announcement" || p.type === "announcement_link") && p.id && shouldShowAnnouncement(p);
   });
   const existing = document.getElementById("cgtiaAnnouncement");
   if (!anns.length) {
@@ -989,8 +989,8 @@ function renderAnnouncement(all) {
 const BELL_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
 const CHEVRON_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="cgtia-chev"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
-function promoItems(all) { return all.filter(function (p) { return p.type !== "announcement" && !p.hibernated && p.active !== false; }); }
-function annItems(all) { return all.filter(function (p) { return p.type === "announcement" && !p.hibernated && p.active !== false; }); }
+function promoItems(all) { return all.filter(function (p) { return p.type !== "announcement" && p.type !== "announcement_link" && !p.hibernated && p.active !== false; }); }
+function annItems(all) { return all.filter(function (p) { return (p.type === "announcement" || p.type === "announcement_link") && !p.hibernated && p.active !== false; }); }
 
 function removeNotifyBell() {
   const b = document.getElementById("cgtiaNotifyBell");
