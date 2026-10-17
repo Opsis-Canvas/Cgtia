@@ -82,8 +82,22 @@ service cloud.firestore {
     // =======================================================
 
     match /students/{studentId} {
-      allow read: if hasRole(['registrar', 'training-officer', 'instructor']) || isAdmin();
+      // Staff + student can read own record (linked by auth uid or email)
+      allow read: if hasRole(['registrar', 'training-officer', 'instructor']) || isAdmin()
+        || (isSignedIn() && (
+          resource.data.uid == request.auth.uid
+          || resource.data.authUid == request.auth.uid
+          || (resource.data.email is string && request.auth.token.email is string
+              && resource.data.email.lower() == request.auth.token.email.lower())
+        ));
       allow create, update: if hasRole(['registrar', 'training-officer']) || isAdmin();
+      // Students may update limited profile fields only
+      allow update: if isSignedIn()
+        && (resource.data.uid == request.auth.uid || resource.data.authUid == request.auth.uid
+            || (resource.data.email is string && request.auth.token.email is string
+                && resource.data.email.lower() == request.auth.token.email.lower()))
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['phone', 'address', 'photoUrl', 'updatedAt']);
       allow delete: if isAdmin();
     }
 
@@ -116,6 +130,17 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update: if hasRole(['training-officer', 'instructor']) || isAdmin();
       allow delete: if isAdmin();
+    }
+
+    match /grades/{gradeId} {
+      allow read: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor'])
+        || (isSignedIn() && resource.data.published == true && (
+          resource.data.studentUid == request.auth.uid
+          || (resource.data.studentEmail is string && request.auth.token.email is string
+              && resource.data.studentEmail.lower() == request.auth.token.email.lower())
+        ));
+      allow create, update: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor']);
+      allow delete: if isAdmin() || hasRole(['registrar', 'training-officer']);
     }
 
     match /notifications/{notifId} {
@@ -254,7 +279,9 @@ service cloud.firestore {
 
     /* payment records (webhook / admin) */
     match /payments/{payId} {
-      allow read: if isAdmin() || isStaff();
+      allow read: if isAdmin() || isStaff()
+        || (isSignedIn() && resource.data.email is string && request.auth.token.email is string
+            && resource.data.email.lower() == request.auth.token.email.lower());
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
