@@ -462,6 +462,51 @@ function applySimpleCmsPage(page) {
       );
     }).join("");
   }
+
+  // Home section visibility (same idea as showOnHome for programmes)
+  const sectionMap = {
+    practice: page.showPractice,
+    tuition: page.showTuition,
+    partners: page.showPartners,
+    insights: page.showInsights,
+    galleryTeaser: page.showGalleryTeaser,
+    offerings: page.showOfferings,
+    voices: page.showVoices,
+    wallTeaser: page.showWallTeaser
+  };
+  Object.keys(sectionMap).forEach((id) => {
+    const vis = sectionMap[id];
+    if (vis === false || vis === true) {
+      document.querySelectorAll('[data-home-section="' + id + '"]').forEach((el) => {
+        el.style.display = vis ? "" : "none";
+      });
+    }
+  });
+
+  // Home testimonials rebuild
+  const voices = document.querySelector('[data-cms-sections="homeTestimonials"]');
+  if (voices && Array.isArray(page.testimonials) && page.testimonials.length) {
+    voices.innerHTML = page.testimonials.map((t) => (
+      '<div class="snap-center shrink-0 w-[85vw] sm:w-[480px] soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/70 shadow-sm flex flex-col justify-between gap-8">' +
+      '<p class="font-editorial text-xl md:text-2xl text-blue-950 font-light leading-relaxed italic">"' + esc(t.quote || t.body || "") + '"</p>' +
+      '<div class="flex items-center gap-4 pt-4 border-t border-slate-200/40">' +
+      '<div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center font-editorial font-bold text-blue-900 text-sm">' + esc((t.name || t.title || "?").charAt(0).toUpperCase()) + "</div>" +
+      "<div><h4 class=\"text-xs font-bold tracking-wide text-blue-950\">" + esc(t.name || t.title || "") + "</h4>" +
+      (t.role ? '<span class="text-[10px] text-slate-400 uppercase tracking-widest">' + esc(t.role) + "</span>" : "") +
+      "</div></div></div>"
+    )).join("");
+  }
+
+  // Institutional offerings cards on home (static arc cards host)
+  const offerHost = document.querySelector("#program-track");
+  if (offerHost && Array.isArray(page.offerings) && page.offerings.length) {
+    offerHost.innerHTML = page.offerings.map((o) => (
+      '<div class="program-arc-card soft-component-card p-8 rounded-[2rem] border border-white/60 flex flex-col gap-3 min-w-[260px]">' +
+      (o.badge ? '<span class="text-[10px] font-bold tracking-widest text-blue-800 uppercase">' + esc(o.badge) + "</span>" : "") +
+      '<h3 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold leading-tight">' + esc(o.title || "") + "</h3>" +
+      '<p class="text-slate-500 font-light text-sm leading-relaxed">' + esc(o.body || "") + "</p></div>"
+    )).join("");
+  }
 }
 
 let domWatcherInstalled = false;

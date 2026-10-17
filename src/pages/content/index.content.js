@@ -61,13 +61,13 @@ export const index_html = `
   </section>
 
   <!-- Curated Structures Grid Section -->
-  <section class="w-full max-w-7xl mx-auto px-6 pb-32">
+  <section data-home-section="practice" class="w-full max-w-7xl mx-auto px-6 pb-32">
     <div class="text-left mb-12 md:mb-16">
       <span data-cms="homePracticeLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Why CGTIA</span>
       <h2 data-cms="homePracticeTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Built Around Real Practice</h2>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 auto-rows-auto md:auto-rows-[18rem]">
+    <div data-cms-sections="homePracticeCards" class="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 auto-rows-auto md:auto-rows-[18rem]">
       <div class="md:col-span-5 md:row-span-2 soft-component-card p-8 md:p-12 rounded-[2.5rem] md:rounded-[3rem] flex flex-col justify-between gap-8 group smooth-transition cursor-pointer">
         <div>
           <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6">01 / Practice</span>
@@ -117,7 +117,7 @@ export const index_html = `
   <!-- Dynamic programme cards from admin (populated when CMS data loads) -->
   <div id="cgtiaHomeProgramCards" class="w-full max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"></div>
 
-  <section id="tuition" data-has-dynamic-cards="1" class="w-full max-w-7xl mx-auto px-6 pb-36">
+  <section id="tuition" data-home-section="tuition" data-has-dynamic-cards="1" class="w-full max-w-7xl mx-auto px-6 pb-36">
     <div class="text-left mb-12 md:mb-16">
       <span data-cms="homeEyebrow" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Tuition Options</span>
       <h2 data-cms="homeHeadline" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Straightforward Program Fees</h2>
@@ -346,11 +346,11 @@ export const index_html = `
   <!-- SaaS Automated Dual-Track Marquee Section -->
   <!-- Internship & Placement Partners — stacked grid for fast scanning -->
 <!-- SaaS Automated Dual-Track Marquee Section -->
-  <section class="w-full pb-32 overflow-hidden marquee-container">
+  <section data-home-section="partners" class="w-full pb-32 overflow-hidden marquee-container">
     <div class="w-full max-w-7xl mx-auto px-6 mb-12">
       <div class="w-full border-t border-slate-200/50 pt-12">
-        <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-2">Clinical Network</span>
-        <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Internship & Placement Partners</h2>
+        <span data-cms="homePartnersLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-2">Clinical Network</span>
+        <h2 data-cms="homePartnersTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Internship & Placement Partners</h2>
       </div>
     </div>
 
@@ -392,10 +392,10 @@ export const index_html = `
   
 
   <!-- Masonry Post Card Grid Workspace -->
-  <section class="w-full max-w-7xl mx-auto px-6 pb-36">
+  <section data-home-section="insights" class="w-full max-w-7xl mx-auto px-6 pb-36">
     <div class="text-left mb-12">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Caregiver Resources</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Insights & Training Notes</h2>
+      <span data-cms="homeInsightsLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Caregiver Resources</span>
+      <h2 data-cms="homeInsightsTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Insights & Training Notes</h2>
     </div>
 
     <div class="masonry-layout-column-grid">
@@ -472,10 +472,10 @@ export const index_html = `
   </section>
 
   <!-- Visual Campus Gallery Section -->
-  <section id="gallery" class="w-full max-w-7xl mx-auto px-6 pb-36">
+  <section id="gallery" data-home-section="galleryTeaser" class="w-full max-w-7xl mx-auto px-6 pb-36">
     <div class="text-left mb-12">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3"> Gallery</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Life at CGTIA</h2>
+      <span data-cms="homeGalleryLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3"> Gallery</span>
+      <h2 data-cms="homeGalleryTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Life at CGTIA</h2>
     </div>
 
     <div class="peel-gallery-container">
@@ -526,10 +526,10 @@ export const index_html = `
   </section>
 
   <!-- Programs Horizontal 3D Arc Carousel Section -->
-  <section id="programs" class="w-full max-w-7xl mx-auto px-6 pb-36">
+  <section id="programs" data-home-section="offerings" class="w-full max-w-7xl mx-auto px-6 pb-36">
     <div class="text-left mb-10">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Institutional Offerings</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Academic Programs</h2>
+      <span data-cms="homeOfferingsLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Institutional Offerings</span>
+      <h2 data-cms="homeOfferingsTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Academic Programs</h2>
     </div>
 
     <div class="arc-viewport-perspective relative w-full h-[340px] md:h-[400px] flex items-center justify-center overflow-hidden py-8">
@@ -582,13 +582,13 @@ export const index_html = `
   </section>
 
   <!-- Horizontal Editorial Testimonials Canvas -->
-  <section class="w-full max-w-7xl mx-auto px-6 pb-36 md:pb-56 overflow-hidden">
+  <section data-home-section="voices" class="w-full max-w-7xl mx-auto px-6 pb-36 md:pb-56 overflow-hidden">
     <div class="text-left mb-12">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Graduate Voices</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">What Our Graduates Say</h2>
+      <span data-cms="homeVoicesLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Graduate Voices</span>
+      <h2 data-cms="homeVoicesTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">What Our Graduates Say</h2>
     </div>
 
-    <div id="testimonialsScroll" class="w-full overflow-x-auto flex gap-8 pb-8 pt-2 px-1 no-scrollbar snap-x snap-mandatory">
+    <div id="testimonialsScroll" data-cms-sections="homeTestimonials" class="w-full overflow-x-auto flex gap-8 pb-8 pt-2 px-1 no-scrollbar snap-x snap-mandatory">
       <div class="snap-center shrink-0 w-[85vw] sm:w-[480px] soft-component-card rounded-[2.5rem] p-8 md:p-10 border border-white/70 shadow-sm flex flex-col justify-between gap-8">
         <p class="font-editorial text-xl md:text-2xl text-blue-950 font-light leading-relaxed italic">
           "CGTIA didn't just teach me theory — the practical training and internship opportunity gave me the confidence to walk into my first job and already know what to do."
@@ -640,14 +640,14 @@ export const index_html = `
   </section>
 
   <!-- Wall of Fame Teaser -->
-  <section class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-36">
+  <section data-home-section="wallTeaser" class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-36">
     <div class="w-full bg-blue-950 rounded-[2.5rem] md:rounded-[3rem] p-10 md:p-16 relative overflow-hidden">
       <div class="absolute -right-10 -top-10 w-64 h-64 rounded-full bg-blue-800/30 blur-3xl"></div>
       <div class="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8 mb-10">
         <div>
-          <span class="text-xs font-bold tracking-widest text-blue-300 uppercase block mb-4">Honor Roll</span>
-          <h2 class="font-editorial text-3xl md:text-4xl text-white font-bold leading-tight max-w-lg">Meet our Wall of Fame</h2>
-          <p class="text-blue-100 text-sm md:text-base font-light mt-3 max-w-md">The best graduating students from every cohort, celebrated year after year.</p>
+          <span data-cms="homeWallLabel" class="text-xs font-bold tracking-widest text-blue-300 uppercase block mb-4">Honor Roll</span>
+          <h2 data-cms="homeWallTitle" class="font-editorial text-3xl md:text-4xl text-white font-bold leading-tight max-w-lg">Meet our Wall of Fame</h2>
+          <p data-cms="homeWallBody" class="text-blue-100 text-sm md:text-base font-light mt-3 max-w-md">The best graduating students from every cohort, celebrated year after year.</p>
         </div>
         <a href="/wall-of-fame" class="shrink-0 inline-block px-7 py-3.5 rounded-full bg-white text-blue-950 text-xs font-semibold tracking-widest uppercase hover:bg-blue-50 smooth-transition">
           View Wall of Fame

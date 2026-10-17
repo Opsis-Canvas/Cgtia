@@ -105,7 +105,7 @@ export const about_html = `
     <div class="w-full bg-blue-950 rounded-[2.5rem] md:rounded-[3rem] p-10 md:p-16 relative overflow-hidden">
       <div class="absolute -right-10 -top-10 w-64 h-64 rounded-full bg-blue-800/30 blur-3xl"></div>
       <span class="text-xs font-bold tracking-widest text-blue-300 uppercase block mb-6 relative z-10">03 &mdash; Mission</span>
-      <p class="font-editorial text-2xl md:text-4xl text-white font-light italic leading-snug max-w-3xl relative z-10">
+      <p data-cms="aboutMission" class="font-editorial text-2xl md:text-4xl text-white font-light italic leading-snug max-w-3xl relative z-10">
         "To equip everyday people with certified caregiving skills, real clinical practice, and guided internship placements &mdash; building careers rooted in dignity and care."
       </p>
     </div>
@@ -115,7 +115,7 @@ export const about_html = `
   <section id="vision" class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-36 pt-10">
     <div class="soft-component-card rounded-[2.5rem] md:rounded-[3rem] p-10 md:p-16 border border-white/60">
       <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-6">04 &mdash; Vision</span>
-      <p class="font-editorial text-2xl md:text-4xl text-blue-950 font-light italic leading-snug max-w-3xl">
+      <p data-cms="aboutVision" class="font-editorial text-2xl md:text-4xl text-blue-950 font-light italic leading-snug max-w-3xl">
         "A Nigeria where every household and care facility has access to caregivers who are properly trained, clinically confident, and trusted with the people who matter most."
       </p>
     </div>
