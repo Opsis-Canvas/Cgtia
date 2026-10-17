@@ -35,14 +35,14 @@ export const index_html = `
   <!-- Hero Workspace -->
   <section class="w-full max-w-5xl mx-auto px-6 pt-16 md:pt-24 pb-28 md:pb-36 text-center">
     <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]"><span data-site-setting="cohortLabel">Enrolling Now / 2026 Cohort</span></span>
-    <h1 class="font-editorial text-4xl sm:text-6xl md:text-8xl text-blue-950 font-bold tracking-tight leading-[1.1] md:leading-[1.05] mb-8 md:mb-10 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
+    <h1 data-cms="homeHeroTitle" class="font-editorial text-4xl sm:text-6xl md:text-8xl text-blue-950 font-bold tracking-tight leading-[1.1] md:leading-[1.05] mb-8 md:mb-10 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
       Compassionate care begins <br class="hidden sm:inline"><span class="italic font-normal text-blue-900/90">with real training</span>.
     </h1>
-    <p class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed mb-10 md:mb-14 opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
+    <p data-cms="homeHeroBody" class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed mb-10 md:mb-14 opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
       Caregivers Training & Internship Academy Limited (CGTIA) equips everyday people with certified caregiving skills, hands-on clinical practice, hands-on practice, and access to internship opportunities — building careers rooted in dignity and care.
     </p>
     <div class="opacity-0 animate-[fadeIn_1.2s_ease-out_0.9s_forwards]">
-      <button onclick="toggleApplyScreen()" class="bg-blue-950 text-white px-9 py-4 rounded-full text-sm font-medium tracking-wide shadow-2xl shadow-blue-950/10 hover:shadow-blue-950/20 hover:scale-[1.015] smooth-transition">
+      <button data-cms="homeHeroCta" onclick="toggleApplyScreen()" class="bg-blue-950 text-white px-9 py-4 rounded-full text-sm font-medium tracking-wide shadow-2xl shadow-blue-950/10 hover:shadow-blue-950/20 hover:scale-[1.015] smooth-transition">
         Apply for Admission
       </button>
     </div>
@@ -52,10 +52,10 @@ export const index_html = `
   <section class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-40">
     <div class="w-full border-t border-slate-200/60 pt-12 md:pt-16 flex flex-col md:flex-row justify-between items-start gap-8 md:gap-12">
       <div class="w-full md:w-1/3">
-        <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold leading-tight">Our Approach to Caregiving Education</h2>
+        <h2 data-cms="homeApproachTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold leading-tight">Our Approach to Caregiving Education</h2>
       </div>
       <div class="w-full md:w-2/3 text-slate-500 font-light text-base md:text-lg leading-relaxed">
-        <p>Caregiving is a skill that deserves proper training, not just good intentions. CGTIA blends structured learning with hands-on clinical practice and access to internship opportunities, so every graduate leaves ready to provide safe, competent, and compassionate care — whether in a client's home, a care facility, or a hospital setting.</p>
+        <p data-cms="homeApproachBody">Caregiving is a skill that deserves proper training, not just good intentions. CGTIA blends structured learning with hands-on clinical practice and access to internship opportunities, so every graduate leaves ready to provide safe, competent, and compassionate care — whether in a client's home, a care facility, or a hospital setting.</p>
       </div>
     </div>
   </section>
@@ -63,8 +63,8 @@ export const index_html = `
   <!-- Curated Structures Grid Section -->
   <section class="w-full max-w-7xl mx-auto px-6 pb-32">
     <div class="text-left mb-12 md:mb-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Why CGTIA</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Built Around Real Practice</h2>
+      <span data-cms="homePracticeLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Why CGTIA</span>
+      <h2 data-cms="homePracticeTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Built Around Real Practice</h2>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 auto-rows-auto md:auto-rows-[18rem]">

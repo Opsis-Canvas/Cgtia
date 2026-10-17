@@ -22,6 +22,11 @@ export const handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return bad(400, 'Invalid JSON'); }
 
+  // Bot honeypot — silent success so scrapers learn nothing
+  if (String(body.website || body.url || '').trim()) {
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, id: 'ok' }) };
+  }
+
   const fullName = String(body.fullName || '').trim();
   const email = String(body.email || '').trim().toLowerCase();
   const phone = String(body.phone || '').trim();

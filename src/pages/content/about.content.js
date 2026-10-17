@@ -34,11 +34,11 @@ export const about_html = `
 
   <!-- Hero -->
   <section class="w-full max-w-5xl mx-auto px-6 pt-16 md:pt-24 pb-20 md:pb-28 text-center">
-    <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">About the Academy</span>
-    <h1 class="font-editorial text-4xl sm:text-6xl md:text-7xl text-blue-950 font-bold tracking-tight leading-[1.1] mb-8 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
+    <span data-cms="aboutEyebrow" class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">About the Academy</span>
+    <h1 data-cms="aboutTitle" class="font-editorial text-4xl sm:text-6xl md:text-7xl text-blue-950 font-bold tracking-tight leading-[1.1] mb-8 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
       Training caregivers <span class="italic font-normal text-blue-900/90">Nigeria can rely on</span>.
     </h1>
-    <p class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
+    <p data-cms="aboutIntro" class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
       CGTIA exists to turn compassion into competence &mdash; giving every student the classroom grounding, clinical practice, and internship placement they need to care for people safely and well.
     </p>
   </section>
@@ -47,10 +47,10 @@ export const about_html = `
   <section id="introduction" class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-36">
     <div class="w-full border-t border-slate-200/60 pt-12 md:pt-16 flex flex-col md:flex-row justify-between items-start gap-8 md:gap-12">
       <div class="w-full md:w-1/3">
-        <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">01 &mdash; Introduction</span>
-        <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold leading-tight">Who We Are</h2>
+        <span data-cms="aboutIntroLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">01 &mdash; Introduction</span>
+        <h2 data-cms="aboutIntroTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold leading-tight">Who We Are</h2>
       </div>
-      <div class="w-full md:w-2/3 text-slate-500 font-light text-base md:text-lg leading-relaxed space-y-5">
+      <div data-cms-list="aboutIntroParas" class="w-full md:w-2/3 text-slate-500 font-light text-base md:text-lg leading-relaxed space-y-5">
         <p>Caregivers Training & Internship Academy Limited (CGTIA) is a Nigerian institution built around one belief: caregiving is a skilled profession, and it deserves proper training. We prepare students to support elderly clients, patients, and families with real clinical competence, not just goodwill.</p>
         <p>Based in Imo State, we combine structured classroom instruction, hands-on clinical labs, and supervised internship placements with partner care homes and clinics &mdash; so every graduate leaves ready to work, not just ready to be taught.</p>
       </div>
@@ -60,8 +60,8 @@ export const about_html = `
   <!-- History -->
   <section id="history" class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-36">
     <div class="text-left mb-12 md:mb-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">02 &mdash; History</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">How CGTIA Came To Be</h2>
+      <span data-cms="aboutHistoryLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">02 &mdash; History</span>
+      <h2 data-cms="aboutHistoryTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">How CGTIA Came To Be</h2>
     </div>
 
     <div class="w-full space-y-0 border-t border-slate-200/60">
@@ -124,8 +124,8 @@ export const about_html = `
   <!-- Goals -->
   <section id="goals" class="w-full max-w-7xl mx-auto px-6 pb-32">
     <div class="text-left mb-12 md:mb-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">05 &mdash; Goals</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">What We're Working Toward</h2>
+      <span data-cms="aboutGoalsLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">05 &mdash; Goals</span>
+      <h2 data-cms="aboutGoalsTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">What We're Working Toward</h2>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
       <div class="soft-component-card p-8 md:p-10 rounded-[2.5rem] flex flex-col gap-4 group smooth-transition cursor-pointer">
@@ -150,8 +150,8 @@ export const about_html = `
   <!-- Academy Board -->
   <section id="board" class="w-full max-w-7xl mx-auto px-6 pb-32 md:pb-48">
     <div class="text-left mb-12 md:mb-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">06 &mdash; Leadership</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Academy Board</h2>
+      <span data-cms="aboutBoardLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">06 &mdash; Leadership</span>
+      <h2 data-cms="aboutBoardTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Academy Board</h2>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
       <div class="soft-component-card p-8 rounded-[2.5rem] flex flex-col items-start gap-5 border border-white/60">

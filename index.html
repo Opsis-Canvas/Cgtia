@@ -26,6 +26,8 @@
   <link rel="icon" href="https://cgtia-assets.netlify.app/misc/favicon-16.png" type="image/png" sizes="16x16">
   <link rel="apple-touch-icon" href="https://cgtia-assets.netlify.app/misc/apple-touch-icon.png" sizes="180x180">
   <meta name="theme-color" content="#0a1128">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
 
   <script type="importmap">
   {
@@ -46,6 +48,8 @@
 <body class="mesh-gradient-canvas font-sans-clean text-slate-900 overflow-x-hidden min-h-screen selection:bg-blue-100 pb-24 md:pb-0">
   <div id="root"></div>
 
+  <!-- App Check: enable in Firebase Console + reCAPTCHA v3, then set:
+       <script>window.CGTIA_APPCHECK_SITE_KEY="YOUR_SITE_KEY";</script> -->
   <script src="/js/runtime-classic.js" defer></script>
   <script type="module" src="/src/app.js"></script>
 </body>

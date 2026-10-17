@@ -39,6 +39,9 @@ async function loadSiteSettingsNow() {
     const pSite = readDoc(api, db, "settings");
     const pTp = readDoc(api, db, "tuitionPage");
     const pPp = readDoc(api, db, "programsPage");
+    const pHp = readDoc(api, db, "homePage");
+    const pAp = readDoc(api, db, "aboutPage");
+    const pGp = readDoc(api, db, "galleryPage");
     const pLg = readDoc(api, db, "legalPages");
     const pAf = readDoc(api, db, "applyForm");
     const pProg = readCollection(api, db, "programs");
@@ -56,6 +59,18 @@ async function loadSiteSettingsNow() {
       const pp = await pPp;
       out.programsPage = pp.exists() ? pp.data() : null;
     } catch (e) { out.programsPage = null; }
+    try {
+      const hp = await pHp;
+      out.homePage = hp.exists() ? hp.data() : null;
+    } catch (e) { out.homePage = null; }
+    try {
+      const ap = await pAp;
+      out.aboutPage = ap.exists() ? ap.data() : null;
+    } catch (e) { out.aboutPage = null; }
+    try {
+      const gp = await pGp;
+      out.galleryPage = gp.exists() ? gp.data() : null;
+    } catch (e) { out.galleryPage = null; }
     try {
       const lg = await pLg;
       out.legalPages = lg.exists() ? lg.data() : null;
@@ -105,6 +120,9 @@ async function loadSiteSettingsNow() {
   applySiteSettingsToDom(out);
   applyTuitionPage(Object.assign({}, out.tuitionPage || {}, out.applyForm || {}));
   try { applyProgramsPage(out.programsPage); } catch (e) {}
+  try { applySimpleCmsPage(out.homePage); } catch (e) {}
+  try { applySimpleCmsPage(out.aboutPage); } catch (e) {}
+  try { applySimpleCmsPage(out.galleryPage); } catch (e) {}
   applyLegalPages(out.legalPages);
   applyCustomFields(out.applyForm);
   installDomWatcher();
@@ -393,9 +411,57 @@ export function reapplyDynamicContent() {
   if (!s) return;
   applySiteSettingsToDom(s);
   applyTuitionPage(Object.assign({}, s.tuitionPage || {}, s.applyForm || {}));
+  try { applySimpleCmsPage(s.homePage); } catch (e) {}
+  try { applySimpleCmsPage(s.aboutPage); } catch (e) {}
+  try { applySimpleCmsPage(s.galleryPage); } catch (e) {}
   applyLegalPages(s.legalPages);
   applyCustomFields(s.applyForm);
   try { renderProgramCards(s); } catch (e) { /* ignore */ }
+}
+
+/** Generic: string fields → [data-cms="key"]; string[] → [data-cms-list="key"] as <p>s; object[] for known section hosts */
+function applySimpleCmsPage(page) {
+  if (!page || typeof page !== "object") return;
+  const esc = (s) => String(s || "").replace(/</g, "&lt;");
+  Object.keys(page).forEach((key) => {
+    const val = page[key];
+    if (typeof val === "string" && val.trim()) {
+      document.querySelectorAll('[data-cms="' + key + '"]').forEach((el) => { el.textContent = val; });
+    } else if (Array.isArray(val) && val.length && typeof val[0] === "string") {
+      const host = document.querySelector('[data-cms-list="' + key + '"]');
+      if (host) host.innerHTML = val.filter(Boolean).map((t) => "<p>" + esc(t) + "</p>").join("");
+    }
+  });
+  // About history steps: {title, body}
+  const hist = document.querySelector('[data-cms-sections="aboutHistorySteps"]');
+  if (hist && Array.isArray(page.historySteps) && page.historySteps.length) {
+    hist.innerHTML = page.historySteps.map((s) => (
+      '<div class="soft-component-card p-8 rounded-[2.5rem] flex flex-col gap-3 border border-white/60">' +
+      '<span class="font-editorial text-2xl md:text-3xl text-blue-950 font-bold">' + esc(s.title) + "</span>" +
+      '<p class="text-slate-500 font-light text-sm leading-relaxed">' + esc(s.body) + "</p></div>"
+    )).join("");
+  }
+  const goals = document.querySelector('[data-cms-sections="aboutGoals"]');
+  if (goals && Array.isArray(page.goals) && page.goals.length) {
+    goals.innerHTML = page.goals.map((s) => (
+      '<div class="group cursor-pointer">' +
+      '<h3 class="font-editorial text-xl md:text-2xl text-blue-950 font-bold group-hover:translate-x-1.5 smooth-transition">' + esc(s.title) + "</h3>" +
+      '<p class="text-slate-500 font-light text-sm mt-2 leading-relaxed">' + esc(s.body) + "</p></div>"
+    )).join("");
+  }
+  const board = document.querySelector('[data-cms-sections="aboutBoard"]');
+  if (board && Array.isArray(page.board) && page.board.length) {
+    board.innerHTML = page.board.map((s) => {
+      const initial = esc((s.title || "?").charAt(0).toUpperCase());
+      return (
+        '<div class="soft-component-card p-8 rounded-[2.5rem] flex flex-col items-start gap-5 border border-white/60">' +
+        '<div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center font-editorial font-bold text-blue-900 text-lg">' + initial + "</div>" +
+        "<div><h4 class=\"font-editorial text-lg font-bold text-blue-950\">" + esc(s.title) + "</h4>" +
+        (s.role ? '<span class="text-[10px] text-slate-400 uppercase tracking-widest">' + esc(s.role) + "</span>" : "") +
+        "</div><p class=\"text-slate-500 font-light text-xs leading-relaxed\">" + esc(s.body) + "</p></div>"
+      );
+    }).join("");
+  }
 }
 
 let domWatcherInstalled = false;

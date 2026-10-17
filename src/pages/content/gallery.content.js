@@ -34,11 +34,11 @@ export const gallery_html = `
 
   <!-- Hero -->
   <section class="w-full max-w-5xl mx-auto px-6 pt-16 md:pt-24 pb-14 md:pb-20 text-center">
-    <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">Life at CGTIA</span>
-    <h1 class="font-editorial text-4xl sm:text-6xl md:text-7xl text-blue-950 font-bold tracking-tight leading-[1.1] mb-8 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
+    <span data-cms="galleryEyebrow" class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]">Life at CGTIA</span>
+    <h1 data-cms="galleryTitle" class="font-editorial text-4xl sm:text-6xl md:text-7xl text-blue-950 font-bold tracking-tight leading-[1.1] mb-8 opacity-0 blur-md animate-[blurFadeIn_1.6s_cubic-bezier(0.16,1,0.3,1)_0.3s_forwards]">
       Gallery.
     </h1>
-    <p class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
+    <p data-cms="galleryIntro" class="max-w-2xl mx-auto text-slate-500 text-base md:text-xl font-light leading-relaxed opacity-0 animate-[fadeIn_1.2s_ease-out_0.7s_forwards]">
       Classroom sessions, clinical labs, internship placements, and graduation day &mdash; a look inside the Academy. Tap any item to expand.
     </p>
   </section>
@@ -153,9 +153,9 @@ export const gallery_html = `
   <!-- Graduation Classes, year by year -->
   <section class="w-full max-w-7xl mx-auto px-6 pb-32 md:pb-48">
     <div class="text-left mb-10 md:mb-12 border-t border-slate-200/60 pt-12 md:pt-16">
-      <span class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Graduation</span>
-      <h2 class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Every Graduating Class</h2>
-      <p class="text-slate-500 font-light text-sm md:text-base mt-3 max-w-xl">Browse graduates by year. See the top 3 from each class on the <a href="/wall-of-fame" class="text-blue-800 underline">Wall of Fame</a>.</p>
+      <span data-cms="galleryGradLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-3">Graduation</span>
+      <h2 data-cms="galleryGradTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Every Graduating Class</h2>
+      <p data-cms="galleryGradBody" class="text-slate-500 font-light text-sm md:text-base mt-3 max-w-xl">Browse graduates by year. See the top 3 from each class on the <a href="/wall-of-fame" class="text-blue-800 underline">Wall of Fame</a>.</p>
     </div>
     <div id="galleryGraduationContainer">
       <p class="text-center text-sm text-slate-400 py-12">Loading graduation photos&hellip;</p>
