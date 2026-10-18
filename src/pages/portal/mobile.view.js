@@ -33,11 +33,11 @@ function PageHead({ backLabel, onBack, title, sub }) {
 }
 
 
-/** Simple MCQ runner. passPercent 0-100. onPass() when score meets bar. */
+/** Polished MCQ with pass/fail animation. */
 function MiniQuiz({ title, subtitle, questions, passPercent, onPass, onBack, failHint }) {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [result, setResult] = useState(null); // null | { score, total, pct, ok }
+  const [result, setResult] = useState(null);
   const qs = questions || [];
 
   function submit() {
@@ -52,48 +52,96 @@ function MiniQuiz({ title, subtitle, questions, passPercent, onPass, onBack, fai
   }
 
   if (!qs.length) {
-    return html`<div class="page-head"><${BackBtn} label="Back" onClick=${onBack} /><h1 class="display">${title}</h1></div>
-      <${Empty} title="No questions" body="This check has no questions yet." />`;
+    return html`<div class="quiz-shell">
+      <${PageHead} title=${title} onBack=${onBack} backLabel="Back" />
+      <${Empty} title="No questions" body="This check has no questions yet." />
+    </div>`;
   }
 
   if (result) {
-    return html`<div class="page-head"><${BackBtn} label="Back" onClick=${onBack} /><h1 class="display">${title}</h1></div>
-      <div class="panel">
-        <p style=${{ fontSize: 16, fontWeight: 700 }}>${result.ok ? "Well done" : "Not quite"}</p>
-        <p style=${{ marginTop: 8 }}>You scored ${result.score}/${result.total} (${result.pct}%). Pass mark is ${passPercent}%.</p>
+    return html`<div class="quiz-shell">
+      <${PageHead} title=${title} sub=${subtitle || ""} onBack=${onBack} backLabel="Back" />
+      <div class=${"quiz-result-card " + (result.ok ? "ok" : "bad")}>
+        <div class="emoji">${result.ok ? "✓" : "!"}</div>
+        <h3>${result.ok ? "You passed" : "Not quite yet"}</h3>
+        <div class="quiz-score-ring">${result.pct}%</div>
+        <p>${result.score} of ${result.total} correct · need ${passPercent}%</p>
         ${result.ok
-          ? html`<button type="button" class="pill-ink" style=${{ marginTop: 14 }} onClick=${onPass}>Continue</button>`
-          : html`<div style=${{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-              <p class="muted">${failHint || "Review the lesson and try again."}</p>
-              <button type="button" class="pill-ink" onClick=${() => { setResult(null); setAnswers({}); setIdx(0); }}>Try again</button>
-            </div>`}
-      </div>`;
+          ? html`<div class="btn-row"><button type="button" class="btn-block" onClick=${onPass}>Continue</button></div>`
+          : html`<p style=${{ marginTop: 8 }}>${failHint || "Review the lesson, then try again."}</p>
+              <div class="btn-row">
+                <button type="button" class="btn-block" onClick=${() => { setResult(null); setAnswers({}); setIdx(0); }}>Try again</button>
+                <button type="button" class="btn-block secondary" onClick=${onBack}>Back to lesson</button>
+              </div>`}
+      </div>
+    </div>`;
   }
 
   const q = qs[idx];
-  return html`<div>
-    <div class="page-head">
-      <${BackBtn} label="Back" onClick=${onBack} />
-      <h1 class="display">${title}</h1>
-      <p>${subtitle || ""} · Q ${idx + 1}/${qs.length}</p>
+  return html`<div class="quiz-shell">
+    <${PageHead} title=${title} sub=${(subtitle || "") + " · Q " + (idx + 1) + "/" + qs.length} onBack=${onBack} backLabel="Back" />
+    <div class="quiz-progress">
+      ${qs.map((_, i) => html`<i key=${i} class=${i <= idx ? "on" : ""}></i>`)}
     </div>
-    <div class="panel">
-      <h3 style=${{ marginBottom: 12 }}>${q.prompt || q.text || "Question"}</h3>
-      ${(q.options || []).map((opt, oi) => html`<label class="opt-row" key=${oi}>
+    <div class="quiz-card">
+      <h3>${q.prompt || q.text || "Question"}</h3>
+      ${(q.options || []).map((opt, oi) => html`<label class=${"quiz-opt" + (String(answers[idx]) === String(oi) ? " on" : "")} key=${oi}>
         <input type="radio" name=${"mq" + idx} checked=${String(answers[idx]) === String(oi)}
           onChange=${() => setAnswers({ ...answers, [idx]: oi })} />
         <span>${opt}</span>
       </label>`)}
-      <div style=${{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-        ${idx > 0 ? html`<button type="button" class="icon-back-btn" onClick=${() => setIdx(idx - 1)}>Previous</button>` : null}
-        <button type="button" class="pill-ink" onClick=${() => {
-          if (idx + 1 >= qs.length) submit();
-          else setIdx(idx + 1);
-        }}>${idx + 1 >= qs.length ? "Submit" : "Next"}</button>
+      <div class="btn-row">
+        <button type="button" class="btn-block" disabled=${answers[idx] == null}
+          style=${{ opacity: answers[idx] == null ? 0.45 : 1 }}
+          onClick=${() => {
+            if (answers[idx] == null) return;
+            if (idx + 1 >= qs.length) submit();
+            else setIdx(idx + 1);
+          }}>${idx + 1 >= qs.length ? "Submit answers" : "Next question"}</button>
+        ${idx > 0 ? html`<button type="button" class="btn-block secondary" onClick=${() => setIdx(idx - 1)}>Previous</button>` : null}
       </div>
     </div>
   </div>`;
 }
+
+function LessonRingNav({ lessons, prog, cid, currentId, onPick, onClose }) {
+  const n = Math.max(lessons.length, 1);
+  const cur = lessons.findIndex((l, i) => String(l.id != null ? l.id : i) === String(currentId));
+  const curL = cur >= 0 ? lessons[cur] : null;
+  return html`<div class="ring-backdrop" onClick=${onClose}>
+    <div class="ring-sheet" onClick=${(e) => e.stopPropagation()}>
+      <h4>Jump to a lesson</h4>
+      <p class="ring-sub">Completed lessons light up green</p>
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3" />
+        </svg>
+        <div class="ring-center">
+          <strong>${curL?.title || "Select"}</strong>
+          <span>${cur >= 0 ? (cur + 1) + " of " + lessons.length : lessons.length + " lessons"}</span>
+        </div>
+        ${lessons.map((ls, i) => {
+          const id = String(ls.id != null ? ls.id : i);
+          const ang = (-90 + (360 / n) * i) * (Math.PI / 180);
+          const x = 50 + 42 * Math.cos(ang);
+          const y = 50 + 42 * Math.sin(ang);
+          const done = prog.completed.includes(id);
+          const open = i === 0 || prog.completed.includes(String(lessons[i - 1].id != null ? lessons[i - 1].id : (i - 1)));
+          const current = String(currentId) === id;
+          const cls = "ring-dot" + (done ? " done" : "") + (current ? " current" : "") + (!open ? " locked" : "");
+          return html`<button type="button" key=${id} class=${cls}
+            style=${{ left: x + "%", top: y + "%" }}
+            disabled=${!open}
+            onClick=${() => { if (open) onPick(id); }}>
+            ${String(i + 1).padStart(2, "0")}
+          </button>`;
+        })}
+      </div>
+      <button type="button" class="btn-block secondary" style=${{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.2)" }} onClick=${onClose}>Close</button>
+    </div>
+  </div>`;
+}
+
 
 
 function LessonView({ section, courses, student, setSection }) {
@@ -184,30 +232,24 @@ function LessonView({ section, courses, student, setSection }) {
           : null}
       </div>
     </div>
-    <div style=${{ padding: "12px 0 80px", display: "flex", gap: 8, flexWrap: "wrap" }}>
-      <button type="button" class="pill-ink" onClick=${completeAndNext}>
-        ${(Array.isArray(l.checkQuestions) && l.checkQuestions.length)
-          ? "Continue to quick check"
-          : (idx + 1 < lessons.length ? "Mark done · Next" : "Mark done · Finish")}
+    <div style=${{ padding: "16px 0 100px" }}>
+      <button type="button" class="btn-block" onClick=${completeAndNext}>
+        ${(Array.isArray(l.checkQuestions) && l.checkQuestions.filter((q) => q.prompt).length)
+          ? "Take quick check"
+          : (idx + 1 < lessons.length ? "Mark done · Next lesson" : "Mark done · Finish module")}
       </button>
     </div>
-    <button type="button" class="fab-lessons" aria-label="Lesson list" onClick=${() => setNavOpen(true)}>☰</button>
-    ${navOpen ? html`
-      <div class="lesson-nav-backdrop" onClick=${() => setNavOpen(false)}></div>
-      <div class="lesson-nav-sheet">
-        <h4>Lessons in this module</h4>
-        ${lessons.map((ls, i) => {
-          const id = String(ls.id != null ? ls.id : i);
-          const prog = loadProgress(student?.email, cid);
-          const open = i === 0 || prog.completed.includes(String(lessons[i - 1].id != null ? lessons[i - 1].id : (i - 1)));
-          return html`<button type="button" key=${id} class="icon-back-btn" style=${{ display: "flex", width: "100%", padding: "10px 0", opacity: open ? 1 : 0.45 }}
-            disabled=${!open}
-            onClick=${() => { setNavOpen(false); if (open) setSection("lesson:" + cid + ":" + id); }}>
-            ${String(i + 1).padStart(2, "0")} · ${ls.title || "Lesson"}${prog.completed.includes(id) ? " ✓" : ""}
-          </button>`;
-        })}
-      </div>
-    ` : null}
+    <button type="button" class="fab-lessons" aria-label="Lesson map" onClick=${() => setNavOpen(true)}>
+      ${Icon({ name: "grid", size: 22 })}
+    </button>
+    ${navOpen ? html`<${LessonRingNav}
+      lessons=${lessons}
+      prog=${loadProgress(student?.email, cid)}
+      cid=${cid}
+      currentId=${l.id != null ? l.id : idx}
+      onClose=${() => setNavOpen(false)}
+      onPick=${(id) => { setNavOpen(false); setSection("lesson:" + cid + ":" + id); }}
+    />` : null}
   </div>`;
 }
 
@@ -323,8 +365,8 @@ function toEmbed(url) {
   return u;
 }
 
-function ListCard({ badge, title, note, tone, onClick }) {
-  return html`<article class=${"m-card" + (onClick ? " is-click" : "")} role=${onClick ? "button" : undefined} onClick=${onClick}>
+function ListCard({ badge, title, note, tone, onClick, shaking }) {
+  return html`<article class=${"m-card" + (onClick ? " is-click" : "") + (shaking ? " shake" : "")} role=${onClick ? "button" : undefined} onClick=${onClick}>
     <span class=${"badge tone-" + (tone || "mist")}>${badge}</span>
     <div class="m-card-text">
       <h4>${title}</h4>
@@ -333,7 +375,45 @@ function ListCard({ badge, title, note, tone, onClick }) {
   </article>`;
 }
 
+function LessonList({ lessons, prog, cid, setSection }) {
+  const [shakeId, setShakeId] = useState(null);
+  const [warn, setWarn] = useState("");
+  if (!lessons.length) {
+    return html`<${Empty} title="No lessons yet" body="Your instructor will add videos and reading here." />`;
+  }
+  return html`<div class="m-list">
+    ${warn ? html`<div class="lock-inline-warn">${warn}</div>` : null}
+    ${lessons.map((l, i) => {
+      const id = String(l.id != null ? l.id : i);
+      const unlocked = i === 0 || prog.completed.includes(String(lessons[i - 1].id != null ? lessons[i - 1].id : (i - 1)));
+      const done = prog.completed.includes(id);
+      const num = String(i + 1).padStart(2, "0");
+      const tone = done ? "done" : (!unlocked ? "lock" : (l.type === "video" ? "coral" : "sky"));
+      const note = !unlocked
+        ? "Finish the lesson above first"
+        : ((l.type || "text") + (l.duration ? " · " + l.duration : "") + (done ? " · Completed" : ""));
+      return html`<${ListCard} key=${id}
+        badge=${num}
+        title=${l.title || "Lesson"}
+        note=${note}
+        tone=${tone}
+        shaking=${shakeId === id}
+        onClick=${() => {
+          if (unlocked) {
+            setWarn("");
+            setSection("lesson:" + cid + ":" + id);
+          } else {
+            setShakeId(id);
+            setWarn("This lesson is locked. Complete “" + (lessons[i - 1]?.title || "the previous lesson") + "” first.");
+            setTimeout(() => setShakeId(null), 500);
+          }
+        }} />`;
+    })}
+  </div>`;
+}
+
 export function MobileView({ ctx }) {
+
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
     paidTotal, onLogout, linked, announcements, assessments
@@ -573,6 +653,7 @@ export function MobileView({ ctx }) {
         </div>
       `}
     `;
+  } else if (String(section || "").startsWith("notice:")
   } else if (String(section || "").startsWith("notice:")) {
     const nid = String(section).slice(7);
     const n = (announcements || []).find((a) => String(a.id) === nid) || (announcements || [])[0];
@@ -611,7 +692,7 @@ export function MobileView({ ctx }) {
           <div class="prog-bar"><i style=${{ width: pct + "%" }}></i></div>
           <p style=${{ marginTop: 12, fontSize: 14, lineHeight: 1.55, color: "#334155" }}>${c?.description || "No description yet."}</p>
           <div class="module-cta-stack">
-            <button type="button" class="pill-ink" onClick=${() => setSection("course:" + cid + ":lessons")}>
+            <button type="button" class="btn-block" onClick=${() => setSection("course:" + cid + ":lessons")}>
               ${doneN > 0 ? "Continue learning" : "Start lessons"}
             </button>
             ${resumeId && lessons[nextIdx]
@@ -621,7 +702,7 @@ export function MobileView({ ctx }) {
                 </button>`
               : null}
             ${doneN >= lessons.length && lessons.length > 0 && !prog.modulePassed && (c?.moduleQuizQuestions || []).length
-              ? html`<button type="button" class="pill-ink" onClick=${() => setSection("mquiz:" + cid)}>
+              ? html`<button type="button" class="btn-block" onClick=${() => setSection("mquiz:" + cid)}>
                   Take module quiz (${c.moduleQuizPassPercent || 90}% to pass)
                 </button>`
               : null}
@@ -638,25 +719,11 @@ export function MobileView({ ctx }) {
           <div class="prog-bar"><i style=${{ width: pct + "%" }}></i></div>
           <div class="prog-label">${doneN}/${lessons.length} complete · open in order (no skipping)</div>
         </div>
-        <div class="m-list">
-          ${lessons.length
-            ? lessons.map((l, i) => {
-                const id = String(l.id != null ? l.id : i);
-                const unlocked = i === 0 || prog.completed.includes(String(lessons[i - 1].id != null ? lessons[i - 1].id : (i - 1)));
-                const done = prog.completed.includes(id);
-                return html`<${ListCard} key=${id}
-                  badge=${done ? "✓" : String(i + 1).padStart(2, "0")}
-                  title=${l.title || "Lesson"}
-                  note=${!unlocked ? "Locked — finish the previous lesson first" : ((l.type || "text") + (l.duration ? " · " + l.duration : "") + (done ? " · Done" : ""))}
-                  tone=${!unlocked ? "mist" : (l.type === "video" ? "coral" : "sky")}
-                  onClick=${unlocked ? () => setSection("lesson:" + cid + ":" + id) : undefined} />`;
-              })
-            : html`<${Empty} title="No lessons yet" body="Your instructor will add videos and reading here." />`}
-        </div>
+        <${LessonList} lessons=${lessons} prog=${prog} cid=${cid} setSection=${setSection} />
         ${doneN >= lessons.length && lessons.length > 0 && !prog.modulePassed && (c?.moduleQuizQuestions || []).length
-          ? html`<button type="button" class="pill-ink" style=${{ marginTop: 14, width: "100%" }} onClick=${() => setSection("mquiz:" + cid)}>
+          ? html`<div style=${{ marginTop: 14 }}><button type="button" class="btn-block" onClick=${() => setSection("mquiz:" + cid)}>
               Take module quiz
-            </button>`
+            </button></div>`
           : null}
       `;
     }
