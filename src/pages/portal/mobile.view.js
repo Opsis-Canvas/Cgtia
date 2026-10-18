@@ -257,12 +257,13 @@ export function MobileView({ ctx }) {
           ? payments.map((p) => html`<div class="m-card" style=${{ marginBottom: 8 }} key=${p.id}>
               <span class="badge tone-mist">₦</span>
               <div class="m-card-text">
-                <h4>${p.feeName || p.purpose || p.feeType || "Payment"} · ${money(p.amountPaid || p.amount)}</h4>
+                <h4>${p.feeName || p.purpose || p.feeType || p.program || "Payment"} · ${money(p.amountPaid || p.amount)}</h4>
                 <p>${formatPayDate(p.paidAt || p.createdAt)}${p.method || p.channel ? " · " + (p.method || p.channel) : ""}</p>
+                <p style=${{ fontSize: 11, marginTop: 4, wordBreak: "break-all" }}>Ref: ${p.reference || p.paystackReference || p.id || "—"}</p>
               </div>
-              <${StatusChip} status=${p.status || p.paymentStatus || "paid"} />
+              <${StatusChip} status=${p.paymentStatus || p.status || "pending"} />
             </div>`)
-          : html`<${Empty} title="No payments found" body="When a payment uses this email, it will show up here." />`}
+          : html`<${Empty} title="No payments found" body="When a payment uses this email, it will show up here — paid, pending, or failed." />`}
       </div>
     `;
   } else if (String(section || "").startsWith("notice:")) {

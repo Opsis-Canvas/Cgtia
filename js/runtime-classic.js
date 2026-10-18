@@ -1121,7 +1121,7 @@ function notifyWhatsAppApplication(app) {
       "Program: " + encodeURIComponent(app.program || "") + "%0A" +
       "Start: " + encodeURIComponent(app.startDate || "") + "%0A" +
       "Note: " + encodeURIComponent(app.message || "");
-    // Open in a new tab so the applicant still sees payment UI
+    // Open in a new tab so the applicant still sees the success screen
     window.open("https://wa.me/" + num + "?text=" + text, "_blank", "noopener");
   } catch (e) {
     console.warn("WhatsApp notify failed", e);
@@ -1288,20 +1288,15 @@ window.handleApplySubmit = async function (event) {
         if (typeof setStatusSuccess === "function") {
           setStatusSuccess(
             "Application received",
-            "Thank you — your application is in. Please complete payment to secure your seat. After you pay, we will email your sign-in details for the student portal."
+            "Thank you — your application is in. Our admissions team will review it and contact you. Payment is separate — after acceptance you will receive a fee or payment link."
           );
         }
         var btn = document.getElementById("statusActionBtn");
         if (btn) {
           btn.classList.remove("hidden");
-          btn.innerText = "Continue to Payment";
+          btn.innerText = "Done";
           btn.onclick = function () {
             if (typeof closeStatusScreen === "function") closeStatusScreen();
-            setTimeout(function () {
-              if (typeof openPaymentScreen === "function") {
-                openPaymentScreen(programKey, email);
-              }
-            }, 400);
           };
         }
         Array.from(form.querySelectorAll("input, select, textarea, button")).forEach(function (el) {

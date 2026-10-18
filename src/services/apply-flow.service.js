@@ -112,7 +112,7 @@ function closeApply() {
 }
 
 /**
- * Main apply submit — email lookup + save + WhatsApp + email link + payment
+ * Main apply submit — email lookup + save + WhatsApp (no payment; fee links later)
  */
 export async function handleApplySubmitFlow(event) {
   if (event && event.preventDefault) event.preventDefault();
@@ -218,15 +218,15 @@ export async function handleApplySubmitFlow(event) {
 
         statusSuccess(
           "Application already on file",
-          "This email already has an application that still needs payment. Continue to payment to secure your seat — no new application was created."
+          "This email already has an application. Admissions will review it and contact you. No new application was created."
         );
         const btn = document.getElementById("statusActionBtn");
         if (btn) {
           btn.classList.remove("hidden");
-          btn.innerText = "Continue to Payment";
+          btn.innerText = "Done";
           btn.onclick = () => {
             closeStatus();
-            setTimeout(() => openPayment(existing.program || programKey, email), 400);
+            /* payment split: no Paystack after apply */;
           };
         }
         Array.from(form.querySelectorAll("input, select, textarea, button")).forEach((el) => {
@@ -278,20 +278,20 @@ export async function handleApplySubmitFlow(event) {
       savePending(app);
       notifyWhatsApp(app); // only for genuinely new successful saves
       // Fire-and-forget email with unique resume link
-      emailResumeLink(app, token);
+      // Payment is no longer on the application form — skip resume payment email
 
       setTimeout(() => {
         statusSuccess(
           "Application received",
-          "Thanks — complete payment to secure your seat. We also sent you an email with a link to finish payment if you need it later."
+          "Thank you — your application is in. Our team will review it and contact you. Payment comes later via a fee or payment link after acceptance."
         );
         const btn = document.getElementById("statusActionBtn");
         if (btn) {
           btn.classList.remove("hidden");
-          btn.innerText = "Continue to Payment";
+          btn.innerText = "Done";
           btn.onclick = () => {
             closeStatus();
-            setTimeout(() => openPayment(programKey, email), 400);
+            /* payment split: no Paystack after apply */;
           };
         }
         Array.from(form.querySelectorAll("input, select, textarea, button")).forEach((el) => {
@@ -363,8 +363,16 @@ export async function handleResumeTokenFromUrl() {
       paymentStatus: "unpaid"
     });
 
-    closeStatus();
-    setTimeout(() => openPayment(app.program, app.email), 400);
+    statusSuccess(
+      "Payment has moved",
+      "Tuition and other fees are paid with a link from the academy (Fees & payment links), not from the application form. Contact admissions if you need a payment link."
+    );
+    const btnR = document.getElementById("statusActionBtn");
+    if (btnR) {
+      btnR.classList.remove("hidden");
+      btnR.innerText = "Done";
+      btnR.onclick = () => closeStatus();
+    }
 
     // Clean token from URL without reload
     try {
