@@ -188,14 +188,10 @@ async function loadPortalData(user) {
   return { student, courses, grades, payments, assessments, announcements, portalSettings, linked: !!row };
 }
 
-function Splash() {
-  return html`<div class="splash">
-    <div>
-      <div class="logo">CGTIA</div>
-      <p>Opening your portal…</p>
-      <div class="spin" aria-hidden="true"></div>
-    </div>
-  </div>`;
+function BrandLoading({ isDesktop }) {
+  return isDesktop
+    ? html`<${OnboardingDesktop} mode="loading" />`
+    : html`<${OnboardingView} mode="loading" />`;
 }
 
 function LoginGate({ onAuthed }) {
@@ -309,15 +305,15 @@ export function DashboardPage() {
     setPhase("auth");
   }
 
-  if (phase === "splash") return html`<${Splash} />`;
+  if (phase === "splash") return html`<${BrandLoading} isDesktop=${isDesktop} />`;
   if (phase === "onboard") {
     const done = () => {
       try { localStorage.setItem(ONBOARD_KEY, "1"); } catch (_) {}
       setPhase("auth");
     };
     return isDesktop
-      ? html`<${OnboardingDesktop} onStart=${done} />`
-      : html`<${OnboardingView} onStart=${done} />`;
+      ? html`<${OnboardingDesktop} mode="welcome" onStart=${done} />`
+      : html`<${OnboardingView} mode="welcome" onStart=${done} />`;
   }
   if (phase === "auth" || !user) {
     return html`<${LoginGate} onAuthed=${(u) => { setUser(u); setPhase("app"); }} />`;
