@@ -1,6 +1,8 @@
 
 import { createElement } from "react";
 import htm from "htm";
+import { ImageSlot } from "./shared.js";
+import { ASSETS } from "./assets.js";
 const html = htm.bind(createElement);
 
 export function OnboardingDesktop({ onStart }) {
@@ -18,6 +20,7 @@ export function OnboardingDesktop({ onStart }) {
       <span class="obd-block b-yellow"></span>
       <span class="obd-block b-purple"></span>
       <span class="obd-block b-green"></span>
+      <${ImageSlot} asset=${ASSETS.onboardingPerson} variant="desktop" className="obd-person" />
     </section>
   </div>`;
 }

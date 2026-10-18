@@ -132,6 +132,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /assessments/{assessmentId} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor']);
+      allow delete: if isAdmin() || hasRole(['registrar', 'training-officer']);
+    }
+
     match /grades/{gradeId} {
       allow read: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor'])
         || (isSignedIn() && resource.data.published == true && (

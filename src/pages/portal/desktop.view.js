@@ -2,7 +2,8 @@
 import { createElement } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
-import { Avatar, Empty, NavList, StatusChip } from "./shared.js";
+import { Avatar, Empty, NavList, StatusChip, ImageSlot } from "./shared.js";
+import { ASSETS } from "./assets.js";
 
 const html = htm.bind(createElement);
 
@@ -34,7 +35,7 @@ function GradeRow({ g }) {
 export function DesktopView({ ctx }) {
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
-    paidTotal, onLogout, linked
+    paidTotal, onLogout, linked, announcements, assessments
   } = ctx;
   const name = student?.name || "Student";
 
@@ -51,10 +52,16 @@ export function DesktopView({ ctx }) {
             ${linked ? "View courses" : "View profile"}
           </button>
         </div>
+        <${ImageSlot} asset=${ASSETS.bannerPerson} variant="desktop" className="d-banner-img" />
       </section>
       <section class="stats">
         ${stats.map((s) => html`<${StatCard} key=${s.id} s=${s} />`)}
       </section>
+      ${(announcements || []).length ? html`<section class="ann-card">
+        <h4>${announcements[0].title || "Announcement"}</h4>
+        <p>${announcements[0].body || announcements[0].message || ""}</p>
+        <div class="ann-meta">From the academy</div>
+      </section>` : null}
       <section class="d-cols">
         <div class="panel lessons" aria-label="Courses">
           <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>Your modules</h3>
@@ -108,6 +115,21 @@ export function DesktopView({ ctx }) {
               </tbody>
             </table>`
           : html`<${Empty} title="No grades published" body="Instructors release results when they are ready. Check back after assessments — nothing is missing on your side." />`}
+      </div>
+    `;
+  } else if (section === "assessments") {
+    main = html`
+      <div class="page-head"><h1 class="display">Tests & assignments</h1><p>What is live for your programme</p></div>
+      <div class="panel lessons">
+        ${(assessments || []).length
+          ? assessments.map((a, i) => html`<div class="lesson" key=${a.id}>
+              <span class=${"badge tone-" + (a.type === "exam" ? "coral" : a.type === "assignment" ? "lime" : "ink")}>${(a.type || "test").slice(0, 4)}</span>
+              <span class="lesson-text">
+                <h4>${a.title}</h4>
+                <p>${a.dueDate ? "Due " + a.dueDate : "No due date"}${a.moduleCode ? " · " + a.moduleCode : ""}</p>
+              </span>
+            </div>`)
+          : html`<${Empty} title="Nothing scheduled" body="When tests or assignments are published for your track, they will show up here." />`}
       </div>
     `;
   } else if (section === "fees") {

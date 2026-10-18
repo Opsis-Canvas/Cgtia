@@ -357,3 +357,46 @@ h1, h2, h3, h4, p { margin: 0; }
   .m-hello h1 { font-size: 26px; }
   .m-tile .num { font-size: 18px; }
 }
+
+
+/* Image slots (PNG placeholders) */
+.slot-img { position: absolute; object-fit: contain; pointer-events: none; z-index: 2; }
+.slot.is-empty {
+  position: absolute; z-index: 2;
+  border: 2px dashed #c4c4cc; border-radius: 12px;
+  display: grid; place-items: center; text-align: center;
+  background: rgba(255,255,255,0.45); color: var(--muted); font-size: 11px; padding: 8px;
+}
+.slot.is-empty b { display: block; font-size: 11px; margin-bottom: 2px; color: var(--ink); }
+.ob-person, .obd-person, .m-banner-img, .d-banner-img { position: absolute; }
+
+/* Skeleton shimmer */
+.skel-wrap { display: flex; flex-direction: column; gap: 14px; }
+.skel {
+  border-radius: 16px;
+  background: linear-gradient(90deg, #eceef2 0%, #f6f7f9 40%, #eceef2 80%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+.skel-banner { height: 140px; }
+.skel-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.skel-tile { height: 88px; }
+.skel-line { height: 56px; }
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@media (max-width: 520px) {
+  .skel-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* Announcement card */
+.ann-card {
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  background: var(--sand);
+  border: 1px solid transparent;
+}
+.ann-card h4 { font-family: Montserrat, sans-serif; font-weight: 800; font-size: 15px; margin: 0 0 6px; }
+.ann-card p { margin: 0; font-size: 13px; color: #5d5547; line-height: 1.45; }
+.ann-card .ann-meta { font-size: 11px; color: var(--muted); margin-top: 8px; }

@@ -8,6 +8,7 @@ import { OnboardingView } from "./portal/onboarding.view.js";
 import { OnboardingDesktop } from "./portal/onboarding-desktop.view.js";
 import { DesktopView } from "./portal/desktop.view.js";
 import { MobileView } from "./portal/mobile.view.js";
+import { Skeleton } from "./portal/shared.js";
 
 const html = htm.bind(createElement);
 const DESKTOP_QUERY = "(min-width: 860px)";
@@ -16,6 +17,7 @@ const ONBOARD_KEY = "cgtia_portal_onboard_v2";
 const NAV_ALL = [
   { id: "dashboard", label: "Dashboard", icon: "grid" },
   { id: "courses", label: "Courses", icon: "book" },
+  { id: "assessments", label: "Tests", icon: "cal" },
   { id: "grades", label: "My grades", icon: "chart" },
   { id: "fees", label: "Fees", icon: "card" },
   { id: "profile", label: "Profile", icon: "user" }
@@ -135,6 +137,41 @@ async function loadPortalData(user) {
     }
   }
 
+  let assessments = [];
+  try {
+    const snap = await api.getDocs(api.collection(db, "assessments"));
+    snap.forEach((d) => {
+      const a = { id: d.id, ...d.data() };
+      if (a.active === false) return;
+      if (row && row.program && a.program && String(a.program).toLowerCase() !== String(row.program).toLowerCase()) return;
+      assessments.push(a);
+    });
+  } catch (e) {
+    console.warn(e);
+  }
+
+  let announcements = [];
+  try {
+    // Prefer promotions/announcements already used on the public site
+    const snap = await api.getDocs(api.collection(db, "promotions"));
+    snap.forEach((d) => {
+      const a = { id: d.id, ...d.data() };
+      if (a.active === false || a.paused === true) return;
+      const kind = String(a.kind || a.type || "").toLowerCase();
+      if (kind && kind.indexOf("ann") === -1 && a.channel !== "announcement") {
+        // still allow if marked showInPortal
+        if (a.showInPortal !== true) return;
+      }
+      announcements.push({
+        title: a.title || a.headline || "Announcement",
+        body: a.body || a.message || a.fullMessage || a.text || "",
+        id: d.id
+      });
+    });
+  } catch (e) {
+    console.warn(e);
+  }
+
   const student = {
     id: row?.id,
     name: row ? (row.fullLegalName || row.fullName || user.email) : user.email,
@@ -148,7 +185,7 @@ async function loadPortalData(user) {
     status: row?.status || ""
   };
 
-  return { student, courses, grades, payments, portalSettings, linked: !!row };
+  return { student, courses, grades, payments, assessments, announcements, portalSettings, linked: !!row };
 }
 
 function Splash() {
@@ -286,6 +323,12 @@ export function DashboardPage() {
     return html`<${LoginGate} onAuthed=${(u) => { setUser(u); setPhase("app"); }} />`;
   }
 
+  if (phase === "app" && !data) {
+    return html`<div class=${isDesktop ? "d-main" : "m-app"} style=${{ padding: isDesktop ? "48px 32px" : undefined }}>
+      <${Skeleton} rows=${4} />
+    </div>`;
+  }
+
   const courses = (data && data.courses) || [];
   const grades = (data && data.grades) || [];
   const payments = (data && data.payments) || [];
@@ -326,7 +369,9 @@ export function DashboardPage() {
     payments,
     paidTotal,
     onLogout: logout,
-    linked: !!(data && data.linked)
+    linked: !!(data && data.linked),
+    announcements: (data && data.announcements) || [],
+    assessments: (data && data.assessments) || []
   };
 
   return isDesktop

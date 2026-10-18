@@ -2,7 +2,8 @@
 import { createElement, useCallback, useState } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
-import { Avatar, Empty, StatusChip } from "./shared.js";
+import { Avatar, Empty, StatusChip, ImageSlot } from "./shared.js";
+import { ASSETS } from "./assets.js";
 import { MenuDrawer } from "./drawer.view.js";
 
 const html = htm.bind(createElement);
@@ -31,7 +32,7 @@ function ListCard({ badge, title, note, tone }) {
 export function MobileView({ ctx }) {
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
-    paidTotal, onLogout, linked
+    paidTotal, onLogout, linked, announcements, assessments
   } = ctx;
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -55,7 +56,12 @@ export function MobileView({ ctx }) {
             ${linked ? "Courses" : "Profile"}
           </button>
         </div>
+        <${ImageSlot} asset=${ASSETS.bannerPerson} className="m-banner-img" />
       </section>
+      ${(announcements || []).length ? html`<section class="ann-card">
+        <h4>${announcements[0].title || "Announcement"}</h4>
+        <p>${announcements[0].body || announcements[0].message || ""}</p>
+      </section>` : null}
       <section class="m-tiles">
         ${stats.map((s) => html`<${Tile} key=${s.id} s=${s} />`)}
       </section>
@@ -114,6 +120,19 @@ export function MobileView({ ctx }) {
               note=${g.score != null ? "Score " + g.score : (g.remark || "")}
               tone="lime" />`)
           : html`<${Empty} title="No grades published" body="Instructors release results when they are ready. Check back after assessments." />`}
+      </div>
+    `;
+  } else if (section === "assessments") {
+    body = html`
+      <div class="page-head"><h1 class="display">Tests & assignments</h1><p>Live for your programme</p></div>
+      <div class="m-list">
+        ${(assessments || []).length
+          ? assessments.map((a) => html`<${ListCard} key=${a.id}
+              badge=${(a.type || "test").slice(0, 1).toUpperCase()}
+              title=${a.title}
+              note=${(a.dueDate ? "Due " + a.dueDate : "No due date") + (a.moduleCode ? " · " + a.moduleCode : "")}
+              tone=${a.type === "exam" ? "coral" : a.type === "assignment" ? "lime" : "ink"} />`)
+          : html`<${Empty} title="Nothing scheduled" body="When tests or assignments go live for your track, they will appear here." />`}
       </div>
     `;
   } else if (section === "fees") {
