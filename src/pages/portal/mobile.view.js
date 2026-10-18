@@ -144,6 +144,121 @@ function LessonRingNav({ lessons, prog, cid, currentId, onPick, onClose }) {
 
 
 
+
+const FONT_STEPS = ["sm", "md", "lg", "xl"];
+function loadFontStep() {
+  try {
+    const v = localStorage.getItem("cgtia_lesson_font");
+    const i = FONT_STEPS.indexOf(v);
+    return i >= 0 ? i : 1;
+  } catch (_) { return 1; }
+}
+function saveFontStep(i) {
+  try { localStorage.setItem("cgtia_lesson_font", FONT_STEPS[i] || "md"); } catch (_) {}
+}
+
+/** Split text into speakable chunks (sentences). */
+function chunkText(text) {
+  const t = String(text || "").replace(/\s+/g, " ").trim();
+  if (!t) return [];
+  const parts = t.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [t];
+  return parts.map((p) => p.trim()).filter(Boolean);
+}
+
+/**
+ * In-lesson TTS player: play/pause, back one chunk, speed cycle.
+ * Uses Web Speech API (free, on-device). No API key.
+ */
+function LessonTtsPlayer({ text, title, hide }) {
+  const [playing, setPlaying] = useState(false);
+  const [chunkIdx, setChunkIdx] = useState(0);
+  const [speed, setSpeed] = useState(1);
+  const chunks = chunkText(text);
+  const total = chunks.length || 1;
+  const speeds = [0.75, 1, 1.25, 1.5];
+
+  useEffect(() => {
+    return () => { try { speechSynthesis.cancel(); } catch (_) {} };
+  }, []);
+
+  useEffect(() => {
+    // Stop when text changes (new lesson)
+    try { speechSynthesis.cancel(); } catch (_) {}
+    setPlaying(false);
+    setChunkIdx(0);
+  }, [text]);
+
+  function speakFrom(start) {
+    if (!chunks.length || typeof speechSynthesis === "undefined") return;
+    speechSynthesis.cancel();
+    let i = Math.max(0, Math.min(start, chunks.length - 1));
+    setChunkIdx(i);
+
+    function run(j) {
+      if (j >= chunks.length) {
+        setPlaying(false);
+        setChunkIdx(0);
+        return;
+      }
+      setChunkIdx(j);
+      const u = new SpeechSynthesisUtterance(chunks[j]);
+      u.lang = "en-NG";
+      u.rate = speed;
+      u.onend = () => run(j + 1);
+      u.onerror = () => setPlaying(false);
+      setPlaying(true);
+      speechSynthesis.speak(u);
+    }
+    run(i);
+  }
+
+  function togglePlay() {
+    if (!chunks.length) return;
+    if (playing) {
+      try { speechSynthesis.cancel(); } catch (_) {}
+      setPlaying(false);
+      return;
+    }
+    speakFrom(chunkIdx);
+  }
+
+  function skipBack() {
+    const next = Math.max(0, chunkIdx - 1);
+    if (playing) speakFrom(next);
+    else setChunkIdx(next);
+  }
+
+  function cycleSpeed() {
+    const i = speeds.indexOf(speed);
+    const n = speeds[(i + 1) % speeds.length];
+    setSpeed(n);
+    if (playing) {
+      // restart current chunk at new rate
+      setTimeout(() => speakFrom(chunkIdx), 30);
+    }
+  }
+
+  if (!chunks.length) return null;
+  const pct = Math.round(((chunkIdx + (playing ? 0.5 : 0)) / total) * 100);
+
+  return html`<div class=${"tts-player" + (hide ? " hide" : "")}>
+    <div class="tts-player-top">
+      <div class="meta">
+        <strong>${title || "Listen"}</strong>
+        <span>${playing ? "Playing" : "Paused"} · part ${Math.min(chunkIdx + 1, total)}/${total}</span>
+      </div>
+    </div>
+    <div class="tts-prog"><i style=${{ width: Math.min(100, pct) + "%" }}></i></div>
+    <div class="tts-controls">
+      <button type="button" aria-label="Back" onClick=${skipBack}>↺ 10s</button>
+      <button type="button" class="primary" aria-label=${playing ? "Pause" : "Play"} onClick=${togglePlay}>
+        ${playing ? "❚❚" : "▶"}
+      </button>
+      <button type="button" class="speed" aria-label="Speed" onClick=${cycleSpeed}>${speed}x</button>
+    </div>
+  </div>`;
+}
+
 function LessonView({ section, courses, student, setSection }) {
   const parts = String(section).slice(7).split(":");
   const cid = parts[0];
@@ -154,6 +269,7 @@ function LessonView({ section, courses, student, setSection }) {
   const l = idx >= 0 ? lessons[idx] : null;
   const [navOpen, setNavOpen] = useState(false);
   const [ttsHide, setTtsHide] = useState(false);
+  const [fontStep, setFontStep] = useState(loadFontStep);
 
   useEffect(() => {
     let prev = 0;
@@ -209,29 +325,34 @@ function LessonView({ section, courses, student, setSection }) {
     }
   }
 
+  const speakText = l.ttsText || l.body || "";
   return html`<div>
     <${PageHead} title=${l.title || "Lesson"} sub=${(l.type || "text") + " · " + (idx + 1) + " of " + lessons.length} onBack=${() => setSection("course:" + cid + ":lessons")} backLabel="Lessons" />
     <div class="lesson-scroll">
       <div class="lesson-fade-top"></div>
       <div class="panel prose">
+        <div class="lesson-toolbar">
+          <div class="font-ctrl">
+            <button type="button" aria-label="Smaller text" onClick=${() => {
+              const n = Math.max(0, fontStep - 1);
+              setFontStep(n); saveFontStep(n);
+            }}>A−</button>
+            <span>${FONT_STEPS[fontStep].toUpperCase()}</span>
+            <button type="button" aria-label="Larger text" onClick=${() => {
+              const n = Math.min(FONT_STEPS.length - 1, fontStep + 1);
+              setFontStep(n); saveFontStep(n);
+            }}>A+</button>
+          </div>
+        </div>
         ${l.type === "video" && l.videoUrl
           ? html`<div class="video-wrap"><iframe src=${toEmbed(l.videoUrl)} title=${l.title || "Video"} allowfullscreen loading="lazy"></iframe></div>`
           : null}
-        ${l.body ? html`<div class="lesson-body">${l.body}</div>` : html`<p class="muted">No reading text for this lesson yet.</p>`}
-      </div>
-      <div class=${"tts-dock" + (ttsHide ? " hide" : "")}>
-        ${l.ttsText || l.body
-          ? html`<button type="button" class="tts-icon-btn" aria-label="Listen" onClick=${() => {
-              try {
-                const u = new SpeechSynthesisUtterance(l.ttsText || l.body || "");
-                u.lang = "en-NG";
-                speechSynthesis.cancel();
-                speechSynthesis.speak(u);
-              } catch (_) {}
-            }}>${Icon({ name: "speaker", size: 22 })}</button>`
-          : null}
+        ${l.body
+          ? html`<div class=${"lesson-body fs-" + FONT_STEPS[fontStep]}>${l.body}</div>`
+          : html`<p class="muted">No reading text for this lesson yet.</p>`}
       </div>
     </div>
+    ${speakText ? html`<${LessonTtsPlayer} text=${speakText} title=${l.title || "Lesson"} hide=${ttsHide} />` : null}
     <div style=${{ padding: "16px 0 100px" }}>
       <button type="button" class="btn-block" onClick=${completeAndNext}>
         ${(Array.isArray(l.checkQuestions) && l.checkQuestions.filter((q) => q.prompt).length)

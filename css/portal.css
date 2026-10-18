@@ -741,3 +741,61 @@ h1, h2, h3, h4, p { margin: 0; }
   background: var(--ink); color: #fff; border: 0; display: grid; place-items: center;
   box-shadow: 0 10px 28px rgba(10,17,40,0.28); cursor: pointer;
 }
+
+
+/* Lesson reader + TTS player */
+.lesson-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.font-ctrl {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #f1f5f9; border-radius: 999px; padding: 4px;
+}
+.font-ctrl button {
+  width: 34px; height: 34px; border: 0; border-radius: 50%;
+  background: #fff; color: var(--ink); font-weight: 800; font-size: 13px;
+  cursor: pointer; box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+}
+.font-ctrl button:active { transform: scale(0.96); }
+.font-ctrl span { font-size: 11px; font-weight: 700; color: #64748b; min-width: 36px; text-align: center; }
+
+.lesson-body.fs-sm { font-size: 14px; line-height: 1.65; }
+.lesson-body.fs-md { font-size: 16px; line-height: 1.7; }
+.lesson-body.fs-lg { font-size: 18px; line-height: 1.75; }
+.lesson-body.fs-xl { font-size: 20px; line-height: 1.8; }
+
+.tts-player {
+  position: fixed; left: 12px; right: 72px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 28;
+  background: #0f172a; color: #fff;
+  border-radius: 18px; padding: 10px 12px;
+  box-shadow: 0 12px 32px rgba(10,17,40,0.35);
+  display: flex; flex-direction: column; gap: 8px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.tts-player.hide { transform: translateY(120%); opacity: 0; pointer-events: none; }
+.tts-player-top {
+  display: flex; align-items: center; gap: 8px;
+}
+.tts-player-top .meta { flex: 1; min-width: 0; }
+.tts-player-top .meta strong { display: block; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tts-player-top .meta span { font-size: 10px; opacity: 0.65; }
+.tts-controls {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.tts-controls button {
+  border: 0; background: rgba(255,255,255,0.1); color: #fff;
+  border-radius: 12px; height: 36px; min-width: 36px; padding: 0 10px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.tts-controls button.primary {
+  background: #fff; color: #0f172a; min-width: 44px; border-radius: 50%;
+}
+.tts-controls button:active { transform: scale(0.96); }
+.tts-controls .speed { min-width: 48px; }
+.tts-prog {
+  height: 3px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden;
+}
+.tts-prog > i { display: block; height: 100%; background: #94a3b8; border-radius: 99px; transition: width 0.2s linear; }
