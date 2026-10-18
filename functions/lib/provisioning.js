@@ -34,13 +34,18 @@ async function recordInstallmentPayment(appRef, appData, method, reference, amou
 
   await db.collection('payments').add({
     applicationId: appRef.id,
-    email: appData.email || appRef.id || null,
+    email: (appData.email || appRef.id || '').toLowerCase() || null,
     fullName: appData.fullName || appData.name || null,
     method,
     reference: reference || null,
-    amount,
+    amount: Number(amount) || 0,
+    amountPaid: Number(amount) || 0,
     program: appData.program || appData.programId || '',
     channel: method,
+    source: 'application',
+    feeName: appData.program || appData.programId || 'Tuition',
+    feeType: 'tuition',
+    purpose: 'tuition',
     installmentNumber: newPaid,
     installmentsPaid: newPaid,
     installmentsTotal: total,
@@ -48,6 +53,7 @@ async function recordInstallmentPayment(appRef, appData, method, reference, amou
     status: 'completed',
     paymentStatus: paidInFull ? 'paid' : 'partial',
     createdAt: new Date(),
+    paidAt: new Date(),
   });
 
   return { installmentsPaid: newPaid, previousInstallmentsPaid: previousPaid, nextDueDate, paidInFull };

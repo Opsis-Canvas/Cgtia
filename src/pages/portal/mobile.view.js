@@ -105,6 +105,20 @@ function TakeTest({ assessment, questions, onBack }) {
 }
 
 
+function toEmbed(url) {
+  const u = String(url || "").trim();
+  if (!u) return "";
+  let m = u.match(/youtu\.be\/([\w-]{6,})/i);
+  if (m) return "https://www.youtube.com/embed/" + m[1];
+  m = u.match(/[?&]v=([\w-]{6,})/i);
+  if (m) return "https://www.youtube.com/embed/" + m[1];
+  m = u.match(/youtube\.com\/embed\/([\w-]{6,})/i);
+  if (m) return u;
+  m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  if (m) return "https://player.vimeo.com/video/" + m[1];
+  return u;
+}
+
 function ListCard({ badge, title, note, tone, onClick }) {
   return html`<article class=${"m-card" + (onClick ? " is-click" : "")} role=${onClick ? "button" : undefined} onClick=${onClick}>
     <span class=${"badge tone-" + (tone || "mist")}>${badge}</span>
@@ -168,8 +182,9 @@ export function MobileView({ ctx }) {
             ? courses.slice(0, 3).map((c, i) => html`<${ListCard} key=${c.id}
                 badge=${String(i + 1).padStart(2, "0")}
                 title=${c.title || c.code}
-                note=${c.code || ""}
-                tone=${i % 2 ? "mist" : "ink"} />`)
+                note=${c.code || "Tap to open"}
+                tone=${i % 2 ? "mist" : "ink"}
+                onClick=${() => setSection("course:" + c.id)} />`)
             : html`<${Empty} title="No modules yet" body="They will show here once your programme is on file." />`}
         </div>
       </section>
@@ -197,8 +212,9 @@ export function MobileView({ ctx }) {
           ? courses.map((c, i) => html`<${ListCard} key=${c.id}
               badge=${String(i + 1).padStart(2, "0")}
               title=${c.title || c.code}
-              note=${c.code || ""}
-              tone=${i % 2 ? "mist" : "ink"} />`)
+              note=${c.code || "Tap to open"}
+              tone=${i % 2 ? "mist" : "ink"}
+              onClick=${() => setSection("course:" + c.id)} />`)
           : html`<${Empty} title="Nothing to show yet" body="Your course list appears after admissions links your programme." />`}
       </div>
     `;
@@ -300,7 +316,7 @@ export function MobileView({ ctx }) {
       </div>
       <div class="panel prose">
         ${l?.type === "video" && l?.videoUrl
-          ? html`<div class="video-wrap"><iframe src=${l.videoUrl} title=${l.title || "Video"} allowfullscreen loading="lazy"></iframe></div>`
+          ? html`<div class="video-wrap"><iframe src=${toEmbed(l.videoUrl)} title=${l.title || "Video"} allowfullscreen loading="lazy"></iframe></div>`
           : null}
         ${l?.body ? html`<div class="lesson-body">${l.body}</div>` : html`<p class="muted">No content text for this lesson yet.</p>`}
         ${l?.ttsText || l?.body

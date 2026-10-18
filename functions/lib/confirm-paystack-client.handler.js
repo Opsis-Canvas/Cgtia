@@ -250,8 +250,9 @@ export const handler = async (event) => {
     const alreadyPaid = appData.paymentStatus === 'paid' || (appData.installmentsPaid || 0) >= (appData.installmentsTotal || 1);
 
     if (!alreadyPaid) {
+      const paidNaira = data.amount ? Number(data.amount) / 100 : null;
       const { installmentsPaid, previousInstallmentsPaid } = await recordInstallmentPayment(
-        appRef, appData, data.channel || 'card', reference
+        appRef, appData, data.channel || 'card', reference, paidNaira
       );
       if (previousInstallmentsPaid === 0 && installmentsPaid >= 1) {
         await provisionStudentAccount(applicationId, { ...appData, email: applicationId });
