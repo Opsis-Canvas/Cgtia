@@ -2,7 +2,7 @@
 import { createElement, useCallback, useState, useEffect } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
-import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone } from "./shared.js";
+import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed } from "./shared.js";
 import { ASSETS } from "./assets.js";
 import { MenuDrawer } from "./drawer.view.js";
 
@@ -15,6 +15,69 @@ function BackBtn({ label, onClick }) {
     <span>${label || "Back"}</span>
   </button>`;
 }
+
+/** Simple MCQ runner. passPercent 0-100. onPass() when score meets bar. */
+function MiniQuiz({ title, subtitle, questions, passPercent, onPass, onBack, failHint }) {
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [result, setResult] = useState(null); // null | { score, total, pct, ok }
+  const qs = questions || [];
+
+  function submit() {
+    let score = 0;
+    qs.forEach((q, i) => {
+      if (q.correct != null && String(answers[i]) === String(q.correct)) score += 1;
+    });
+    const total = qs.length || 1;
+    const pct = Math.round((score / total) * 100);
+    const ok = pct >= (passPercent || 70);
+    setResult({ score, total, pct, ok });
+  }
+
+  if (!qs.length) {
+    return html`<div class="page-head"><${BackBtn} label="Back" onClick=${onBack} /><h1 class="display">${title}</h1></div>
+      <${Empty} title="No questions" body="This check has no questions yet." />`;
+  }
+
+  if (result) {
+    return html`<div class="page-head"><${BackBtn} label="Back" onClick=${onBack} /><h1 class="display">${title}</h1></div>
+      <div class="panel">
+        <p style=${{ fontSize: 16, fontWeight: 700 }}>${result.ok ? "Well done" : "Not quite"}</p>
+        <p style=${{ marginTop: 8 }}>You scored ${result.score}/${result.total} (${result.pct}%). Pass mark is ${passPercent}%.</p>
+        ${result.ok
+          ? html`<button type="button" class="pill-ink" style=${{ marginTop: 14 }} onClick=${onPass}>Continue</button>`
+          : html`<div style=${{ marginTop: 14, display: "flex", flexDirection: "column", gap: 8 }}>
+              <p class="muted">${failHint || "Review the lesson and try again."}</p>
+              <button type="button" class="pill-ink" onClick=${() => { setResult(null); setAnswers({}); setIdx(0); }}>Try again</button>
+            </div>`}
+      </div>`;
+  }
+
+  const q = qs[idx];
+  return html`<div>
+    <div class="page-head">
+      <${BackBtn} label="Back" onClick=${onBack} />
+      <h1 class="display">${title}</h1>
+      <p>${subtitle || ""} · Q ${idx + 1}/${qs.length}</p>
+    </div>
+    <div class="panel">
+      <h3 style=${{ marginBottom: 12 }}>${q.prompt || q.text || "Question"}</h3>
+      ${(q.options || []).map((opt, oi) => html`<label class="opt-row" key=${oi}>
+        <input type="radio" name=${"mq" + idx} checked=${String(answers[idx]) === String(oi)}
+          onChange=${() => setAnswers({ ...answers, [idx]: oi })} />
+        <span>${opt}</span>
+      </label>`)}
+      <div style=${{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+        ${idx > 0 ? html`<button type="button" class="icon-back-btn" onClick=${() => setIdx(idx - 1)}>Previous</button>` : null}
+        <button type="button" class="pill-ink" onClick=${() => {
+          if (idx + 1 >= qs.length) submit();
+          else setIdx(idx + 1);
+        }}>${idx + 1 >= qs.length ? "Submit" : "Next"}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 
 function LessonView({ section, courses, student, setSection }) {
   const parts = String(section).slice(7).split(":");
@@ -68,6 +131,11 @@ function LessonView({ section, courses, student, setSection }) {
   }
 
   function completeAndNext() {
+    const checks = Array.isArray(l.checkQuestions) ? l.checkQuestions.filter((q) => q.prompt) : [];
+    if (checks.length) {
+      setSection("lcheck:" + cid + ":" + (l.id != null ? l.id : idx));
+      return;
+    }
     markLessonDone(student?.email, cid, l.id != null ? l.id : idx);
     if (idx + 1 < lessons.length) {
       setSection("lesson:" + cid + ":" + (lessons[idx + 1].id != null ? lessons[idx + 1].id : (idx + 1)));
@@ -105,7 +173,9 @@ function LessonView({ section, courses, student, setSection }) {
     </div>
     <div style=${{ padding: "12px 0 80px", display: "flex", gap: 8, flexWrap: "wrap" }}>
       <button type="button" class="pill-ink" onClick=${completeAndNext}>
-        ${idx + 1 < lessons.length ? "Mark done · Next" : "Mark done · Finish"}
+        ${(Array.isArray(l.checkQuestions) && l.checkQuestions.length)
+          ? "Continue to quick check"
+          : (idx + 1 < lessons.length ? "Mark done · Next" : "Mark done · Finish")}
       </button>
     </div>
     <button type="button" class="fab-lessons" aria-label="Lesson list" onClick=${() => setNavOpen(true)}>☰</button>
@@ -496,6 +566,14 @@ export function MobileView({ ctx }) {
                   Resume: ${lessons[nextIdx].title || "last lesson"}
                 </button>`
               : null}
+            ${doneN >= lessons.length && lessons.length > 0 && !prog.modulePassed && (c?.moduleQuizQuestions || []).length
+              ? html`<button type="button" class="pill-ink" onClick=${() => setSection("mquiz:" + cid)}>
+                  Take module quiz (${c.moduleQuizPassPercent || 90}% to pass)
+                </button>`
+              : null}
+            ${prog.modulePassed
+              ? html`<p style=${{ textAlign: "center", fontWeight: 700, marginTop: 4 }}>Module completed ✓</p>`
+              : null}
           </div>
         </div>
       `;
@@ -525,8 +603,55 @@ export function MobileView({ ctx }) {
               })
             : html`<${Empty} title="No lessons yet" body="Your instructor will add videos and reading here." />`}
         </div>
+        ${doneN >= lessons.length && lessons.length > 0 && !prog.modulePassed && (c?.moduleQuizQuestions || []).length
+          ? html`<button type="button" class="pill-ink" style=${{ marginTop: 14, width: "100%" }} onClick=${() => setSection("mquiz:" + cid)}>
+              Take module quiz
+            </button>`
+          : null}
       `;
     }
+  } else if (String(section || "").startsWith("lcheck:")) {
+    const parts = String(section).slice(7).split(":");
+    const cid = parts[0];
+    const lid = parts[1];
+    const c = (courses || []).find((x) => x.id === cid);
+    const lessons = Array.isArray(c?.lessons) ? c.lessons.slice().sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
+    const idx = lessons.findIndex((x, i) => String(x.id != null ? x.id : i) === String(lid));
+    const l = idx >= 0 ? lessons[idx] : null;
+    const qs = (l && Array.isArray(l.checkQuestions)) ? l.checkQuestions : [];
+    body = html`<${MiniQuiz}
+      title=${"Quick check"}
+      subtitle=${l?.title || ""}
+      questions=${qs}
+      passPercent=${70}
+      failHint=${"Skim the lesson again, then retry. You need about 70% to continue."}
+      onBack=${() => setSection("lesson:" + cid + ":" + lid)}
+      onPass=${() => {
+        markLessonDone(student?.email, cid, l?.id != null ? l.id : idx);
+        if (idx + 1 < lessons.length) {
+          setSection("lesson:" + cid + ":" + (lessons[idx + 1].id != null ? lessons[idx + 1].id : (idx + 1)));
+        } else {
+          setSection("course:" + cid + ":lessons");
+        }
+      }}
+    />`;
+  } else if (String(section || "").startsWith("mquiz:")) {
+    const cid = String(section).slice(6);
+    const c = (courses || []).find((x) => x.id === cid);
+    const qs = Array.isArray(c?.moduleQuizQuestions) ? c.moduleQuizQuestions : [];
+    const pass = Number(c?.moduleQuizPassPercent) || 90;
+    body = html`<${MiniQuiz}
+      title=${"Module quiz"}
+      subtitle=${c?.title || ""}
+      questions=${qs}
+      passPercent=${pass}
+      failHint=${"Review the module lessons and try again. You need " + pass + "% to complete this module."}
+      onBack=${() => setSection("course:" + cid)}
+      onPass=${() => {
+        setModulePassed(student?.email, cid, true);
+        setSection("course:" + cid);
+      }}
+    />`;
   } else if (String(section || "").startsWith("lesson:")) {
     body = html`<${LessonView} section=${section} courses=${courses} student=${student} setSection=${setSection} />`;
   } else if (String(section || "").startsWith("test:")) {
@@ -534,7 +659,6 @@ export function MobileView({ ctx }) {
     const a = (assessments || []).find((x) => x.id === tid);
     const qs = Array.isArray(a?.questions) ? a.questions : [];
     body = html`<${TakeTest} assessment=${a} questions=${qs} onBack=${() => setSection("assessments")} />`;
-  }
   } else {
     body = html`
       <div class="page-head"><h1 class="display">Profile</h1><p>Your academy file</p></div>

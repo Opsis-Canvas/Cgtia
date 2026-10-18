@@ -95,14 +95,15 @@ export function progressKey(email, courseId) {
 export function loadProgress(email, courseId) {
   try {
     const raw = localStorage.getItem(progressKey(email, courseId));
-    if (!raw) return { completed: [], lastLessonId: null };
+    if (!raw) return { completed: [], lastLessonId: null, modulePassed: false };
     const j = JSON.parse(raw);
     return {
       completed: Array.isArray(j.completed) ? j.completed : [],
-      lastLessonId: j.lastLessonId || null
+      lastLessonId: j.lastLessonId || null,
+      modulePassed: !!j.modulePassed
     };
   } catch (_) {
-    return { completed: [], lastLessonId: null };
+    return { completed: [], lastLessonId: null, modulePassed: false };
   }
 }
 
@@ -111,9 +112,17 @@ export function saveProgress(email, courseId, data) {
     localStorage.setItem(progressKey(email, courseId), JSON.stringify({
       completed: data.completed || [],
       lastLessonId: data.lastLessonId || null,
+      modulePassed: !!data.modulePassed,
       updatedAt: Date.now()
     }));
   } catch (_) {}
+}
+
+export function setModulePassed(email, courseId, passed) {
+  const p = loadProgress(email, courseId);
+  p.modulePassed = !!passed;
+  saveProgress(email, courseId, p);
+  return p;
 }
 
 export function markLessonDone(email, courseId, lessonId) {
