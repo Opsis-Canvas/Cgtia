@@ -1,3 +1,4 @@
+function __cgtiaIsPortalPath(){ try { return /\/dashboard/i.test(location.pathname || ''); } catch(_){ return false; } }
 /**
  * Active promotions: top banner + tuition strikethrough + payment amount
  */
@@ -171,7 +172,7 @@ function openPromoModal(promoList, startIdx) {
   }
   modal.onclick = function (e) { if (e.target === modal) closeModal(); };
   modal.appendChild(sheet);
-  document.body.appendChild(modal);
+  if (__cgtiaIsPortalPath()) return; document.body.appendChild(modal);
   paintModal();
   requestAnimationFrame(function () {
     requestAnimationFrame(function () {

@@ -2,7 +2,7 @@
 import { createElement } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
-import { Avatar, Empty, NavList, StatusChip, ImageSlot } from "./shared.js";
+import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
 
 const html = htm.bind(createElement);
@@ -57,10 +57,11 @@ export function DesktopView({ ctx }) {
       <section class="stats">
         ${stats.map((s) => html`<${StatCard} key=${s.id} s=${s} />`)}
       </section>
-      ${(announcements || []).length ? html`<section class="ann-card">
+      ${(announcements || []).length ? html`<section class="ann-card is-click" role="button"
+        onClick=${() => setSection("notice:" + (announcements[0].id || "0"))}>
         <h4>${announcements[0].title || "Announcement"}</h4>
-        <p>${announcements[0].body || announcements[0].message || ""}</p>
-        <div class="ann-meta">From the academy</div>
+        <p>${(announcements[0].body || announcements[0].message || "").slice(0, 160)}</p>
+        <div class="ann-meta">Tap for full details →</div>
       </section>` : null}
       <section class="d-cols">
         <div class="panel lessons" aria-label="Courses">

@@ -65,3 +65,23 @@ export function Skeleton({ rows = 3 }) {
     ${Array.from({ length: rows }, (_, i) => html`<div key=${i} class="skel skel-line"></div>`)}
   </div>`;
 }
+
+
+export function formatPayDate(v) {
+  if (!v) return "—";
+  try {
+    if (typeof v.toDate === "function") return v.toDate().toLocaleString();
+    if (v.seconds) return new Date(v.seconds * 1000).toLocaleString();
+    if (typeof v === "number") return new Date(v).toLocaleString();
+    const s = String(v);
+    if (s.startsWith("Timestamp")) return "—";
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return d.toLocaleString();
+    return s.slice(0, 16);
+  } catch (_) { return "—"; }
+}
+
+export function money(n) {
+  const x = Number(n) || 0;
+  return "₦" + x.toLocaleString("en-NG");
+}
