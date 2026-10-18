@@ -318,7 +318,7 @@ export function DashboardPage() {
     // Keep list tabs in nav; allow detail routes (module / lesson / test / notice)
     if (!nav.length) return;
     if (nav.find((n) => n.id === section)) return;
-    if (/^(course|lesson|test|notice):/.test(String(section || ""))) return;
+    if (/^(course|lesson|test|notice|fees|receipt):/.test(String(section || ""))) return;
     setSection("dashboard");
   }, [nav, section]);
 

@@ -85,3 +85,42 @@ export function money(n) {
   const x = Number(n) || 0;
   return "₦" + x.toLocaleString("en-NG");
 }
+
+
+/** Lesson progress — local until we sync to Firestore */
+export function progressKey(email, courseId) {
+  return "cgtia_prog_" + String(email || "anon").toLowerCase() + "_" + String(courseId || "");
+}
+
+export function loadProgress(email, courseId) {
+  try {
+    const raw = localStorage.getItem(progressKey(email, courseId));
+    if (!raw) return { completed: [], lastLessonId: null };
+    const j = JSON.parse(raw);
+    return {
+      completed: Array.isArray(j.completed) ? j.completed : [],
+      lastLessonId: j.lastLessonId || null
+    };
+  } catch (_) {
+    return { completed: [], lastLessonId: null };
+  }
+}
+
+export function saveProgress(email, courseId, data) {
+  try {
+    localStorage.setItem(progressKey(email, courseId), JSON.stringify({
+      completed: data.completed || [],
+      lastLessonId: data.lastLessonId || null,
+      updatedAt: Date.now()
+    }));
+  } catch (_) {}
+}
+
+export function markLessonDone(email, courseId, lessonId) {
+  const p = loadProgress(email, courseId);
+  const id = String(lessonId);
+  if (!p.completed.includes(id)) p.completed.push(id);
+  p.lastLessonId = id;
+  saveProgress(email, courseId, p);
+  return p;
+}
