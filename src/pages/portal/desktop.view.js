@@ -14,10 +14,23 @@ function StatCard({ s }) {
   </div>`;
 }
 
-function CourseRow({ c, i }) {
-  return html`<div class="lesson">
+function toEmbed(url) {
+  const u = String(url || "").trim();
+  if (!u) return "";
+  let m = u.match(/youtu\.be\/([\w-]{6,})/i);
+  if (m) return "https://www.youtube.com/embed/" + m[1];
+  m = u.match(/[?&]v=([\w-]{6,})/i);
+  if (m) return "https://www.youtube.com/embed/" + m[1];
+  if (/youtube\.com\/embed\//i.test(u)) return u;
+  m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  if (m) return "https://player.vimeo.com/video/" + m[1];
+  return u;
+}
+
+function CourseRow({ c, i, onOpen }) {
+  return html`<div class="lesson is-click" role="button" onClick=${onOpen}>
     <span class=${"badge tone-" + (i % 2 ? "mist" : "ink")}>${String(i + 1).padStart(2, "0")}</span>
-    <span class="lesson-text"><h4>${c.title || c.code}</h4><p>${c.code || ""}</p></span>
+    <span class="lesson-text"><h4>${c.title || c.code}</h4><p>${c.code || "Open module"}</p></span>
     ${Icon({ name: "arrow", size: 18 })}
   </div>`;
 }
@@ -67,7 +80,7 @@ export function DesktopView({ ctx }) {
         <div class="panel lessons" aria-label="Courses">
           <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>Your modules</h3>
           ${courses.length
-            ? courses.slice(0, 6).map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} />`)
+            ? courses.slice(0, 6).map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} onOpen=${() => setSection("course:" + c.id)} />`)
             : html`<${Empty} title="No modules yet" body="When your programme is linked, the modules for your track will show up here." />`}
           ${courses.length > 6
             ? html`<button type="button" class="see" style=${{ alignSelf: "flex-end", border: 0, background: "none", cursor: "pointer" }} onClick=${() => setSection("courses")}>see all</button>`
@@ -96,7 +109,7 @@ export function DesktopView({ ctx }) {
       <div class="page-head"><h1 class="display">Courses</h1><p>Modules on your programme track</p></div>
       <div class="panel lessons">
         ${courses.length
-          ? courses.map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} />`)
+          ? courses.map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} onOpen=${() => setSection("course:" + c.id)} />`)
           : html`<${Empty} title="Nothing to show yet" body="Your course list appears after admissions links your programme. If you expected to see modules, message the office with your full name and email." />`}
       </div>
     `;
@@ -153,6 +166,84 @@ export function DesktopView({ ctx }) {
               </tbody>
             </table>`
           : html`<${Empty} title="No payments found" body="When a payment is made with this email, it will show up here. Cash receipts recorded by the office appear the same way." />`}
+      </div>
+    `;
+  } else if (String(section || "").startsWith("notice:")) {
+    const nid = String(section).slice(7);
+    const n = (announcements || []).find((a) => String(a.id) === nid) || (announcements || [])[0];
+    main = html`
+      <div class="page-head">
+        <button type="button" class="ghost-back" onClick=${() => setSection("dashboard")}>← Back</button>
+        <h1 class="display">${n?.title || "Announcement"}</h1>
+        <p>From the academy</p>
+      </div>
+      <div class="panel prose"><p>${n?.body || n?.message || "No further details."}</p></div>
+    `;
+  } else if (String(section || "").startsWith("course:")) {
+    const cid = String(section).slice(7);
+    const c = (courses || []).find((x) => x.id === cid);
+    const lessons = Array.isArray(c?.lessons) ? c.lessons.slice().sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
+    main = html`
+      <div class="page-head">
+        <button type="button" class="ghost-back" onClick=${() => setSection("courses")}>← Courses</button>
+        <h1 class="display">${c?.title || "Module"}</h1>
+        <p>${c?.code || ""} · ${c?.program || ""}</p>
+      </div>
+      ${c?.description ? html`<div class="panel prose"><p>${c.description}</p></div>` : null}
+      <div class="panel lessons" style=${{ marginTop: 12 }}>
+        <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>Lessons</h3>
+        ${lessons.length
+          ? lessons.map((l, i) => html`<div class="lesson is-click" role="button" key=${l.id || i}
+              onClick=${() => setSection("lesson:" + cid + ":" + (l.id || i))}>
+              <span class=${"badge tone-" + (l.type === "video" ? "coral" : "sky")}>${String(i + 1).padStart(2, "0")}</span>
+              <span class="lesson-text"><h4>${l.title || "Lesson"}</h4><p>${l.type || "text"}${l.duration ? " · " + l.duration : ""}</p></span>
+              ${Icon({ name: "arrow", size: 18 })}
+            </div>`)
+          : html`<${Empty} title="No lessons yet" body="Your instructor will add videos and reading here." />`}
+      </div>
+    `;
+  } else if (String(section || "").startsWith("lesson:")) {
+    const parts = String(section).slice(7).split(":");
+    const cid = parts[0];
+    const lid = parts[1];
+    const c = (courses || []).find((x) => x.id === cid);
+    const lessons = Array.isArray(c?.lessons) ? c.lessons : [];
+    const l = lessons.find((x, i) => String(x.id || i) === String(lid)) || lessons[Number(lid)] || null;
+    main = html`
+      <div class="page-head">
+        <button type="button" class="ghost-back" onClick=${() => setSection("course:" + cid)}>← Module</button>
+        <h1 class="display">${l?.title || "Lesson"}</h1>
+        <p>${l?.type || "text"}</p>
+      </div>
+      <div class="panel prose">
+        ${l?.type === "video" && l?.videoUrl
+          ? html`<div class="video-wrap"><iframe src=${toEmbed(l.videoUrl)} title=${l.title || "Video"} allowfullscreen loading="lazy"></iframe></div>`
+          : null}
+        ${l?.body ? html`<div class="lesson-body">${l.body}</div>` : html`<p class="muted">No content text for this lesson yet.</p>`}
+        ${l?.ttsText || l?.body
+          ? html`<button type="button" class="pill-ink" style=${{ marginTop: 12 }} onClick=${() => {
+              try {
+                const u = new SpeechSynthesisUtterance(l.ttsText || l.body || "");
+                u.lang = "en-NG";
+                speechSynthesis.cancel();
+                speechSynthesis.speak(u);
+              } catch (_) {}
+            }}>Listen (text to speech)</button>`
+          : null}
+      </div>
+    `;
+  } else if (String(section || "").startsWith("test:")) {
+    const tid = String(section).slice(5);
+    const a = (assessments || []).find((x) => x.id === tid);
+    main = html`
+      <div class="page-head">
+        <button type="button" class="ghost-back" onClick=${() => setSection("assessments")}>← Tests</button>
+        <h1 class="display">${a?.title || "Test"}</h1>
+        <p>Open this test on your phone for the full timed experience, or use the mobile layout.</p>
+      </div>
+      <div class="panel">
+        <p>${a?.description || "No description."}</p>
+        <p style=${{ marginTop: 8, color: "var(--muted)" }}>${(a?.questions || []).length} question(s)${a?.timerMinutes ? " · " + a.timerMinutes + " min" : ""}</p>
       </div>
     `;
   } else {

@@ -315,7 +315,11 @@ export function DashboardPage() {
   }, [data]);
 
   useEffect(() => {
-    if (nav.length && !nav.find((n) => n.id === section)) setSection("dashboard");
+    // Keep list tabs in nav; allow detail routes (module / lesson / test / notice)
+    if (!nav.length) return;
+    if (nav.find((n) => n.id === section)) return;
+    if (/^(course|lesson|test|notice):/.test(String(section || ""))) return;
+    setSection("dashboard");
   }, [nav, section]);
 
   async function logout() {
