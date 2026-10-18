@@ -169,8 +169,13 @@ export function DesktopView({ ctx }) {
           <tbody>
             <tr><td>Reg number</td><td><strong>${student?.reg || "—"}</strong></td></tr>
             <tr><td>Programme</td><td><strong>${student?.program || "—"}</strong></td></tr>
-            <tr><td>Phone</td><td><strong>${student?.phone || "—"}</strong></td></tr>
             <tr><td>Cohort</td><td><strong>${student?.cohort || "—"}</strong></td></tr>
+            <tr><td>Status</td><td><strong>${student?.status || "—"}</strong></td></tr>
+            <tr><td>Phone</td><td><strong>${student?.phone || "—"}</strong></td></tr>
+            <tr><td>Start date</td><td><strong>${student?.startDate || "—"}</strong></td></tr>
+            <tr><td>Certificate code</td><td><strong>${student?.certificateCode || "—"}</strong></td></tr>
+            <tr><td>Next of kin</td><td><strong>${student?.nextOfKin || "—"}</strong></td></tr>
+            <tr><td>Profile form</td><td><strong>${student?.profileCompleted ? "Completed" : "Not completed yet"}</strong></td></tr>
           </tbody>
         </table>
         ${!linked

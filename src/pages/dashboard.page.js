@@ -127,13 +127,23 @@ async function loadPortalData(user) {
   let payments = [];
   if (portalSettings.showFees !== false) {
     try {
-      const snap = await api.getDocs(api.collection(db, "payments"));
-      snap.forEach((d) => {
-        const p = { id: d.id, ...d.data() };
-        if (String(p.email || "").toLowerCase() === email) payments.push(p);
-      });
+      // Must query by email — students cannot list the whole payments collection (Firestore rules)
+      const qPay = api.query(api.collection(db, "payments"), api.where("email", "==", email));
+      const snap = await api.getDocs(qPay);
+      snap.forEach((d) => payments.push({ id: d.id, ...d.data() }));
+      // Also match by studentId if linked (covers edge cases where email field differs)
+      if (row && row.id) {
+        try {
+          const q2 = api.query(api.collection(db, "payments"), api.where("studentId", "==", row.id));
+          const s2 = await api.getDocs(q2);
+          const seen = new Set(payments.map((p) => p.id));
+          s2.forEach((d) => {
+            if (!seen.has(d.id)) payments.push({ id: d.id, ...d.data() });
+          });
+        } catch (_) { /* studentId index may be missing */ }
+      }
     } catch (e) {
-      console.warn(e);
+      console.warn("payments load", e);
     }
   }
 
@@ -182,7 +192,11 @@ async function loadPortalData(user) {
     program: row?.program || "",
     phone: row?.phone || "",
     cohort: row?.cohort || row?.year || "",
-    status: row?.status || ""
+    status: row?.status || "",
+    startDate: row?.startDate || "",
+    certificateCode: row?.certificateCode || "",
+    profileCompleted: !!row?.profileCompleted,
+    nextOfKin: row?.nextOfKinName || (row?.nextOfKin && row.nextOfKin.name) || ""
   };
 
   return { student, courses, grades, payments, assessments, announcements, portalSettings, linked: !!row };
