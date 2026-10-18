@@ -127,20 +127,27 @@ async function loadPortalData(user) {
   let payments = [];
   if (portalSettings.showFees !== false) {
     try {
-      // Must query by email — students cannot list the whole payments collection (Firestore rules)
-      const qPay = api.query(api.collection(db, "payments"), api.where("email", "==", email));
-      const snap = await api.getDocs(qPay);
-      snap.forEach((d) => payments.push({ id: d.id, ...d.data() }));
-      // Also match by studentId if linked (covers edge cases where email field differs)
+      const seen = new Set();
+      const addSnap = (snap) => {
+        snap.forEach((d) => {
+          if (seen.has(d.id)) return;
+          seen.add(d.id);
+          payments.push({ id: d.id, ...d.data() });
+        });
+      };
+      // Fee-link + online + cash that stored this email
+      addSnap(await api.getDocs(api.query(api.collection(db, "payments"), api.where("email", "==", email))));
+      // Cash / fee-link tied to student record id
       if (row && row.id) {
         try {
-          const q2 = api.query(api.collection(db, "payments"), api.where("studentId", "==", row.id));
-          const s2 = await api.getDocs(q2);
-          const seen = new Set(payments.map((p) => p.id));
-          s2.forEach((d) => {
-            if (!seen.has(d.id)) payments.push({ id: d.id, ...d.data() });
-          });
-        } catch (_) { /* studentId index may be missing */ }
+          addSnap(await api.getDocs(api.query(api.collection(db, "payments"), api.where("studentId", "==", row.id))));
+        } catch (_) {}
+      }
+      // Same reg number (walk-in cash sometimes uses reg more than email)
+      if (row && row.regNumber) {
+        try {
+          addSnap(await api.getDocs(api.query(api.collection(db, "payments"), api.where("regNumber", "==", row.regNumber))));
+        } catch (_) {}
       }
     } catch (e) {
       console.warn("payments load", e);

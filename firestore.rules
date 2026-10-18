@@ -285,9 +285,16 @@ service cloud.firestore {
 
     /* payment records (webhook / admin) */
     match /payments/{payId} {
+      // Student sees every payment tied to their email OR their student record id
       allow read: if isAdmin() || isStaff()
-        || (isSignedIn() && resource.data.email is string && request.auth.token.email is string
-            && resource.data.email.lower() == request.auth.token.email.lower());
+        || (isSignedIn() && request.auth.token.email is string && resource.data.email is string
+            && resource.data.email.lower() == request.auth.token.email.lower())
+        || (isSignedIn() && request.auth.token.email is string
+            && resource.data.studentId is string
+            && exists(/databases/$(database)/documents/students/$(resource.data.studentId))
+            && get(/databases/$(database)/documents/students/$(resource.data.studentId)).data.email is string
+            && get(/databases/$(database)/documents/students/$(resource.data.studentId)).data.email.lower()
+               == request.auth.token.email.lower());
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
