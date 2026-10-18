@@ -10,11 +10,28 @@ const html = htm.bind(createElement);
 const TILE_TONE = { courses: "sky", grades: "lilac", fees: "mint" };
 
 function BackBtn({ label, onClick }) {
-  return html`<button type="button" class="icon-back-btn" onClick=${onClick}>
-    <span aria-hidden="true" style=${{ fontSize: 18, lineHeight: 1 }}>←</span>
-    <span>${label || "Back"}</span>
-  </button>`;
+  return html`<div class="page-head-row">
+    <button type="button" class="back-circle" aria-label=${label || "Back"} onClick=${onClick}>
+      ${Icon({ name: "back", size: 20 })}
+    </button>
+    ${label ? html`<span class="sr-only">${label}</span>` : null}
+  </div>`;
 }
+
+function PageHead({ backLabel, onBack, title, sub }) {
+  return html`<div class="page-head">
+    <div class="page-head-row">
+      ${onBack ? html`<button type="button" class="back-circle" aria-label=${backLabel || "Back"} onClick=${onBack}>
+        ${Icon({ name: "back", size: 20 })}
+      </button>` : null}
+      <div class="page-titles">
+        <h1 class="display">${title}</h1>
+        ${sub ? html`<p>${sub}</p>` : null}
+      </div>
+    </div>
+  </div>`;
+}
+
 
 /** Simple MCQ runner. passPercent 0-100. onPass() when score meets bar. */
 function MiniQuiz({ title, subtitle, questions, passPercent, onPass, onBack, failHint }) {
@@ -116,18 +133,18 @@ function LessonView({ section, courses, student, setSection }) {
   }
 
   if (!l) {
-    return html`<div class="page-head">
-      <${BackBtn} label="Module" onClick=${() => setSection("course:" + cid)} />
-      <h1 class="display">Lesson</h1>
-    </div><${Empty} title="Not found" body="This lesson is unavailable." />`;
+    return html`<div>
+      <${PageHead} title="Lesson" onBack=${() => setSection("course:" + cid)} backLabel="Module" />
+      <${Empty} title="Not found" body="This lesson is unavailable." />
+    </div>`;
   }
 
   const unlocked = idx === 0 || loadProgress(student?.email, cid).completed.includes(String(lessons[idx - 1].id || (idx - 1)));
   if (!unlocked) {
-    return html`<div class="page-head">
-      <${BackBtn} label="Lessons" onClick=${() => setSection("course:" + cid + ":lessons")} />
-      <h1 class="display">${l.title}</h1>
-    </div><${Empty} title="Locked" body="Finish the previous lesson before opening this one." />`;
+    return html`<div>
+      <${PageHead} title=${l.title} onBack=${() => setSection("course:" + cid + ":lessons")} backLabel="Lessons" />
+      <${Empty} title="Locked" body="Finish the previous lesson before opening this one." />
+    </div>`;
   }
 
   function completeAndNext() {
@@ -145,11 +162,7 @@ function LessonView({ section, courses, student, setSection }) {
   }
 
   return html`<div>
-    <div class="page-head">
-      <${BackBtn} label="Lessons" onClick=${() => setSection("course:" + cid + ":lessons")} />
-      <h1 class="display">${l.title || "Lesson"}</h1>
-      <p>${l.type || "text"} · ${idx + 1} of ${lessons.length}</p>
-    </div>
+    <${PageHead} title=${l.title || "Lesson"} sub=${(l.type || "text") + " · " + (idx + 1) + " of " + lessons.length} onBack=${() => setSection("course:" + cid + ":lessons")} backLabel="Lessons" />
     <div class="lesson-scroll">
       <div class="lesson-fade-top"></div>
       <div class="panel prose">
@@ -160,14 +173,14 @@ function LessonView({ section, courses, student, setSection }) {
       </div>
       <div class=${"tts-dock" + (ttsHide ? " hide" : "")}>
         ${l.ttsText || l.body
-          ? html`<button type="button" class="pill-ink" onClick=${() => {
+          ? html`<button type="button" class="tts-icon-btn" aria-label="Listen" onClick=${() => {
               try {
                 const u = new SpeechSynthesisUtterance(l.ttsText || l.body || "");
                 u.lang = "en-NG";
                 speechSynthesis.cancel();
                 speechSynthesis.speak(u);
               } catch (_) {}
-            }}>Listen</button>`
+            }}>${Icon({ name: "speaker", size: 22 })}</button>`
           : null}
       </div>
     </div>
@@ -436,8 +449,59 @@ export function MobileView({ ctx }) {
           : html`<${Empty} title="Nothing scheduled" body="When tests or assignments go live for your track, they will appear here." />`}
       </div>
     `;
-  } else if (section === "fees" || String(section || "").startsWith("fees:")) {
-    const feeFilter = String(section).startsWith("fees:") ? String(section).slice(5) : "all";
+  } else if (section === "fees") {
+    // Home: balance + shortcuts + recent 5
+    const recent = (payments || []).slice(0, 5);
+    body = html`
+      <${PageHead} title="Fees" sub="Your academy payments" />
+      <div class="fees-balance">
+        <div class="lbl">TOTAL RECORDED</div>
+        <div class="big">${money(paidTotal)}</div>
+        <div class="meta">${payments.length} payment${payments.length === 1 ? "" : "s"} on this email</div>
+      </div>
+      <div class="fees-actions">
+        <button type="button" class="fees-action" onClick=${() => setSection("fees:tx")}>
+          <strong>All transactions</strong>
+          <span>Full history & filters</span>
+        </button>
+        <button type="button" class="fees-action" onClick=${() => setSection("fees:tx:paid")}>
+          <strong>Paid only</strong>
+          <span>Successful payments</span>
+        </button>
+      </div>
+      <div class="panel">
+        <div class="m-section-h" style=${{ marginBottom: 4 }}>
+          <h3 class="display" style=${{ fontSize: 15 }}>Recent</h3>
+        </div>
+        ${recent.length
+          ? recent.map((p) => {
+              const st = String(p.paymentStatus || p.status || "paid").toLowerCase();
+              const stClass = /pend|partial/.test(st) ? "is-pend" : /fail|cancel|unpaid/.test(st) ? "is-fail" : "";
+              return html`<div class="tx-row" key=${p.id} role="button" onClick=${() => setSection("receipt:" + p.id)}>
+                <div class="tx-ico">${Icon({ name: "card", size: 18 })}</div>
+                <div class="tx-mid">
+                  <h4>${p.feeName || p.purpose || p.feeType || p.program || "Payment"}</h4>
+                  <p>${formatPayDate(p.paidAt || p.createdAt)}</p>
+                </div>
+                <div class="tx-right">
+                  <div class="amt">${money(p.amountPaid || p.amount)}</div>
+                  <div class=${"st " + stClass}>${st}</div>
+                </div>
+              </div>`;
+            })
+          : html`<${Empty} title="No payments yet" body="When you pay with a fee link, it will show up here." />`}
+        ${payments.length > 5
+          ? html`<div class="see-all-row"><button type="button" onClick=${() => setSection("fees:tx")}>See all transactions</button></div>`
+          : (payments.length > 0
+              ? html`<div class="see-all-row"><button type="button" onClick=${() => setSection("fees:tx")}>View all transactions</button></div>`
+              : null)}
+      </div>
+    `;
+  } else if (String(section || "").startsWith("fees:")) {
+    const parts = String(section).slice(5).split(":");
+    const feeFilter = parts[1] || parts[0] || "all";
+    // fees:tx or fees:tx:paid or fees:all
+    const filter = feeFilter === "tx" ? "all" : feeFilter;
     const filters = [
       { id: "all", label: "All" },
       { id: "paid", label: "Paid" },
@@ -449,59 +513,52 @@ export function MobileView({ ctx }) {
     const filtered = (payments || []).filter((p) => {
       const st = String(p.paymentStatus || p.status || "").toLowerCase();
       const blob = [p.feeName, p.feeType, p.purpose, p.program].map((x) => String(x || "").toLowerCase()).join(" ");
-      if (feeFilter === "all") return true;
-      if (feeFilter === "paid") return /paid|complete/.test(st);
-      if (feeFilter === "pending") return /pend|partial/.test(st);
-      if (feeFilter === "failed") return /fail|unpaid|cancel/.test(st);
-      if (feeFilter === "tuition") return /tuition|cert|diploma|program/.test(blob);
-      if (feeFilter === "id-card") return /id.?card|student id/.test(blob);
+      if (filter === "all") return true;
+      if (filter === "paid") return /paid|complete/.test(st);
+      if (filter === "pending") return /pend|partial/.test(st);
+      if (filter === "failed") return /fail|unpaid|cancel/.test(st);
+      if (filter === "tuition") return /tuition|cert|diploma|program/.test(blob);
+      if (filter === "id-card") return /id.?card|student id/.test(blob);
       return true;
     });
     body = html`
-      <div class="page-head">
-        <h1 class="display">Fees</h1>
-        <p>Payments for your email</p>
-      </div>
-      <section class="m-tiles">
-        <${Tile} s=${{ id: "fees", value: "₦" + (paidTotal >= 1000 ? Math.round(paidTotal / 1000) + "k" : paidTotal), label: "Total recorded", icon: "card", tall: true }}
-          onClick=${() => setSection("fees:all")} />
-        <${Tile} s=${{ id: "tx", value: String(payments.length), label: "Transactions", icon: "grid" }}
-          onClick=${() => setSection("fees:all")} />
-      </section>
+      <${PageHead} title="Transactions" sub="Tap a row for the full receipt" onBack=${() => setSection("fees")} backLabel="Fees" />
       <div class="filter-chips">
-        ${filters.map((f) => html`<button type="button" key=${f.id} class=${feeFilter === f.id ? "on" : ""}
-          onClick=${() => setSection("fees:" + f.id)}>${f.label}</button>`)}
+        ${filters.map((f) => html`<button type="button" key=${f.id} class=${filter === f.id ? "on" : ""}
+          onClick=${() => setSection("fees:tx:" + f.id)}>${f.label}</button>`)}
       </div>
       <div class="panel">
         ${filtered.length
-          ? filtered.map((p) => html`<div class="m-card is-click" style=${{ marginBottom: 8 }} key=${p.id}
-              role="button" onClick=${() => setSection("receipt:" + p.id)}>
-              <span class="badge tone-mist">₦</span>
-              <div class="m-card-text">
-                <h4>${p.feeName || p.purpose || p.feeType || p.program || "Payment"} · ${money(p.amountPaid || p.amount)}</h4>
-                <p>${formatPayDate(p.paidAt || p.createdAt)}${p.method || p.channel ? " · " + (p.method || p.channel) : ""}</p>
-                <p style=${{ fontSize: 11, marginTop: 4, wordBreak: "break-all" }}>Ref: ${p.reference || p.paystackReference || p.id || "—"}</p>
-              </div>
-              <${StatusChip} status=${p.paymentStatus || p.status || "pending"} />
-            </div>`)
-          : html`<${Empty} title="No payments in this filter" body="Try All, or complete a payment with a fee link." />`}
+          ? filtered.map((p) => {
+              const st = String(p.paymentStatus || p.status || "paid").toLowerCase();
+              const stClass = /pend|partial/.test(st) ? "is-pend" : /fail|cancel|unpaid/.test(st) ? "is-fail" : "";
+              return html`<div class="tx-row" key=${p.id} role="button" onClick=${() => setSection("receipt:" + p.id)}>
+                <div class="tx-ico">${Icon({ name: "card", size: 18 })}</div>
+                <div class="tx-mid">
+                  <h4>${p.feeName || p.purpose || p.feeType || p.program || "Payment"}</h4>
+                  <p>${formatPayDate(p.paidAt || p.createdAt)}${p.method || p.channel ? " · " + (p.method || p.channel) : ""}</p>
+                </div>
+                <div class="tx-right">
+                  <div class="amt">${money(p.amountPaid || p.amount)}</div>
+                  <div class=${"st " + stClass}>${st}</div>
+                </div>
+              </div>`;
+            })
+          : html`<${Empty} title="Nothing in this filter" body="Try All, or pay with a fee link from the academy." />`}
       </div>
     `;
   } else if (String(section || "").startsWith("receipt:")) {
     const rid = String(section).slice(8);
     const pmt = (payments || []).find((x) => x.id === rid);
     body = html`
-      <div class="page-head">
-        <${BackBtn} label="Fees" onClick=${() => setSection("fees:all")} />
-        <h1 class="display">Receipt</h1>
-        <p>Payment details</p>
-      </div>
+      <${PageHead} title="Receipt" sub="Payment details" onBack=${() => setSection("fees:tx")} backLabel="Transactions" />
       ${!pmt ? html`<${Empty} title="Not found" body="This payment is no longer available." />` : html`
         <div class="receipt-sheet">
           <div class="receipt-hero">
-            <div class="sub">CGTIA · ${pmt.feeName || pmt.purpose || pmt.feeType || "Payment"}</div>
+            <div class="sub">CGTIA</div>
             <div class="amt">${money(pmt.amountPaid || pmt.amount)}</div>
-            <div class="sub">${String(pmt.paymentStatus || pmt.status || "paid").toUpperCase()}</div>
+            <div class="sub">${pmt.feeName || pmt.purpose || pmt.feeType || "Payment"}</div>
+            <div class="sub" style=${{ marginTop: 6 }}>${String(pmt.paymentStatus || pmt.status || "paid").toUpperCase()}</div>
           </div>
           <div class="panel">
             <div class="receipt-row"><span>Status</span><span>${pmt.paymentStatus || pmt.status || "—"}</span></div>
@@ -511,10 +568,12 @@ export function MobileView({ ctx }) {
             <div class="receipt-row"><span>Email</span><span>${pmt.email || student?.email || "—"}</span></div>
             <div class="receipt-row"><span>Name</span><span>${pmt.fullName || student?.name || "—"}</span></div>
             ${pmt.regNumber ? html`<div class="receipt-row"><span>Reg number</span><span>${pmt.regNumber}</span></div>` : null}
+            ${pmt.program || pmt.programName ? html`<div class="receipt-row"><span>Programme</span><span>${pmt.programName || pmt.program}</span></div>` : null}
           </div>
         </div>
       `}
     `;
+  } else if (String(section || "").startsWith("notice:")
   } else if (String(section || "").startsWith("notice:")) {
     const nid = String(section).slice(7);
     const n = (announcements || []).find((a) => String(a.id) === nid) || (announcements || [])[0];
@@ -542,21 +601,17 @@ export function MobileView({ ctx }) {
 
     if (mode !== "lessons") {
       body = html`
-        <div class="page-head">
-          <${BackBtn} label="Courses" onClick=${() => setSection("courses")} />
-          <h1 class="display">${c?.title || "Module"}</h1>
-          <p>${c?.code || ""} · ${c?.program || ""}</p>
-        </div>
+        <${PageHead} title=${c?.title || "Module"} sub=${(c?.code || "") + (c?.program ? " · " + c.program : "")} onBack=${() => setSection("courses")} backLabel="Courses" />
         <div class="course-hero-art">
           ${c?.coverUrl
             ? html`<img src=${c.coverUrl} alt="" />`
-            : html`<div class="ph"><strong>Module cover</strong><br/>Illustration placeholder (.webp)<br/>${lessons.length} lesson${lessons.length === 1 ? "" : "s"}</div>`}
+            : html`<div class="ph"><strong>${c?.title || "Module"}</strong><br/>${lessons.length} lesson${lessons.length === 1 ? "" : "s"} ready<br/><span style=${{ fontSize: 11 }}>Add a cover .webp in admin</span></div>`}
         </div>
         <div class="panel">
           <div class="prog-label">${doneN} of ${lessons.length} lessons done · ${pct}%</div>
           <div class="prog-bar"><i style=${{ width: pct + "%" }}></i></div>
-          <p style=${{ marginTop: 12, fontSize: 14, lineHeight: 1.5 }}>${c?.description || "No description yet."}</p>
-          <div style=${{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+          <p style=${{ marginTop: 12, fontSize: 14, lineHeight: 1.55, color: "#334155" }}>${c?.description || "No description yet."}</p>
+          <div class="module-cta-stack">
             <button type="button" class="pill-ink" onClick=${() => setSection("course:" + cid + ":lessons")}>
               ${doneN > 0 ? "Continue learning" : "Start lessons"}
             </button>
@@ -579,11 +634,7 @@ export function MobileView({ ctx }) {
       `;
     } else {
       body = html`
-        <div class="page-head">
-          <${BackBtn} label="Overview" onClick=${() => setSection("course:" + cid)} />
-          <h1 class="display">Lessons</h1>
-          <p>${c?.title || ""} · ${pct}% complete</p>
-        </div>
+        <${PageHead} title="Lessons" sub=${(c?.title || "") + " · " + pct + "% complete"} onBack=${() => setSection("course:" + cid)} backLabel="Overview" />
         <div class="panel" style=${{ marginBottom: 12 }}>
           <div class="prog-bar"><i style=${{ width: pct + "%" }}></i></div>
           <div class="prog-label">${doneN}/${lessons.length} complete · open in order (no skipping)</div>
