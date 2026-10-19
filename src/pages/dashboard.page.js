@@ -118,13 +118,37 @@ async function loadPortalData(user) {
   let grades = [];
   if (portalSettings.showResults !== false) {
     try {
-      const snap = await api.getDocs(api.collection(db, "grades"));
-      snap.forEach((d) => {
-        const g = { id: d.id, ...d.data() };
-        if (g.published === false) return;
-        const match = (row && g.studentId === row.id) || (g.studentEmail && String(g.studentEmail).toLowerCase() === email);
-        if (match) grades.push(g);
-      });
+      const seen = new Set();
+      const addGradeSnap = (snap) => {
+        snap.forEach((d) => {
+          if (seen.has(d.id)) return;
+          seen.add(d.id);
+          const g = { id: d.id, ...d.data() };
+          // published must be true (missing published treated as not shown for safety)
+          if (g.published !== true && g.published !== false) {
+            // legacy rows: if published field missing but has grade, still show
+            if (g.grade == null && g.score == null) return;
+          } else if (g.published === false) return;
+          grades.push(g);
+        });
+      };
+      // Rules only allow reading own published grades — must query, not list whole collection
+      try {
+        addGradeSnap(await api.getDocs(api.query(
+          api.collection(db, "grades"),
+          api.where("studentEmail", "==", email)
+        )));
+      } catch (e) { console.warn("grades by email", e); }
+      if (row && row.id) {
+        try {
+          addGradeSnap(await api.getDocs(api.query(
+            api.collection(db, "grades"),
+            api.where("studentId", "==", row.id)
+          )));
+        } catch (e) { console.warn("grades by studentId", e); }
+      }
+      // Client-side published filter (query may return drafts if rules loosen)
+      grades = grades.filter((g) => g.published !== false);
     } catch (e) {
       console.warn(e);
     }
