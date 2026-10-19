@@ -854,3 +854,29 @@ h1, h2, h3, h4, p { margin: 0; }
 .m-card.is-locked { opacity: 0.92; }
 .m-card .lock-pill { font-size: 14px; margin-left: 4px; }
 .m-card .lock-note-hot { color: #c2410c !important; font-weight: 700; }
+
+
+/* More grid + credentials */
+.more-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.more-tile {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 12px; border-radius: 16px; border: 1px solid #eef2f7;
+  background: #fff; font-weight: 700; font-size: 13px; color: var(--ink);
+  cursor: pointer; text-align: left;
+}
+.more-tile:active { transform: scale(0.98); }
+.cred-grid { display: grid; gap: 10px; }
+.cred-card {
+  background: #fff; border: 1px solid #eef2f7; border-radius: 18px; padding: 16px;
+}
+.cred-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #64748b; margin-bottom: 6px; }
+.cred-card strong { font-size: 16px; font-weight: 800; display: block; }
+.cred-card p { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.toggle-mini {
+  border: 0; border-radius: 999px; padding: 8px 14px; font-weight: 800; font-size: 12px;
+  background: #e2e8f0; color: #64748b; cursor: pointer;
+}
+.toggle-mini.on { background: #dcfce7; color: #15803d; }

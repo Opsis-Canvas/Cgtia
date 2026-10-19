@@ -564,11 +564,161 @@ function LessonList({ lessons, prog, cid, setSection }) {
   </div>`;
 }
 
+
+function MessagesScreen({ messages, student, setSection }) {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+  const [local, setLocal] = useState(messages || []);
+
+  useEffect(() => { setLocal(messages || []); }, [messages]);
+
+  async function send(e) {
+    e.preventDefault();
+    if (!subject.trim() || !body.trim()) {
+      setNote("Add a subject and message.");
+      return;
+    }
+    setBusy(true);
+    setNote("");
+    try {
+      const { getFirebase } = await import("../../services/firebase.service.js");
+      const { db, api } = await getFirebase();
+      const ref = await api.addDoc(api.collection(db, "supportMessages"), {
+        email: (student?.email || "").toLowerCase(),
+        studentId: student?.id || "",
+        name: student?.name || "",
+        subject: subject.trim(),
+        body: body.trim(),
+        status: "open",
+        createdAt: api.serverTimestamp()
+      });
+      setLocal([{ id: ref.id, subject: subject.trim(), body: body.trim(), status: "open", createdAt: { toDate: () => new Date() } }, ...local]);
+      setSubject("");
+      setBody("");
+      setNote("Message sent. The academy will reply here when they can.");
+    } catch (err) {
+      setNote(err.message || "Could not send. Try again later.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return html`<div>
+    <${PageHead} title="Messages" sub="Support with the academy" onBack=${() => setSection("dashboard")} backLabel="Home" />
+    <form class="panel" onSubmit=${send} style=${{ marginBottom: 14 }}>
+      <label class="cred-label">Subject</label>
+      <input style=${{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} value=${subject} onInput=${(e) => setSubject(e.target.value)} placeholder="e.g. Fee receipt question" />
+      <label class="cred-label">Message</label>
+      <textarea rows="4" style=${{ width: "100%", marginBottom: 10, boxSizing: "border-box" }} value=${body} onInput=${(e) => setBody(e.target.value)} placeholder="Write your message…"></textarea>
+      ${note ? html`<p style=${{ fontSize: 13, marginBottom: 8, color: "var(--muted)" }}>${note}</p>` : null}
+      <button type="submit" class="btn-block" disabled=${busy}>${busy ? "Sending…" : "Send to academy"}</button>
+    </form>
+    <div class="m-section-h"><h3 class="display">Your messages</h3></div>
+    <div class="m-list">
+      ${local.length
+        ? local.map((m) => html`<article class="m-card" key=${m.id}>
+            <span class="badge tone-mist">${(m.status || "open").toString().slice(0, 4)}</span>
+            <div class="m-card-text">
+              <h4>${m.subject || "Message"}</h4>
+              <p>${(m.body || "").slice(0, 100)}${(m.body || "").length > 100 ? "…" : ""}</p>
+              ${m.reply ? html`<p style=${{ marginTop: 6, color: "var(--ink)" }}><strong>Reply:</strong> ${m.reply}</p>` : null}
+            </div>
+          </article>`)
+        : html`<${Empty} title="No messages yet" body="Send a note above if you need help with fees, classes, or your profile." />`}
+    </div>
+  </div>`;
+}
+
+function SettingsScreen({ student, user, onLogout, setSection }) {
+  const [pw1, setPw1] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notify, setNotify] = useState(() => {
+    try { return localStorage.getItem("cgtia_notify") !== "0"; } catch (_) { return true; }
+  });
+
+  function toggleNotify() {
+    const next = !notify;
+    setNotify(next);
+    try { localStorage.setItem("cgtia_notify", next ? "1" : "0"); } catch (_) {}
+  }
+
+  async function changePassword(e) {
+    e.preventDefault();
+    setMsg("");
+    if (pw1.length < 6) { setMsg("Use at least 6 characters."); return; }
+    if (pw1 !== pw2) { setMsg("Passwords do not match."); return; }
+    setBusy(true);
+    try {
+      const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+      const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+      const cfg = {
+        apiKey: "AIzaSyCZOA3OxPyRyRT9XUTsFTUWKViFmkpfOV0",
+        authDomain: "verify-cgtia-cert.firebaseapp.com",
+        projectId: "verify-cgtia-cert",
+        storageBucket: "verify-cgtia-cert.firebasestorage.app",
+        messagingSenderId: "766655761701",
+        appId: "1:766655761701:web:45f559e0e38023439b5ecc"
+      };
+      const app = getApps().length ? getApp() : initializeApp(cfg);
+      const auth = authMod.getAuth(app);
+      const u = auth.currentUser || user;
+      if (!u) throw new Error("Please sign in again.");
+      await authMod.updatePassword(u, pw1);
+      setPw1(""); setPw2("");
+      setMsg("Password updated.");
+    } catch (err) {
+      const code = err && err.code;
+      if (code === "auth/requires-recent-login") {
+        setMsg("For security, sign out and sign in again, then change your password.");
+      } else {
+        setMsg(err.message || "Could not update password.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return html`<div>
+    <${PageHead} title="Settings" sub="Account & preferences" onBack=${() => setSection("dashboard")} backLabel="Home" />
+    <div class="panel" style=${{ marginBottom: 12 }}>
+      <div class="cred-label">Signed in as</div>
+      <strong>${student?.email || "—"}</strong>
+    </div>
+    <div class="panel" style=${{ marginBottom: 12 }}>
+      <div style=${{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <strong style=${{ fontSize: 14 }}>Dashboard notices</strong>
+          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Remember to show offers & notices on home</p>
+        </div>
+        <button type="button" class=${"toggle-mini" + (notify ? " on" : "")} onClick=${toggleNotify} aria-label="Toggle notices">${notify ? "On" : "Off"}</button>
+      </div>
+    </div>
+    <form class="panel" onSubmit=${changePassword}>
+      <strong style=${{ fontSize: 14, display: "block", marginBottom: 10 }}>Change password</strong>
+      <input type="password" autocomplete="new-password" placeholder="New password" value=${pw1} onInput=${(e) => setPw1(e.target.value)}
+        style=${{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
+      <input type="password" autocomplete="new-password" placeholder="Confirm password" value=${pw2} onInput=${(e) => setPw2(e.target.value)}
+        style=${{ width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
+      ${msg ? html`<p style=${{ fontSize: 13, marginBottom: 8, color: "var(--muted)" }}>${msg}</p>` : null}
+      <button type="submit" class="btn-block" disabled=${busy}>${busy ? "Saving…" : "Update password"}</button>
+    </form>
+    <div style=${{ marginTop: 16 }}>
+      <button type="button" class="btn-block secondary" onClick=${onLogout}>Sign out</button>
+    </div>
+  </div>`;
+}
+
+
 export function MobileView({ ctx }) {
 
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
-    paidTotal, onLogout, linked, announcements, promos, assessments
+    paidTotal, onLogout, linked, announcements, promos, assessments,
+    certificates, attendance, schedule, messages, user
   } = ctx;
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -630,6 +780,22 @@ export function MobileView({ ctx }) {
         }} />`)}
       </section>
       <section>
+        <div class="m-section-h"><h3 class="display">More</h3></div>
+        <div class="more-grid">
+          ${[
+            { id: "schedule", label: "Schedule", icon: "cal" },
+            { id: "attendance", label: "Attendance", icon: "check" },
+            { id: "certificates", label: "Certificates", icon: "card" },
+            { id: "messages", label: "Messages", icon: "mail" },
+            { id: "transcript", label: "Transcript", icon: "chart" },
+            { id: "settings", label: "Settings", icon: "gear" }
+          ].map((x) => html`<button type="button" class="more-tile" key=${x.id} onClick=${() => setSection(x.id)}>
+            <span class="tile-icon">${Icon({ name: x.icon, size: 18 })}</span>
+            <span>${x.label}</span>
+          </button>`)}
+        </div>
+      </section>
+      <section>
         <div class="m-section-h">
           <h3 class="display">Modules</h3>
           ${courses.length ? html`<button type="button" class="see" style=${{ border: 0, background: "none" }} onClick=${() => setSection("courses")}>See all</button>` : null}
@@ -677,7 +843,10 @@ export function MobileView({ ctx }) {
     `;
   } else if (section === "grades") {
     body = html`
-      <div class="page-head"><h1 class="display">My grades</h1><p>Published results only</p></div>
+      <${PageHead} title="My grades" sub="Published results only" onBack=${() => setSection("dashboard")} backLabel="Home" />
+      ${grades.length ? html`<div style=${{ marginBottom: 12 }}>
+        <button type="button" class="btn-block secondary" onClick=${() => setSection("transcript")}>Open full transcript</button>
+      </div>` : null}
       <div class="m-list">
         ${grades.length
           ? grades.map((g) => html`<${ListCard} key=${g.id}
@@ -950,6 +1119,113 @@ export function MobileView({ ctx }) {
     const a = (assessments || []).find((x) => x.id === tid);
     const qs = Array.isArray(a?.questions) ? a.questions : [];
     body = html`<${TakeTest} assessment=${a} questions=${qs} onBack=${() => setSection("assessments")} />`;
+  } else if (section === "schedule") {
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const byDay = {};
+    (schedule || []).forEach((s) => {
+      const d = s.day || s.weekday || "Other";
+      if (!byDay[d]) byDay[d] = [];
+      byDay[d].push(s);
+    });
+    body = html`
+      <${PageHead} title="Schedule" sub="Class times for your track" onBack=${() => setSection("dashboard")} backLabel="Home" />
+      ${(schedule || []).length
+        ? days.filter((d) => byDay[d]).concat(Object.keys(byDay).filter((d) => !days.includes(d))).map((d) => html`<section key=${d} style=${{ marginBottom: 14 }}>
+            <div class="m-section-h"><h3 class="display" style=${{ fontSize: 15 }}>${d}</h3></div>
+            <div class="m-list">
+              ${byDay[d].map((s) => html`<article class="m-card" key=${s.id}>
+                <span class="badge tone-sky">${(s.startTime || s.time || "—").toString().slice(0, 5)}</span>
+                <div class="m-card-text">
+                  <h4>${s.title || s.courseTitle || s.module || "Session"}</h4>
+                  <p>${[s.endTime ? "until " + s.endTime : "", s.room || s.venue || "", s.tutor || s.instructor || ""].filter(Boolean).join(" · ") || "Class session"}</p>
+                </div>
+              </article>`)}
+            </div>
+          </section>`)
+        : html`<${Empty} title="No timetable yet" body="When the academy publishes class times for your programme, they will show up here." />`}
+    `;
+  } else if (section === "attendance") {
+    const rows = attendance || [];
+    const present = rows.filter((r) => /present|yes|1|attended/i.test(String(r.status || r.present || ""))).length;
+    const pct = rows.length ? Math.round((present / rows.length) * 100) : null;
+    body = html`
+      <${PageHead} title="Attendance" sub="Sessions marked by your instructors" onBack=${() => setSection("dashboard")} backLabel="Home" />
+      ${rows.length ? html`<div class="panel" style=${{ marginBottom: 12 }}>
+        <div class="prog-label">${present} present of ${rows.length} recorded · ${pct}%</div>
+        <div class="prog-bar"><i style=${{ width: (pct || 0) + "%" }}></i></div>
+      </div>` : null}
+      <div class="m-list">
+        ${rows.length
+          ? rows.map((r) => {
+              const st = String(r.status || (r.present ? "Present" : "Absent") || "—");
+              const ok = /present|yes|attended/i.test(st);
+              return html`<${ListCard} key=${r.id}
+                badge=${ok ? "P" : "A"}
+                title=${r.sessionTitle || r.topic || r.module || "Session"}
+                note=${[r.date || r.sessionDate || "", st].filter(Boolean).join(" · ")}
+                tone=${ok ? "lime" : "coral"} />`;
+            })
+          : html`<${Empty} title="No attendance yet" body="After classes are marked, your presence record will appear here." />`}
+      </div>
+    `;
+  } else if (section === "certificates") {
+    const certs = certificates || [];
+    const idStatus = student?.idCardStatus || (certs.find((c) => c.idCardStatus) || {}).idCardStatus || "";
+    body = html`
+      <${PageHead} title="Certificates & ID" sub="Credentials on your academy file" onBack=${() => setSection("dashboard")} backLabel="Home" />
+      <div class="cred-grid">
+        <article class="cred-card">
+          <span class="cred-label">Student ID card</span>
+          <strong>${idStatus || (student?.reg ? "On file" : "Not issued yet")}</strong>
+          <p>${student?.reg ? "Reg " + student.reg : "Issued after profile and fees are complete."}</p>
+        </article>
+        <article class="cred-card">
+          <span class="cred-label">Programme certificate</span>
+          <strong>${student?.certificateCode || (certs[0] && (certs[0].code || certs[0].certificateCode)) || "Not issued yet"}</strong>
+          <p>${student?.program ? String(student.program) : "Appears when the academy publishes your certificate."}</p>
+        </article>
+      </div>
+      <div class="m-list" style=${{ marginTop: 12 }}>
+        ${certs.length
+          ? certs.map((c) => html`<${ListCard} key=${c.id}
+              badge=${(c.status || "OK").toString().slice(0, 3).toUpperCase()}
+              title=${c.title || c.type || "Credential"}
+              note=${[c.certificateCode || c.code || "", c.issuedAt || c.date || c.status || ""].filter(Boolean).join(" · ")}
+              tone="lime" />`)
+          : html`<${Empty} title="No certificate records yet" body="When ID cards or certificates are issued for you, the status will show above and in this list." />`}
+      </div>
+    `;
+  } else if (section === "messages") {
+    body = html`<${MessagesScreen} messages=${messages || []} student=${student} setSection=${setSection} />`;
+  } else if (section === "transcript") {
+    const list = (grades || []).slice().sort((a, b) => String(a.courseCode || a.courseTitle || "").localeCompare(String(b.courseCode || b.courseTitle || "")));
+    const nums = list.map((g) => Number(g.score)).filter((n) => !Number.isNaN(n));
+    const avg = nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : null;
+    body = html`
+      <${PageHead} title="Transcript" sub="Full published results" onBack=${() => setSection("grades")} backLabel="Grades" />
+      <div class="panel" style=${{ marginBottom: 12 }}>
+        <div class="cred-label">Student</div>
+        <strong style=${{ fontSize: 16 }}>${student?.name || "—"}</strong>
+        <p style=${{ color: "var(--muted)", fontSize: 12, marginTop: 4 }}>${student?.reg || "No reg yet"} · ${student?.program || "Programme TBD"}</p>
+        <div style=${{ display: "flex", gap: 16, marginTop: 12 }}>
+          <div><div class="cred-label">Modules</div><strong>${list.length}</strong></div>
+          <div><div class="cred-label">Average</div><strong>${avg != null ? avg : "—"}</strong></div>
+        </div>
+      </div>
+      <div class="m-list">
+        ${list.length
+          ? list.map((g) => html`<article class="m-card" key=${g.id}>
+              <span class="badge tone-lime">${g.grade || (g.score != null ? g.score : "·")}</span>
+              <div class="m-card-text">
+                <h4>${g.courseTitle || g.courseCode || "Course"}</h4>
+                <p>${[g.courseCode && g.courseTitle ? g.courseCode : "", g.score != null ? "Score " + g.score : "", g.remark || "", g.term || g.session || ""].filter(Boolean).join(" · ")}</p>
+              </div>
+            </article>`)
+          : html`<${Empty} title="Transcript empty" body="Published grades will build your transcript here module by module." />`}
+      </div>
+    `;
+  } else if (section === "settings") {
+    body = html`<${SettingsScreen} student=${student} user=${user} onLogout=${onLogout} setSection=${setSection} />`;
   } else {
     body = html`
       <div class="page-head"><h1 class="display">Profile</h1><p>Your academy file</p></div>

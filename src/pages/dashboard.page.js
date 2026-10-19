@@ -17,9 +17,15 @@ const ONBOARD_KEY = "cgtia_portal_onboard_v2";
 const NAV_ALL = [
   { id: "dashboard", label: "Dashboard", icon: "grid" },
   { id: "courses", label: "Courses", icon: "book" },
-  { id: "assessments", label: "Tests", icon: "cal" },
+  { id: "schedule", label: "Schedule", icon: "cal" },
+  { id: "assessments", label: "Tests", icon: "book" },
   { id: "grades", label: "My grades", icon: "chart" },
+  { id: "transcript", label: "Transcript", icon: "chart" },
+  { id: "attendance", label: "Attendance", icon: "check" },
+  { id: "certificates", label: "Certificates", icon: "card" },
+  { id: "messages", label: "Messages", icon: "mail" },
   { id: "fees", label: "Fees", icon: "card" },
+  { id: "settings", label: "Settings", icon: "gear" },
   { id: "profile", label: "Profile", icon: "user" }
 ];
 
@@ -202,6 +208,85 @@ async function loadPortalData(user) {
     console.warn(e);
   }
 
+  let certificates = [];
+  try {
+    if (row) {
+      const snaps = [];
+      try {
+        snaps.push(await api.getDocs(api.query(api.collection(db, "certificates"), api.where("email", "==", email))));
+      } catch (_) {}
+      try {
+        if (row.id) snaps.push(await api.getDocs(api.query(api.collection(db, "certificates"), api.where("studentId", "==", row.id))));
+      } catch (_) {}
+      const seen = new Set();
+      snaps.forEach((snap) => {
+        snap.forEach((d) => {
+          if (seen.has(d.id)) return;
+          seen.add(d.id);
+          const c = { id: d.id, ...d.data() };
+          if (c.trashed === true) return;
+          certificates.push(c);
+        });
+      });
+    }
+    // synthetic from student record if no cert docs
+    if (!certificates.length && row && (row.certificateCode || row.idCardStatus || row.licenseStatus)) {
+      certificates.push({
+        id: "student-record",
+        type: "record",
+        title: "Academy credentials",
+        certificateCode: row.certificateCode || "",
+        idCardStatus: row.idCardStatus || row.idCard || "",
+        licenseStatus: row.licenseStatus || "",
+        status: row.certificateStatus || (row.certificateCode ? "issued" : "pending")
+      });
+    }
+  } catch (e) { console.warn(e); }
+
+  let attendance = [];
+  try {
+    if (row) {
+      try {
+        const snap = await api.getDocs(api.query(api.collection(db, "attendance"), api.where("email", "==", email)));
+        snap.forEach((d) => attendance.push({ id: d.id, ...d.data() }));
+      } catch (_) {}
+      if (!attendance.length && row.id) {
+        try {
+          const snap = await api.getDocs(api.query(api.collection(db, "attendance"), api.where("studentId", "==", row.id)));
+          snap.forEach((d) => attendance.push({ id: d.id, ...d.data() }));
+        } catch (_) {}
+      }
+      attendance.sort((a, b) => String(b.date || b.sessionDate || "").localeCompare(String(a.date || a.sessionDate || "")));
+    }
+  } catch (e) { console.warn(e); }
+
+  let schedule = [];
+  try {
+    const snap = await api.getDocs(api.collection(db, "schedule"));
+    snap.forEach((d) => {
+      const s = { id: d.id, ...d.data() };
+      if (s.active === false || s.trashed === true) return;
+      if (row && row.program && s.program && String(s.program).toLowerCase() !== String(row.program).toLowerCase()) return;
+      schedule.push(s);
+    });
+    schedule.sort((a, b) => String(a.dayOrder || a.day || "").localeCompare(String(b.dayOrder || b.day || "")) || String(a.startTime || "").localeCompare(String(b.startTime || "")));
+  } catch (e) { console.warn(e); }
+
+  let messages = [];
+  try {
+    if (email) {
+      try {
+        const snap = await api.getDocs(api.query(api.collection(db, "supportMessages"), api.where("email", "==", email)));
+        snap.forEach((d) => messages.push({ id: d.id, ...d.data() }));
+      } catch (_) {}
+      messages.sort((a, b) => {
+        const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+        const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+        return tb - ta;
+      });
+    }
+  } catch (e) { console.warn(e); }
+
   const student = {
     id: row?.id,
     name: row ? (row.fullLegalName || row.fullName || user.email) : user.email,
@@ -219,7 +304,7 @@ async function loadPortalData(user) {
     nextOfKin: row?.nextOfKinName || (row?.nextOfKin && row.nextOfKin.name) || ""
   };
 
-  return { student, courses, grades, payments, assessments, announcements, promos, portalSettings, linked: !!row };
+  return { student, courses, grades, payments, assessments, announcements, promos, certificates, attendance, schedule, messages, portalSettings, linked: !!row };
 }
 
 function BrandLoading({ isDesktop }) {
@@ -332,6 +417,7 @@ export function DashboardPage() {
     if (!nav.length) return;
     if (nav.find((n) => n.id === section)) return;
     if (/^(course|lesson|test|notice|fees|receipt|lcheck|mquiz):/.test(String(section || ""))) return;
+    if (/^(schedule|attendance|certificates|messages|transcript|settings)$/.test(String(section || ""))) return;
     setSection("dashboard");
   }, [nav, section]);
 
@@ -406,7 +492,12 @@ export function DashboardPage() {
     linked: !!(data && data.linked),
     announcements: (data && data.announcements) || [],
     promos: (data && data.promos) || [],
-    assessments: (data && data.assessments) || []
+    assessments: (data && data.assessments) || [],
+    certificates: (data && data.certificates) || [],
+    attendance: (data && data.attendance) || [],
+    schedule: (data && data.schedule) || [],
+    messages: (data && data.messages) || [],
+    user
   };
 
   return isDesktop
