@@ -324,6 +324,11 @@ service cloud.firestore {
     }
 
 
+    match /portalNotifications/{id} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin() || isStaff();
+    }
+
     // Class timetable (student portal Schedule)
     match /schedule/{sessionId} {
       allow read: if isSignedIn();

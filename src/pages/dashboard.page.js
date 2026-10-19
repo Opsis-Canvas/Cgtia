@@ -310,6 +310,39 @@ async function loadPortalData(user) {
     schedule.sort((a, b) => String(a.dayOrder || a.day || "").localeCompare(String(b.dayOrder || b.day || "")) || String(a.startTime || "").localeCompare(String(b.startTime || "")));
   } catch (e) { console.warn(e); }
 
+  let notifications = [];
+  try {
+    const snaps = [];
+    try {
+      snaps.push(await api.getDocs(api.query(api.collection(db, "portalNotifications"), api.where("audience", "==", "all"))));
+    } catch (_) {}
+    if (email) {
+      try {
+        snaps.push(await api.getDocs(api.query(api.collection(db, "portalNotifications"), api.where("email", "==", email))));
+      } catch (_) {}
+    }
+    if (row && row.program) {
+      try {
+        snaps.push(await api.getDocs(api.query(api.collection(db, "portalNotifications"), api.where("program", "==", row.program))));
+      } catch (_) {}
+    }
+    const seen = new Set();
+    snaps.forEach((snap) => {
+      snap.forEach((d) => {
+        if (seen.has(d.id)) return;
+        seen.add(d.id);
+        const n = { id: d.id, ...d.data() };
+        if (n.active === false || n.trashed === true) return;
+        notifications.push(n);
+      });
+    });
+    notifications.sort((a, b) => {
+      const ta = a.createdAt?.toMillis?.() || 0;
+      const tb = b.createdAt?.toMillis?.() || 0;
+      return tb - ta;
+    });
+  } catch (e) { console.warn(e); }
+
   let messages = [];
   try {
     if (email) {
@@ -342,7 +375,7 @@ async function loadPortalData(user) {
     nextOfKin: row?.nextOfKinName || (row?.nextOfKin && row.nextOfKin.name) || ""
   };
 
-  return { student, courses, grades, payments, assessments, announcements, promos, certificates, attendance, schedule, messages, portalSettings, linked: !!row };
+  return { student, courses, grades, payments, assessments, announcements, promos, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
 }
 
 function BrandLoading({ isDesktop }) {
@@ -553,6 +586,7 @@ export function DashboardPage() {
     attendance: (data && data.attendance) || [],
     schedule: (data && data.schedule) || [],
     messages: (data && data.messages) || [],
+    notifications: (data && data.notifications) || [],
     user
   };
 

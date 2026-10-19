@@ -5,6 +5,8 @@
  * mobile → ~Galaxy A51 · desktop → 1280px+
  */
 export const ASSETS = {
+  logo: "/assets/brand/cgtia-logo.webp",
+  logoPng: "/assets/brand/cgtia-logo.png",
   onboardingPerson: {
     name: "Onboarding person PNG",
     url: "/assets/onboarding-person.webp",

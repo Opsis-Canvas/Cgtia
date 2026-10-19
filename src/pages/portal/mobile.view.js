@@ -740,17 +740,43 @@ function SettingsScreen({ student, user, onLogout, setSection }) {
 }
 
 
+
+function NotifDrawer({ open, onClose, items, onOpen }) {
+  return html`<div class=${"notif-drawer" + (open ? " open" : "")}>
+    <div class="notif-scrim" onClick=${onClose}></div>
+    <aside class="notif-panel" role="dialog" aria-label="Notifications">
+      <div class="notif-head">
+        <strong style=${{ fontSize: 16 }}>Notifications</strong>
+        <button type="button" class="icon-btn" aria-label="Close" onClick=${onClose}>${Icon({ name: "close", size: 18 })}</button>
+      </div>
+      <div class="notif-list">
+        ${(items || []).length
+          ? (items || []).map((n) => html`<article class=${"notif-item" + (n.read ? "" : " unread")} key=${n.id}
+              role=${n.linkUrl || n.section ? "button" : undefined}
+              onClick=${() => onOpen && onOpen(n)}>
+              <h4>${n.title || "Notice"}</h4>
+              <p>${n.body || n.message || ""}</p>
+              <time>${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString() : ""}</time>
+            </article>`)
+          : html`<${Empty} title="You're all caught up" body="When the academy posts a notice for you, it will show here." />`}
+      </div>
+    </aside>
+  </div>`;
+}
+
 export function MobileView({ ctx }) {
 
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
     paidTotal, onLogout, linked, announcements, promos, assessments,
-    certificates, attendance, schedule, messages, user
+    certificates, attendance, schedule, messages, notifications, user
   } = ctx;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const name = student?.name || "Student";
   const first = String(name).split(/\s+/)[0];
+  const unreadNotifs = (notifications || []).filter((n) => !n.read).length;
 
   let body = null;
   if (section === "dashboard") {
@@ -1308,7 +1334,18 @@ export function MobileView({ ctx }) {
     <header class="m-top">
       <button class="icon-btn" aria-label="Open menu" aria-expanded=${menuOpen}
         onClick=${() => setMenuOpen(true)}>${Icon({ name: "menu", size: 18 })}</button>
+      <div class="careed-brand" aria-label="CareEd powered by CGTIA">
+        <img src="/assets/brand/cgtia-logo.webp" alt="" width="36" height="36" />
+        <div class="careed-text">
+          <strong>CareEd</strong>
+          <span>Powered by CGTIA</span>
+        </div>
+      </div>
       <div class="m-top-r">
+        <button type="button" class="notif-btn" aria-label="Notifications" onClick=${() => setNotifOpen(true)}>
+          ${Icon({ name: "bell", size: 18 })}
+          ${unreadNotifs ? html`<span class="dot"></span>` : null}
+        </button>
         <${Avatar} src=${student?.avatar} name=${name} />
       </div>
     </header>
@@ -1321,6 +1358,16 @@ export function MobileView({ ctx }) {
       section=${section}
       onSelect=${setSection}
       onLogout=${onLogout}
+    />
+    <${NotifDrawer}
+      open=${notifOpen}
+      onClose=${() => setNotifOpen(false)}
+      items=${notifications || []}
+      onOpen=${(n) => {
+        setNotifOpen(false);
+        if (n.section) setSection(n.section);
+        else if (n.linkUrl) { try { window.open(n.linkUrl, "_blank", "noopener"); } catch (_) {} }
+      }}
     />
   </div>`;
 }
