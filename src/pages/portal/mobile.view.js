@@ -797,7 +797,6 @@ export function MobileView({ ctx }) {
         </div>
       `}
     `;
-  } else if (String(section || "").startsWith("notice:")
   } else if (String(section || "").startsWith("notice:")) {
     const nid = String(section).slice(7);
     const n = (announcements || []).find((a) => String(a.id) === nid) || (announcements || [])[0];
