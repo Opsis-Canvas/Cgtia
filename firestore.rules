@@ -141,7 +141,7 @@ service cloud.firestore {
 
     match /grades/{gradeId} {
       allow read: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor'])
-        || (isSignedIn() && resource.data.published != false && (
+        || (isSignedIn() && resource.data.published == true && (
           resource.data.studentUid == request.auth.uid
           || (resource.data.studentEmail is string && request.auth.token.email is string
               && resource.data.studentEmail.lower() == request.auth.token.email.lower())
