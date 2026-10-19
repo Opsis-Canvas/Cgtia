@@ -168,22 +168,35 @@ async function loadPortalData(user) {
   }
 
   let announcements = [];
+  let promos = [];
   try {
-    // Prefer promotions/announcements already used on the public site
     const snap = await api.getDocs(api.collection(db, "promotions"));
+    const now = Date.now();
     snap.forEach((d) => {
       const a = { id: d.id, ...d.data() };
-      if (a.active === false || a.paused === true) return;
-      const kind = String(a.kind || a.type || "").toLowerCase();
-      if (kind && kind.indexOf("ann") === -1 && a.channel !== "announcement") {
-        // still allow if marked showInPortal
-        if (a.showInPortal !== true) return;
+      // Respect admin pause / hibernate / stop / trash
+      if (a.trashed === true) return;
+      if (a.active === false || a.paused === true || a.hibernated === true) return;
+      if (a.endsAt) {
+        const end = a.endsAt.toMillis ? a.endsAt.toMillis() : new Date(a.endsAt).getTime();
+        if (end && end < now) return;
       }
-      announcements.push({
-        title: a.title || a.headline || "Announcement",
-        body: a.body || a.message || a.fullMessage || a.text || "",
-        id: d.id
-      });
+      const kind = String(a.type || a.kind || "").toLowerCase();
+      const item = {
+        id: d.id,
+        title: a.title || a.headline || "Notice",
+        body: a.description || a.body || a.message || a.fullMessage || a.bellText || a.text || "",
+        linkUrl: a.linkUrl || a.bellButtonUrl || "",
+        linkLabel: a.linkLabel || a.bellButtonLabel || "Open",
+        kind,
+        badge: a.badge || "",
+        promoAmount: a.promoAmount || ""
+      };
+      if (kind === "tuition" || kind === "promo" || kind === "promotion") {
+        promos.push(item);
+      } else if (kind.indexOf("ann") !== -1 || a.channel === "announcement" || a.showInPortal === true) {
+        announcements.push(item);
+      }
     });
   } catch (e) {
     console.warn(e);
@@ -206,7 +219,7 @@ async function loadPortalData(user) {
     nextOfKin: row?.nextOfKinName || (row?.nextOfKin && row.nextOfKin.name) || ""
   };
 
-  return { student, courses, grades, payments, assessments, announcements, portalSettings, linked: !!row };
+  return { student, courses, grades, payments, assessments, announcements, promos, portalSettings, linked: !!row };
 }
 
 function BrandLoading({ isDesktop }) {
@@ -392,6 +405,7 @@ export function DashboardPage() {
     onLogout: logout,
     linked: !!(data && data.linked),
     announcements: (data && data.announcements) || [],
+    promos: (data && data.promos) || [],
     assessments: (data && data.assessments) || []
   };
 

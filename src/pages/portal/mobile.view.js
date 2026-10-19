@@ -449,46 +449,53 @@ function TakeTest({ assessment, questions, onBack }) {
   }, [anti]);
 
   if (!assessment) {
-    return html`<div class="page-head"><button type="button" class="ghost-back" onClick=${onBack}>← Back</button>
-      <h1 class="display">Test</h1></div><${Empty} title="Not found" body="This test is no longer available." />`;
+    return html`<div>
+      <${PageHead} title="Test" onBack=${onBack} backLabel="Exit" />
+      <${Empty} title="Not found" body="This test is no longer available." />
+    </div>`;
   }
   if (done || (questions.length && idx >= questions.length)) {
     let score = 0;
     questions.forEach((q, i) => {
       if (q.correct != null && String(answers[i]) === String(q.correct)) score += 1;
     });
-    return html`<div class="page-head"><button type="button" class="ghost-back" onClick=${onBack}>← Back</button>
-      <h1 class="display">Submitted</h1><p>${assessment.title}</p></div>
-      <div class="panel"><p>You answered ${Object.keys(answers).length} of ${questions.length} questions.
-      ${questions.some((q) => q.correct != null) ? " Score: " + score + " / " + questions.length + "." : " Your instructor will mark this."}</p>
-      <button type="button" class="pill-ink" style=${{ marginTop: 12 }} onClick=${onBack}>Back to tests</button></div>`;
+    return html`<div>
+      <${PageHead} title="Submitted" sub=${assessment.title} onBack=${onBack} backLabel="Exit" />
+      <div class="quiz-result-card ok">
+        <div class="emoji">✓</div>
+        <h3>Answers sent</h3>
+        <p>You answered ${Object.keys(answers).length} of ${questions.length} questions.
+        ${questions.some((q) => q.correct != null) ? " Score: " + score + " / " + questions.length + "." : " Your instructor will mark this."}</p>
+        <div class="btn-row"><button type="button" class="btn-block" onClick=${onBack}>Back to tests</button></div>
+      </div>
+    </div>`;
   }
   const q = questions[idx] || null;
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
   const ss = String(left % 60).padStart(2, "0");
-  return html`<div class="test-shell" onCopy=${anti ? (e) => e.preventDefault() : undefined}>
-    <div class="page-head">
-      <button type="button" class="ghost-back" onClick=${onBack}>← Exit</button>
-      <h1 class="display">${assessment.title}</h1>
-      <p>${assessment.timerMinutes ? ("Time left " + mm + ":" + ss) : "No time limit"} · Q ${questions.length ? idx + 1 : 0}/${questions.length}</p>
-    </div>
+  return html`<div class="test-shell quiz-shell" onCopy=${anti ? (e) => e.preventDefault() : undefined}>
+    <${PageHead}
+      title=${assessment.title}
+      sub=${(assessment.timerMinutes ? ("Time left " + mm + ":" + ss) : "No time limit") + " · Q " + (questions.length ? idx + 1 : 0) + "/" + questions.length}
+      onBack=${onBack}
+      backLabel="Exit" />
     ${warn ? html`<p class="warn-banner">${warn}</p>` : null}
     ${!questions.length
       ? html`<div class="panel"><p>${assessment.description || "No questions published yet. Check back later."}</p>
-          <button type="button" class="pill-ink" onClick=${onBack}>Back</button></div>`
-      : html`<div class="panel">
-          <h3 style=${{ marginBottom: 12 }}>${q.prompt || q.text || "Question"}</h3>
-          ${(q.options || []).map((opt, oi) => html`<label class="opt-row" key=${oi}>
+          <div class="btn-row"><button type="button" class="btn-block" onClick=${onBack}>Back to tests</button></div></div>`
+      : html`<div class="quiz-card">
+          <h3>${q.prompt || q.text || "Question"}</h3>
+          ${(q.options || []).map((opt, oi) => html`<label class=${"quiz-opt" + (String(answers[idx]) === String(oi) ? " on" : "")} key=${oi}>
             <input type="radio" name=${"q" + idx} checked=${String(answers[idx]) === String(oi)}
               onChange=${() => setAnswers({ ...answers, [idx]: oi })} />
             <span>${opt}</span>
           </label>`)}
-          <div style=${{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-            ${idx > 0 ? html`<button type="button" class="ghost-back" onClick=${() => setIdx(idx - 1)}>Previous</button>` : null}
-            <button type="button" class="pill-ink" onClick=${() => {
+          <div class="btn-row">
+            <button type="button" class="btn-block" onClick=${() => {
               if (idx + 1 >= questions.length) setDone(true);
               else setIdx(idx + 1);
-            }}>${idx + 1 >= questions.length ? "Submit" : "Next"}</button>
+            }}>${idx + 1 >= questions.length ? "Submit answers" : "Next question"}</button>
+            ${idx > 0 ? html`<button type="button" class="btn-block secondary" onClick=${() => setIdx(idx - 1)}>Previous</button>` : null}
           </div>
         </div>`}
   </div>`;
@@ -509,13 +516,14 @@ function toEmbed(url) {
   return u;
 }
 
-function ListCard({ badge, title, note, tone, onClick, shaking }) {
-  return html`<article class=${"m-card" + (onClick ? " is-click" : "") + (shaking ? " shake" : "")} role=${onClick ? "button" : undefined} onClick=${onClick}>
+function ListCard({ badge, title, note, tone, onClick, shaking, locked }) {
+  return html`<article class=${"m-card" + (onClick ? " is-click" : "") + (shaking ? " shake" : "") + (locked ? " is-locked" : "")} role=${onClick ? "button" : undefined} onClick=${onClick}>
     <span class=${"badge tone-" + (tone || "mist")}>${badge}</span>
     <div class="m-card-text">
       <h4>${title}</h4>
-      <p>${note || ""}</p>
+      <p class=${locked && shaking ? "lock-note-hot" : ""}>${note || ""}</p>
     </div>
+    ${locked ? html`<span class="lock-pill" aria-hidden="true">🔒</span>` : null}
   </article>`;
 }
 
@@ -526,15 +534,15 @@ function LessonList({ lessons, prog, cid, setSection }) {
     return html`<${Empty} title="No lessons yet" body="Your instructor will add videos and reading here." />`;
   }
   return html`<div class="m-list">
-    ${warn ? html`<div class="lock-inline-warn">${warn}</div>` : null}
     ${lessons.map((l, i) => {
       const id = String(l.id != null ? l.id : i);
       const unlocked = i === 0 || prog.completed.includes(String(lessons[i - 1].id != null ? lessons[i - 1].id : (i - 1)));
       const done = prog.completed.includes(id);
       const num = String(i + 1).padStart(2, "0");
       const tone = done ? "done" : (!unlocked ? "lock" : (l.type === "video" ? "coral" : "sky"));
+      const lockedHere = !unlocked && shakeId === id;
       const note = !unlocked
-        ? "Finish the lesson above first"
+        ? (lockedHere ? ("Locked · finish “" + (lessons[i - 1]?.title || "previous") + "” first") : "Locked")
         : ((l.type || "text") + (l.duration ? " · " + l.duration : "") + (done ? " · Completed" : ""));
       return html`<${ListCard} key=${id}
         badge=${num}
@@ -542,14 +550,14 @@ function LessonList({ lessons, prog, cid, setSection }) {
         note=${note}
         tone=${tone}
         shaking=${shakeId === id}
+        locked=${!unlocked}
         onClick=${() => {
           if (unlocked) {
-            setWarn("");
+            setShakeId(null);
             setSection("lesson:" + cid + ":" + id);
           } else {
             setShakeId(id);
-            setWarn("This lesson is locked. Complete “" + (lessons[i - 1]?.title || "the previous lesson") + "” first.");
-            setTimeout(() => setShakeId(null), 500);
+            setTimeout(() => setShakeId(null), 900);
           }
         }} />`;
     })}
@@ -560,7 +568,7 @@ export function MobileView({ ctx }) {
 
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
-    paidTotal, onLogout, linked, announcements, assessments
+    paidTotal, onLogout, linked, announcements, promos, assessments
   } = ctx;
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -586,11 +594,32 @@ export function MobileView({ ctx }) {
         </div>
         <${ImageSlot} asset=${ASSETS.bannerPerson} className="m-banner-img" />
       </section>
-      ${(announcements || []).length ? html`<section class="ann-card is-click" role="button"
-        onClick=${() => setSection("notice:" + (announcements[0].id || "0"))}>
-        <h4>${announcements[0].title || "Announcement"}</h4>
-        <p>${(announcements[0].body || announcements[0].message || "").slice(0, 120)}${(announcements[0].body || "").length > 120 ? "…" : ""}</p>
-        <span class="ann-more">Tap for details →</span>
+      ${(promos || []).length ? html`<section class="dash-promo-strip">
+        <div class="m-section-h"><h3 class="display">Offers</h3></div>
+        <div class="promo-scroll">
+          ${(promos || []).map((p) => html`<article class="promo-chip" key=${p.id}
+            role=${p.linkUrl ? "button" : undefined}
+            onClick=${p.linkUrl ? () => { try { window.open(p.linkUrl, "_blank", "noopener"); } catch (_) {} } : undefined}>
+            ${p.badge ? html`<span class="promo-badge">${p.badge}</span>` : null}
+            <strong>${p.title}</strong>
+            <p>${(p.body || "").slice(0, 80)}${(p.body || "").length > 80 ? "…" : ""}</p>
+            ${p.linkUrl ? html`<span class="promo-cta">${p.linkLabel || "View"}</span>` : null}
+          </article>`)}
+        </div>
+      </section>` : null}
+      ${(announcements || []).length ? html`<section>
+        <div class="m-section-h"><h3 class="display">Notices</h3></div>
+        <div class="m-list">
+          ${(announcements || []).slice(0, 4).map((a) => html`<article class="notice-row is-click" key=${a.id}
+            role="button" onClick=${() => setSection("notice:" + a.id)}>
+            <div class="notice-ico">${a.linkUrl ? "↗" : "●"}</div>
+            <div class="notice-mid">
+              <h4>${a.title || "Notice"}</h4>
+              <p>${(a.body || "").slice(0, 90)}${(a.body || "").length > 90 ? "…" : ""}</p>
+            </div>
+            <span class="notice-chev">›</span>
+          </article>`)}
+        </div>
       </section>` : null}
       <section class="m-tiles">
         ${stats.map((s) => html`<${Tile} key=${s.id} s=${s} onClick=${() => {
@@ -801,12 +830,14 @@ export function MobileView({ ctx }) {
     const nid = String(section).slice(7);
     const n = (announcements || []).find((a) => String(a.id) === nid) || (announcements || [])[0];
     body = html`
-      <div class="page-head">
-        <${BackBtn} label="Home" onClick=${() => setSection("dashboard")} />
-        <h1 class="display">${n?.title || "Announcement"}</h1>
-        <p>From the academy</p>
+      <${PageHead} title=${n?.title || "Notice"} sub="From the academy" onBack=${() => setSection("dashboard")} backLabel="Home" />
+      <div class="panel prose"><p>${n?.body || n?.message || "No further details."}</p>
+        ${n?.linkUrl ? html`<div style=${{ marginTop: 16 }}>
+          <button type="button" class="btn-block" onClick=${() => { try { window.open(n.linkUrl, "_blank", "noopener"); } catch (_) {} }}>
+            ${n.linkLabel || "Open link"}
+          </button>
+        </div>` : null}
       </div>
-      <div class="panel prose"><p>${n?.body || n?.message || "No further details."}</p></div>
     `;
   } else if (String(section || "").startsWith("course:")) {
     const rest = String(section).slice(7);
