@@ -169,7 +169,8 @@ function chunkText(text) {
  * In-lesson TTS player: play/pause, back one chunk, speed cycle.
  * Uses Web Speech API (free, on-device). No API key.
  */
-function LessonTtsPlayer({ text, title, hide }) {
+function LessonTtsPlayer({ text, title }) {
+  const [open, setOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [chunkIdx, setChunkIdx] = useState(0);
   const [speed, setSpeed] = useState(1);
@@ -182,10 +183,10 @@ function LessonTtsPlayer({ text, title, hide }) {
   }, []);
 
   useEffect(() => {
-    // Stop when text changes (new lesson)
     try { speechSynthesis.cancel(); } catch (_) {}
     setPlaying(false);
     setChunkIdx(0);
+    setOpen(false);
   }, [text]);
 
   function speakFrom(start) {
@@ -193,7 +194,6 @@ function LessonTtsPlayer({ text, title, hide }) {
     speechSynthesis.cancel();
     let i = Math.max(0, Math.min(start, chunks.length - 1));
     setChunkIdx(i);
-
     function run(j) {
       if (j >= chunks.length) {
         setPlaying(false);
@@ -232,25 +232,36 @@ function LessonTtsPlayer({ text, title, hide }) {
     const i = speeds.indexOf(speed);
     const n = speeds[(i + 1) % speeds.length];
     setSpeed(n);
-    if (playing) {
-      // restart current chunk at new rate
-      setTimeout(() => speakFrom(chunkIdx), 30);
-    }
+    if (playing) setTimeout(() => speakFrom(chunkIdx), 30);
+  }
+
+  function closePlayer() {
+    try { speechSynthesis.cancel(); } catch (_) {}
+    setPlaying(false);
+    setOpen(false);
   }
 
   if (!chunks.length) return null;
   const pct = Math.round(((chunkIdx + (playing ? 0.5 : 0)) / total) * 100);
 
-  return html`<div class=${"tts-player" + (hide ? " hide" : "")}>
+  if (!open) {
+    return html`<button type="button" class=${"tts-fab" + (playing ? " playing" : "")}
+      aria-label="Listen" onClick=${() => setOpen(true)}>
+      ${Icon({ name: "speaker", size: 22 })}
+    </button>`;
+  }
+
+  return html`<div class="tts-player">
     <div class="tts-player-top">
       <div class="meta">
         <strong>${title || "Listen"}</strong>
-        <span>${playing ? "Playing" : "Paused"} · part ${Math.min(chunkIdx + 1, total)}/${total}</span>
+        <span>${playing ? "Playing" : "Paused"} · ${Math.min(chunkIdx + 1, total)}/${total}</span>
       </div>
+      <button type="button" class="tts-close" aria-label="Close" onClick=${closePlayer}>×</button>
     </div>
     <div class="tts-prog"><i style=${{ width: Math.min(100, pct) + "%" }}></i></div>
     <div class="tts-controls">
-      <button type="button" aria-label="Back" onClick=${skipBack}>↺ 10s</button>
+      <button type="button" aria-label="Back" onClick=${skipBack}>↺</button>
       <button type="button" class="primary" aria-label=${playing ? "Pause" : "Play"} onClick=${togglePlay}>
         ${playing ? "❚❚" : "▶"}
       </button>
@@ -259,7 +270,7 @@ function LessonTtsPlayer({ text, title, hide }) {
   </div>`;
 }
 
-function LessonView({ section, courses, student, setSection }) {
+function LessonViewfunction LessonView({ section, courses, student, setSection }) {
   const parts = String(section).slice(7).split(":");
   const cid = parts[0];
   const lid = parts[1];
@@ -345,14 +356,26 @@ function LessonView({ section, courses, student, setSection }) {
           </div>
         </div>
         ${l.type === "video" && l.videoUrl
-          ? html`<div class="video-wrap"><iframe src=${toEmbed(l.videoUrl)} title=${l.title || "Video"} allowfullscreen loading="lazy"></iframe></div>`
+          ? html`<div class="video-wrap">
+              <iframe
+                src=${toEmbed(l.videoUrl)}
+                title=${l.title || "Video"}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                allowfullscreen
+                referrerpolicy="strict-origin-when-cross-origin"
+                loading="lazy"
+              ></iframe>
+            </div>`
           : null}
-        ${l.body
-          ? html`<div class=${"lesson-body fs-" + FONT_STEPS[fontStep]}>${l.body}</div>`
-          : html`<p class="muted">No reading text for this lesson yet.</p>`}
+        <div class="lesson-body-wrap">
+          ${l.body
+            ? html`<div class=${"lesson-body fs-" + FONT_STEPS[fontStep]}>${l.body}</div>`
+            : html`<p class="muted">No reading text for this lesson yet.</p>`}
+          <div class="lesson-fade-bottom"></div>
+        </div>
       </div>
     </div>
-    ${speakText ? html`<${LessonTtsPlayer} text=${speakText} title=${l.title || "Lesson"} hide=${ttsHide} />` : null}
+    ${speakText ? html`<${LessonTtsPlayer} text=${speakText} title=${l.title || "Lesson"} />` : null}
     <div style=${{ padding: "16px 0 100px" }}>
       <button type="button" class="btn-block" onClick=${completeAndNext}>
         ${(Array.isArray(l.checkQuestions) && l.checkQuestions.filter((q) => q.prompt).length)
@@ -774,6 +797,7 @@ export function MobileView({ ctx }) {
         </div>
       `}
     `;
+  } else if (String(section || "").startsWith("notice:")
   } else if (String(section || "").startsWith("notice:")) {
     const nid = String(section).slice(7);
     const n = (announcements || []).find((a) => String(a.id) === nid) || (announcements || [])[0];

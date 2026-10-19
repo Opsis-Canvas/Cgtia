@@ -427,7 +427,7 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 .sec-label { font-family: Montserrat, sans-serif; font-weight: 800; font-size: 14px; margin: 16px 0 8px; }
 .prose p, .lesson-body { font-size: 14px; line-height: 1.55; color: #333; white-space: pre-wrap; }
-.video-wrap { position: relative; padding-bottom: 56.25%; height: 0; margin-bottom: 12px; border-radius: 12px; overflow: hidden; background: #111; }
+.video-wrap { position: relative; padding-bottom: 56.25%; height: 0; margin-bottom: 12px; border-radius: 12px; overflow: hidden; background: #111; isolation: isolate; }
 .video-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 .opt-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px; }
 .warn-banner { background: #fef3c7; color: #92400e; padding: 10px 14px; border-radius: 12px; font-size: 13px; margin-bottom: 12px; }
@@ -765,37 +765,54 @@ h1, h2, h3, h4, p { margin: 0; }
 .lesson-body.fs-lg { font-size: 18px; line-height: 1.75; }
 .lesson-body.fs-xl { font-size: 20px; line-height: 1.8; }
 
+/* Compact TTS: speaker fab, expands to slim bar */
+.tts-fab {
+  position: fixed; left: 16px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 28; width: 52px; height: 52px; border-radius: 50%;
+  border: 0; background: var(--ink); color: #fff;
+  display: grid; place-items: center;
+  box-shadow: 0 10px 24px rgba(10,17,40,0.28); cursor: pointer;
+}
+.tts-fab:active { transform: scale(0.96); }
+.tts-fab.playing { box-shadow: 0 0 0 3px rgba(37,99,235,0.35), 0 10px 24px rgba(10,17,40,0.28); }
+
 .tts-player {
   position: fixed; left: 12px; right: 72px;
   bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 28;
   background: #0f172a; color: #fff;
-  border-radius: 18px; padding: 10px 12px;
-  box-shadow: 0 12px 32px rgba(10,17,40,0.35);
-  display: flex; flex-direction: column; gap: 8px;
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  border-radius: 16px; padding: 8px 10px;
+  box-shadow: 0 12px 28px rgba(10,17,40,0.32);
+  display: flex; flex-direction: column; gap: 6px;
+  max-width: 280px;
+  animation: quizPop 0.25s ease both;
 }
-.tts-player.hide { transform: translateY(120%); opacity: 0; pointer-events: none; }
 .tts-player-top {
   display: flex; align-items: center; gap: 8px;
 }
 .tts-player-top .meta { flex: 1; min-width: 0; }
-.tts-player-top .meta strong { display: block; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tts-player-top .meta strong { display: block; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tts-player-top .meta span { font-size: 10px; opacity: 0.65; }
+.tts-player-top .tts-close {
+  width: 28px; height: 28px; border: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.12); color: #fff; cursor: pointer;
+  font-size: 14px; line-height: 1;
+}
 .tts-controls {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
 }
 .tts-controls button {
   border: 0; background: rgba(255,255,255,0.1); color: #fff;
-  border-radius: 12px; height: 36px; min-width: 36px; padding: 0 10px;
-  font-size: 12px; font-weight: 700; cursor: pointer;
+  border-radius: 10px; height: 32px; min-width: 32px; padding: 0 8px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
 }
 .tts-controls button.primary {
-  background: #fff; color: #0f172a; min-width: 44px; border-radius: 50%;
+  background: #fff; color: #0f172a; min-width: 40px; border-radius: 50%; height: 40px;
 }
 .tts-controls button:active { transform: scale(0.96); }
-.tts-controls .speed { min-width: 48px; }
+.tts-controls .speed { min-width: 42px; }
 .tts-prog {
-  height: 3px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden;
+  height: 2px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden;
 }
 .tts-prog > i { display: block; height: 100%; background: #94a3b8; border-radius: 99px; transition: width 0.2s linear; }
