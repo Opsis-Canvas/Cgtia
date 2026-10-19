@@ -8,6 +8,7 @@ Your production rules, merged with public site + admin needs:
 promotions, wallOfFame, graduates, siteContent, payments,
 feeDefinitions, feePaymentLinks,
 and resumeToken on applications create.
+Portal: schedule, supportMessages, attendance (email read), grades transcript.
 ==========================================================
 */
 
@@ -140,13 +141,24 @@ service cloud.firestore {
 
     match /grades/{gradeId} {
       allow read: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor'])
-        || (isSignedIn() && resource.data.published == true && (
+        || (isSignedIn() && resource.data.published != false && (
           resource.data.studentUid == request.auth.uid
           || (resource.data.studentEmail is string && request.auth.token.email is string
               && resource.data.studentEmail.lower() == request.auth.token.email.lower())
         ));
-      allow create, update: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor']);
-      allow delete: if isAdmin() || hasRole(['registrar', 'training-officer']);
+      allow create: if isAdmin() || hasRole(['registrar', 'training-officer', 'instructor']);
+      allow update: if isAdmin()
+        || (hasRole(['registrar', 'training-officer', 'instructor'])
+            && (
+              !('createdAt' in resource.data)
+              || request.time < resource.data.createdAt + duration.value(14, 'd')
+            ));
+      allow delete: if isAdmin()
+        || (hasRole(['registrar', 'training-officer'])
+            && (
+              !('createdAt' in resource.data)
+              || request.time < resource.data.createdAt + duration.value(14, 'd')
+            ));
     }
 
     match /notifications/{notifId} {
@@ -311,14 +323,41 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+
+    // Class timetable (student portal Schedule)
+    match /schedule/{sessionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin() || hasRole(['training-officer', 'registrar', 'instructor']);
+    }
+
+    // Student portal support inbox
+    match /supportMessages/{msgId} {
+      allow read: if isAdmin() || isStaff()
+        || (isSignedIn() && resource.data.email is string && request.auth.token.email is string
+            && resource.data.email.lower() == request.auth.token.email.lower());
+      allow create: if isSignedIn()
+        && request.resource.data.email is string
+        && request.auth.token.email is string
+        && request.resource.data.email.lower() == request.auth.token.email.lower();
+      allow update: if isAdmin() || isStaff();
+      allow delete: if isAdmin();
+    }
+
     // =======================================================
     // 5. TRAINEE / INSTRUCTOR PORTAL
     // =======================================================
 
     match /attendance/{recordId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || hasRole(['instructor']) || isAdmin());
-      allow create, update: if hasRole(['instructor']) || isAdmin();
-      allow delete: if isAdmin();
+      allow read: if isAdmin()
+        || hasRole(['instructor', 'training-officer', 'registrar'])
+        || (isSignedIn() && (
+          resource.data.userId == request.auth.uid
+          || resource.data.studentUid == request.auth.uid
+          || (resource.data.email is string && request.auth.token.email is string
+              && resource.data.email.lower() == request.auth.token.email.lower())
+        ));
+      allow create, update: if isAdmin() || hasRole(['instructor', 'training-officer', 'registrar']);
+      allow delete: if isAdmin() || hasRole(['training-officer', 'registrar']);
     }
 
     match /courseProgress/{uid} {
