@@ -23,7 +23,8 @@ export function OnboardingView({ onStart, mode = "welcome" }) {
     ${loading
       ? html`<div class="ob-load" aria-live="polite">
           <div class="ob-spin" aria-hidden="true"></div>
-          <span>Opening your portal…</span>
+          <span>Getting your details ready…</span>
+          <small style=${{ display: "block", marginTop: 6, opacity: 0.7, fontSize: 12 }}>Modules, results and fees</small>
         </div>`
       : html`<button class="ob-go" aria-label="Get started" onClick=${onStart}>
           ${Icon({ name: "arrow", size: 26 })}

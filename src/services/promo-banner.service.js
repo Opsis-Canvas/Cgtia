@@ -45,6 +45,8 @@ export async function loadActivePromotions() {
       if (data.trashed === true) return;
       if (data.hibernated) return;
       if (!data.active) return;
+      // Main website only — portal campaigns use showInPortal and must not appear here
+      if (data.showOnSite === false) return;
       if (data.endsAt) {
         const end = data.endsAt.toMillis ? data.endsAt.toMillis() : new Date(data.endsAt).getTime();
         if (end && end < now) return;
@@ -990,8 +992,8 @@ function renderAnnouncement(all) {
 const BELL_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 22a2.5 2.5 0 002.45-2h-4.9A2.5 2.5 0 0012 22zm6-6V11c0-3.07-1.64-5.64-4.5-6.32V4a1.5 1.5 0 00-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>';
 const CHEVRON_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="cgtia-chev"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
-function promoItems(all) { return all.filter(function (p) { return p.type !== "announcement" && p.type !== "announcement_link" && !p.hibernated && p.active !== false; }); }
-function annItems(all) { return all.filter(function (p) { return (p.type === "announcement" || p.type === "announcement_link") && !p.hibernated && p.active !== false; }); }
+function promoItems(all) { return all.filter(function (p) { return p.type !== "announcement" && p.type !== "announcement_link" && !p.hibernated && p.active !== false && p.showOnSite !== false; }); }
+function annItems(all) { return all.filter(function (p) { return (p.type === "announcement" || p.type === "announcement_link") && !p.hibernated && p.active !== false && p.showOnSite !== false; }); }
 
 function removeNotifyBell() {
   const b = document.getElementById("cgtiaNotifyBell");

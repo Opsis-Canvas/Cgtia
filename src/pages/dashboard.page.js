@@ -221,6 +221,8 @@ async function loadPortalData(user) {
         const end = a.endsAt.toMillis ? a.endsAt.toMillis() : new Date(a.endsAt).getTime();
         if (end && end < now) return;
       }
+      // Portal only — never pull main-site-only campaigns into the student app
+      if (a.showInPortal !== true) return;
       const kind = String(a.type || a.kind || "").toLowerCase();
       const item = {
         id: d.id,
@@ -232,16 +234,11 @@ async function loadPortalData(user) {
         badge: a.badge || "",
         promoAmount: a.promoAmount || "",
         imageUrl: a.imageUrl || a.graphicUrl || a.bannerUrl || "",
-        ctaLabel: a.ctaLabel || a.linkLabel || a.bellButtonLabel || "Know more",
-        showInPortal: a.showInPortal !== false
+        ctaLabel: a.ctaLabel || a.linkLabel || a.bellButtonLabel || "Know more"
       };
-      if (item.showInPortal === false) return;
       if (kind === "tuition" || kind === "promo" || kind === "promotion") {
         promos.push(item);
-      } else if (kind.indexOf("ann") !== -1 || a.channel === "announcement" || kind === "" || a.showInPortal === true) {
-        announcements.push(item);
-      } else if (item.imageUrl || item.linkUrl) {
-        // Graphic cards tagged for portal
+      } else {
         announcements.push(item);
       }
     });
@@ -412,31 +409,49 @@ export function DashboardPage() {
     let unsub = () => {};
     let cancelled = false;
     (async () => {
-      const wait = new Promise((r) => setTimeout(r, 700));
+      // Hold branded loading at least ~3.5s so the screen is readable
+      const minSplash = new Promise((r) => setTimeout(r, 3500));
       try {
         const { auth, onAuthStateChanged } = await firebaseAuth();
-        await wait;
-        if (cancelled) return;
+        let pendingUser = null;
+        let authReady = false;
         unsub = onAuthStateChanged(auth, async (u) => {
+          pendingUser = u;
+          authReady = true;
           setUser(u);
           if (!u) {
+            await minSplash;
+            if (cancelled) return;
             let seen = "1";
             try { seen = localStorage.getItem(ONBOARD_KEY); } catch (_) {}
             setPhase(seen ? "auth" : "onboard");
             setData(null);
             return;
           }
-          setPhase("app");
           try {
             const d = await loadPortalData(u);
-            if (!cancelled) setData(d);
+            await minSplash;
+            if (cancelled) return;
+            setData(d);
+            setPhase("app");
           } catch (e) {
             console.warn(e);
-            if (!cancelled) setData({ student: { name: u.email, email: u.email, role: "Student" }, courses: [], grades: [], payments: [], portalSettings: {}, linked: false });
+            await minSplash;
+            if (cancelled) return;
+            setData({ student: { name: u.email, email: u.email, role: "Student" }, courses: [], grades: [], payments: [], portalSettings: {}, linked: false });
+            setPhase("app");
           }
         });
+        // Safety: if auth is slow, still leave splash after min time once auth fires
+        await minSplash;
+        if (cancelled) return;
+        if (authReady && !pendingUser) {
+          let seen = "1";
+          try { seen = localStorage.getItem(ONBOARD_KEY); } catch (_) {}
+          setPhase(seen ? "auth" : "onboard");
+        }
       } catch (e) {
-        await wait;
+        await minSplash;
         if (!cancelled) setPhase("auth");
       }
     })();
@@ -457,7 +472,7 @@ export function DashboardPage() {
     // Keep list tabs in nav; allow detail routes (module / lesson / test / notice)
     if (!nav.length) return;
     if (nav.find((n) => n.id === section)) return;
-    if (/^(course|lesson|test|notice|fees|receipt|lcheck|mquiz):/.test(String(section || ""))) return;
+    if (/^(course|lesson|test|notice|fees|receipt|lcheck|mquiz|grade):/.test(String(section || ""))) return;
     if (/^(schedule|attendance|certificates|messages|transcript|settings)$/.test(String(section || ""))) return;
     setSection("dashboard");
   }, [nav, section]);

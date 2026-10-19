@@ -273,14 +273,19 @@ h1, h2, h3, h4, p { margin: 0; }
   position: absolute; top: 0; left: 0; bottom: 0; width: min(300px, 84vw); background: var(--paper);
   padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 24px; display: flex; flex-direction: column; gap: 22px;
   transform: translateX(-100%); transition: transform 0.3s ease; box-shadow: 10px 0 30px rgba(0, 0, 0, 0.15);
-}
+ overflow: hidden; }
 .drawer.open .drawer-panel { transform: translateX(0); }
 .drawer-top { display: flex; justify-content: space-between; align-items: center; }
 .drawer-profile { display: flex; align-items: center; gap: 12px; }
 .drawer-profile .avatar { width: 52px; height: 52px; }
 .drawer-profile b { font-family: Montserrat, sans-serif; font-weight: 800; font-size: 16px; display: block; }
 .drawer-profile small { font-size: 12px; color: var(--muted); }
-.drawer-nav { display: flex; flex-direction: column; gap: 4px; }
+.drawer-nav {
+  display: flex; flex-direction: column; gap: 4px;
+  flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding-bottom: 24px;
+}
+.drawer-panel .drawer-top, .drawer-panel .drawer-profile { flex-shrink: 0; }
 .drawer-nav a { display: flex; align-items: center; gap: 12px; height: 46px; padding: 0 14px; border-radius: 14px; font-size: 15px; color: #3b3a41; }
 .drawer-nav a.on { background: var(--ink); color: #fff; }
 @media (prefers-reduced-motion: reduce) {
@@ -916,3 +921,26 @@ h1, h2, h3, h4, p { margin: 0; }
   background: var(--ink, #0f172a); color: #fff; font-weight: 700; font-size: 12px;
   cursor: pointer;
 }
+
+/* Night mode */
+[data-theme="dark"] {
+  --paper: #0b1220;
+  --ink: #f1f5f9;
+  --muted: #94a3b8;
+  --line: #1e293b;
+  background: #0b1220;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .m-app,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .m-card,
+[data-theme="dark"] .feed-card,
+[data-theme="dark"] .more-tile,
+[data-theme="dark"] .drawer-panel,
+[data-theme="dark"] .auth-card {
+  background: #111827;
+  border-color: #1e293b;
+  color: #f1f5f9;
+}
+[data-theme="dark"] .page-head h1,
+[data-theme="dark"] .display { color: #f8fafc; }

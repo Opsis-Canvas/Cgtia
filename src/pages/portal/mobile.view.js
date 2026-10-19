@@ -639,12 +639,28 @@ function SettingsScreen({ student, user, onLogout, setSection }) {
   const [notify, setNotify] = useState(() => {
     try { return localStorage.getItem("cgtia_notify") !== "0"; } catch (_) { return true; }
   });
+  const [dark, setDark] = useState(() => {
+    try { return localStorage.getItem("cgtia_theme") === "dark"; } catch (_) { return false; }
+  });
 
   function toggleNotify() {
     const next = !notify;
     setNotify(next);
     try { localStorage.setItem("cgtia_notify", next ? "1" : "0"); } catch (_) {}
   }
+  function toggleDark() {
+    const next = !dark;
+    setDark(next);
+    try {
+      localStorage.setItem("cgtia_theme", next ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
+    } catch (_) {}
+  }
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    } catch (_) {}
+  }, [dark]);
 
   async function changePassword(e) {
     e.preventDefault();
@@ -692,9 +708,20 @@ function SettingsScreen({ student, user, onLogout, setSection }) {
       <div style=${{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <strong style=${{ fontSize: 14 }}>Dashboard notices</strong>
-          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Remember to show offers & notices on home</p>
+          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Offers & notices on home</p>
         </div>
         <button type="button" class=${"toggle-mini" + (notify ? " on" : "")} onClick=${toggleNotify} aria-label="Toggle notices">${notify ? "On" : "Off"}</button>
+      </div>
+    </div>
+    <div class="panel" style=${{ marginBottom: 12 }}>
+      <div style=${{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <strong style=${{ fontSize: 14 }}>Night mode</strong>
+          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Darker colours for low light</p>
+        </div>
+        <button type="button" class=${"toggle-mini" + (dark ? " on" : "")} onClick=${toggleDark} aria-label="Toggle night mode">
+          ${Icon({ name: dark ? "moon" : "sun", size: 16 })} ${dark ? "On" : "Off"}
+        </button>
       </div>
     </div>
     <form class="panel" onSubmit=${changePassword}>
@@ -852,8 +879,9 @@ export function MobileView({ ctx }) {
           ? grades.map((g) => html`<${ListCard} key=${g.id}
               badge=${g.grade || "·"}
               title=${g.courseTitle || g.courseCode || "Course"}
-              note=${g.score != null ? "Score " + g.score : (g.remark || "")}
-              tone="lime" />`)
+              note=${g.score != null ? "Score " + g.score : (g.remark || "Tap for details")}
+              tone="lime"
+              onClick=${() => setSection("grade:" + g.id)} />`)
           : html`<${Empty} title="No grades published" body="Instructors release results when they are ready. Check back after assessments." />`}
       </div>
     `;
@@ -1119,6 +1147,29 @@ export function MobileView({ ctx }) {
     const a = (assessments || []).find((x) => x.id === tid);
     const qs = Array.isArray(a?.questions) ? a.questions : [];
     body = html`<${TakeTest} assessment=${a} questions=${qs} onBack=${() => setSection("assessments")} />`;
+  } else if (String(section || "").startsWith("grade:")) {
+    const gid = String(section).slice(6);
+    const g = (grades || []).find((x) => String(x.id) === gid);
+    body = html`
+      <${PageHead} title="Result detail" sub="Published grade" onBack=${() => setSection("grades")} backLabel="Grades" />
+      ${!g ? html`<${Empty} title="Not found" body="This result is no longer available." />` : html`
+        <div class="panel">
+          <div class="cred-label">Module</div>
+          <strong style=${{ fontSize: 18 }}>${g.courseTitle || g.courseCode || "Course"}</strong>
+          <p style=${{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>${g.courseCode || ""}</p>
+          <div style=${{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 16 }}>
+            <div class="cred-card"><span class="cred-label">Grade</span><strong>${g.grade || "—"}</strong></div>
+            <div class="cred-card"><span class="cred-label">Score</span><strong>${g.score != null ? g.score : "—"}</strong></div>
+          </div>
+          ${g.remark ? html`<div style=${{ marginTop: 14 }}><span class="cred-label">Remark</span><p style=${{ marginTop: 4, lineHeight: 1.5 }}>${g.remark}</p></div>` : null}
+          ${g.term || g.session ? html`<p style=${{ marginTop: 12, fontSize: 13, color: "var(--muted)" }}>${g.term || g.session}</p>` : null}
+          <p style=${{ marginTop: 16, fontSize: 12, color: "var(--muted)" }}>From your academy file · ${student?.reg || student?.email || ""}</p>
+        </div>
+        <div style=${{ marginTop: 12 }}>
+          <button type="button" class="btn-block secondary" onClick=${() => setSection("transcript")}>Open full transcript</button>
+        </div>
+      `}
+    `;
   } else if (section === "schedule") {
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const byDay = {};
