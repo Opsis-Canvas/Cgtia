@@ -270,7 +270,7 @@ function LessonTtsPlayer({ text, title }) {
   </div>`;
 }
 
-function LessonViewfunction LessonView({ section, courses, student, setSection }) {
+function LessonView({ section, courses, student, setSection }) {
   const parts = String(section).slice(7).split(":");
   const cid = parts[0];
   const lid = parts[1];
