@@ -1286,3 +1286,59 @@ h1, h2, h3, h4, p { margin: 0; }
   box-sizing: border-box;
   font-size: 16px; /* prevents iOS zoom; works on desktop too */
 }
+
+/* Structured lesson content */
+.lesson-body .ls-h1 {
+  font-family: Montserrat, sans-serif;
+  font-weight: 800;
+  font-size: 1.35em;
+  letter-spacing: -0.02em;
+  margin: 1.1em 0 0.4em;
+  color: var(--ink);
+}
+.lesson-body .ls-h2 {
+  font-family: Montserrat, sans-serif;
+  font-weight: 700;
+  font-size: 1.1em;
+  margin: 0.9em 0 0.35em;
+  color: var(--ink);
+}
+.lesson-body .ls-p {
+  margin: 0 0 0.75em;
+  line-height: 1.55;
+}
+.lesson-body .ls-bullet { padding-left: 0.15em; }
+.lesson-body .ls-code {
+  display: block;
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  background: #f1f5f9;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin: 0.6em 0;
+  white-space: pre-wrap;
+}
+.lesson-body .ls-table-wrap {
+  overflow-x: auto;
+  margin: 0.75em 0 1em;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.lesson-body .ls-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.lesson-body .ls-table th,
+.lesson-body .ls-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+.lesson-body .ls-table th {
+  background: #f8fafc;
+  font-weight: 700;
+}
+.lesson-body strong { font-weight: 800; }
+.lesson-body em { font-style: italic; }
+.lesson-body del { opacity: 0.7; }

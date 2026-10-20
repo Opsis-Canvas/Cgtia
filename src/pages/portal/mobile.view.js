@@ -2,7 +2,7 @@
 import { createElement, useCallback, useState, useEffect } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
-import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed } from "./shared.js";
+import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed, formatLessonHtml } from "./shared.js";
 import { ASSETS } from "./assets.js";
 import { MenuDrawer } from "./drawer.view.js";
 
@@ -338,7 +338,7 @@ function LessonView({ section, courses, student, setSection }) {
 
   const speakText = l.ttsText || l.body || "";
   return html`<div>
-    <${PageHead} title=${l.title || "Lesson"} sub=${(l.type || "text") + " · " + (idx + 1) + " of " + lessons.length} onBack=${() => setSection("course:" + cid + ":lessons")} backLabel="Lessons" />
+    <${PageHead} title=${l.title || "Lesson"} sub=${(l.subheader || l.header || ((l.type || "text") + " · " + (idx + 1) + " of " + lessons.length))} onBack=${() => setSection("course:" + cid + ":lessons")} backLabel="Lessons" />
     <div class="lesson-scroll">
       <div class="lesson-fade-top"></div>
       <div class="panel prose">
@@ -368,8 +368,9 @@ function LessonView({ section, courses, student, setSection }) {
             </div>`
           : null}
         <div class="lesson-body-wrap">
-          ${l.body
-            ? html`<div class=${"lesson-body fs-" + FONT_STEPS[fontStep]}>${l.body}</div>`
+          ${(l.header || l.subheader || l.body || (l.blocks && l.blocks.length))
+            ? html`<div class=${"lesson-body fs-" + FONT_STEPS[fontStep]}
+                dangerouslySetInnerHTML=${{ __html: formatLessonHtml(l) }}></div>`
             : html`<p class="muted">No reading text for this lesson yet.</p>`}
           <div class="lesson-fade-bottom"></div>
         </div>
