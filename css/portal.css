@@ -2686,3 +2686,100 @@ section.m-banner {
   border-color: #243044 !important;
   color: #e8eef8 !important;
 }
+
+/* =====================================================================
+   Round 3 — banner figure like the old reference (protrudes ABOVE card)
+   Any image in ASSETS.bannerPerson.url will sit on the right edge and
+   cross the top of the card. Height comes from assets.js (taller than card).
+   ===================================================================== */
+
+/* Room above the card for the head; never clip the figure */
+.m-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-top: 8px;
+}
+.m-scroll > .m-banner,
+.m-app > .m-scroll > .m-banner,
+section.m-banner {
+  margin-top: 52px !important; /* head clearance above the rounded card */
+  overflow: visible !important;
+  position: relative !important;
+  isolation: auto !important;
+}
+
+.m-banner {
+  overflow: visible !important;
+  position: relative !important;
+  /* Keep right padding so copy does not run under the figure */
+  padding-right: 150px !important;
+  min-height: 196px;
+}
+
+/* Figure: use the size/position from assets.js (inline), only ensure stacking */
+.m-banner-img,
+.m-banner .slot-img,
+.m-banner img.slot-img {
+  position: absolute !important;
+  z-index: 4 !important;
+  pointer-events: none !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  /* Do NOT force width/height/transform — assets.js owns placement so
+     swapping the PNG keeps the same “over the top edge” behaviour */
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+}
+
+/* Placeholder dashed box when no PNG URL is set — same overhang */
+.m-banner .slot.is-empty {
+  position: absolute !important;
+  z-index: 4 !important;
+  transform: none !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.45) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+[data-theme="dark"] .m-banner .slot.is-empty {
+  background: rgba(15, 23, 42, 0.35) !important;
+  border-color: rgba(148, 163, 184, 0.55) !important;
+  color: #cbd5e1 !important;
+}
+.m-banner .slot.is-empty b {
+  color: inherit !important;
+}
+
+/* Copy stays under the figure on the left */
+.m-banner-copy {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 58%);
+  max-width: 220px;
+}
+
+/* Sticky header must not paint over the protruding head */
+.m-app .sticky-top {
+  z-index: 30;
+}
+.m-banner-img,
+.m-banner .slot-img {
+  z-index: 4;
+}
+
+/* Desktop banner — same idea */
+.d-banner {
+  overflow: visible !important;
+  position: relative !important;
+  margin-top: 40px;
+}
+.d-banner-img,
+.d-banner .slot-img {
+  position: absolute !important;
+  z-index: 4 !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  transform: none !important;
+  max-width: none !important;
+  max-height: none !important;
+}
