@@ -68,7 +68,11 @@ export function DesktopView({ ctx }) {
         <${ImageSlot} asset=${ASSETS.bannerPerson} variant="desktop" className="d-banner-img" />
       </section>
       <section class="stats">
-        ${stats.map((s) => html`<${StatCard} key=${s.id} s=${s} />`)}
+        ${stats.map((s) => html`<div key=${s.id} class="is-click" role="button" onClick=${() => {
+          if (s.id === "courses") setSection("courses");
+          else if (s.id === "grades" || s.id === "score") setSection("grades");
+          else if (s.id === "fees") setSection("fees");
+        }}><${StatCard} s=${s} /></div>`)}
       </section>
       ${(announcements || []).length ? html`<section class="ann-card is-click" role="button"
         onClick=${() => setSection("notice:" + (announcements[0].id || "0"))}>
@@ -275,6 +279,12 @@ export function DesktopView({ ctx }) {
           : html`<p style=${{ color: "var(--muted)", fontSize: 13, marginTop: 12 }}>Legal details such as NIN are held by the academy. Contact the office to update them.</p>`}
       </div>
     `;
+  }
+
+  if (!main) {
+    main = html`<div class="page-head"><h1 class="display">Open on this view</h1>
+      <p class="muted">This section opens in the focused learning view.</p>
+      <button type="button" class="pill-ink" onClick=${() => setSection("dashboard")}>Back to dashboard</button></div>`;
   }
 
   return html`<div class="d-shell">

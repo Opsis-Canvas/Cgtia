@@ -1,7 +1,7 @@
 /**
  * CGTIA Student Portal — EasyKorean layout language, CGTIA brand
  */
-import { createElement, useCallback, useEffect, useMemo, useState } from "react";
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import htm from "htm";
 import { getFirebase } from "../services/firebase.service.js";
 import { OnboardingView } from "./portal/onboarding.view.js";
@@ -385,20 +385,36 @@ function BrandLoading({ isDesktop }) {
 }
 
 function LoginGate({ onAuthed }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
   const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function toggleShowPw(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = passwordRef.current;
+    // Capture real DOM value before React re-renders the input type
+    const kept = el ? el.value : "";
+    setShowPw((v) => !v);
+    // Restore after type switch (controlled-value / autofill safe)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (passwordRef.current) {
+          passwordRef.current.value = kept;
+          try { passwordRef.current.focus(); } catch (_) {}
+        }
+      });
+    });
+  }
+
   async function submit(e) {
     e.preventDefault();
     setErr("");
-    // Read live DOM values — avoids Show/Hide / autofill drift
-    const form = e.currentTarget;
-    const fd = form ? new FormData(form) : null;
-    const em = String((fd && fd.get("email")) || email || "").trim();
-    const pw = String((fd && fd.get("password")) || password || "");
+    // Always read from the DOM — never trust React state for passwords
+    const em = String(emailRef.current && emailRef.current.value != null ? emailRef.current.value : "").trim();
+    const pw = String(passwordRef.current && passwordRef.current.value != null ? passwordRef.current.value : "");
     if (!em) {
       setErr("Enter the email you used with the academy.");
       return;
@@ -407,17 +423,17 @@ function LoginGate({ onAuthed }) {
       setErr("Enter your password or one-time code, then tap Sign in.");
       return;
     }
-    setEmail(em);
-    setPassword(pw);
     setLoading(true);
     try {
       const { auth, signInWithEmailAndPassword } = await firebaseAuth();
-      const cred = await signInWithEmailAndPassword(auth, em, pw);
-      onAuthed(cred.user);
+      await signInWithEmailAndPassword(auth, em, pw);
+      // onAuthStateChanged will move phase to app; still notify parent
+      const user = auth.currentUser;
+      if (user) onAuthed(user);
     } catch (ex) {
       const code = ex && ex.code;
       if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-email") {
-        setErr("That email or password does not match. Check both fields and try again — Show/Hide does not change your password.");
+        setErr("That email or password does not match. Check both fields and try again.");
       } else if (code === "auth/too-many-requests") {
         setErr("Too many tries. Wait a minute, then try again.");
       } else {
@@ -436,18 +452,20 @@ function LoginGate({ onAuthed }) {
       </div>
       <h1>Student sign in</h1>
       <p class="sub">Use the email from your application and the password or one-time code you received after payment.</p>
-      <form onSubmit=${submit} autoComplete="on">
+      <form onSubmit=${submit} autoComplete="on" method="post" action="#">
         <label for="cgtia-email">Email</label>
-        <input id="cgtia-email" name="email" type="email" required autocomplete="username"
-          value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="you@email.com" />
+        <input id="cgtia-email" name="email" type="email" required
+          autocomplete="username" placeholder="you@email.com"
+          ref=${emailRef} defaultValue="" />
         <label for="cgtia-password">Password</label>
         <div class="pw-field">
           <input id="cgtia-password" name="password" type=${showPw ? "text" : "password"} required
-            autocomplete="current-password" value=${password}
-            onInput=${(e) => setPassword(e.target.value)} placeholder="••••••••" />
-          <button type="button" class="pw-toggle" aria-label=${showPw ? "Hide password" : "Show password"}
+            autocomplete="current-password" placeholder="••••••••"
+            ref=${passwordRef} defaultValue="" />
+          <button type="button" class="pw-toggle"
+            aria-label=${showPw ? "Hide password" : "Show password"}
             onMouseDown=${(e) => e.preventDefault()}
-            onClick=${(e) => { e.preventDefault(); e.stopPropagation(); setShowPw((v) => !v); }}>
+            onClick=${toggleShowPw}>
             ${showPw ? "Hide" : "Show"}
           </button>
         </div>
@@ -674,10 +692,13 @@ export function DashboardPage() {
     user
   };
 
-  // One UI for phone + desktop so every portal feature stays in sync
-  return html`<div class=${isDesktop ? "desk-shell" : undefined}>
-    <${MobileView} ctx=${ctx} />
-  </div>
-  ${exitModal}`;
+  // Desktop keeps the wide sidebar layout; deep lesson/test flows use the app view
+  const deep = /^(course|lesson|test|lcheck|mquiz|fees:|receipt|grade:|notice:)/.test(String(section || ""));
+  return html`
+    ${isDesktop && !deep
+      ? html`<${DesktopView} ctx=${ctx} />`
+      : html`<div class=${isDesktop ? "desk-shell" : undefined}><${MobileView} ctx=${ctx} /></div>`}
+    ${exitModal}
+  `;
 }
 
