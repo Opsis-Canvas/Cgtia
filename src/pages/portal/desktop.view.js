@@ -4,6 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView } from "./mobile.view.js";
 
 const html = htm.bind(createElement);
 
@@ -140,7 +141,7 @@ export function DesktopView({ ctx }) {
       <div class="page-head"><h1 class="display">Tests & assignments</h1><p>What is live for your programme</p></div>
       <div class="panel lessons">
         ${(assessments || []).length
-          ? assessments.map((a, i) => html`<div class="lesson" key=${a.id}>
+          ? assessments.map((a, i) => html`<div class="lesson is-click" role="button" key=${a.id} onClick=${() => setSection("test:" + a.id)}>
               <span class=${"badge tone-" + (a.type === "exam" ? "coral" : a.type === "assignment" ? "lime" : "ink")}>${(a.type || "test").slice(0, 4)}</span>
               <span class="lesson-text">
                 <h4>${a.title}</h4>
@@ -250,7 +251,88 @@ export function DesktopView({ ctx }) {
         <p style=${{ marginTop: 8, color: "var(--muted)" }}>${(a?.questions || []).length} question(s)${a?.timerMinutes ? " · " + a.timerMinutes + " min" : ""}</p>
       </div>
     `;
-  } else {
+  } else if (section === "schedule") {
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const list = ctx.schedule || [];
+    const byDay = {};
+    list.forEach((x) => { const d = x.day || x.weekday || "Other"; (byDay[d] = byDay[d] || []).push(x); });
+    main = html`
+      <div class="page-head"><h1 class="display">Schedule</h1><p>Class times for your track</p></div>
+      ${list.length
+        ? days.filter((d) => byDay[d]).concat(Object.keys(byDay).filter((d) => !days.includes(d))).map((d) => html`<div class="panel lessons" key=${d} style=${{ marginBottom: 12 }}>
+            <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>${d}</h3>
+            ${byDay[d].map((x) => html`<div class="lesson" key=${x.id}>
+              <span class="badge tone-sky">${(x.startTime || x.time || "—").toString().slice(0, 5)}</span>
+              <span class="lesson-text"><h4>${x.title || x.courseTitle || x.module || "Session"}</h4>
+                <p>${[x.endTime ? "until " + x.endTime : "", x.room || x.venue || "", x.tutor || x.instructor || ""].filter(Boolean).join(" · ") || "Class session"}</p></span>
+            </div>`)}
+          </div>`)
+        : html`<div class="panel"><${Empty} title="No timetable yet" body="When the academy publishes class times for your programme, they will show up here." /></div>`}
+    `;
+  } else if (section === "attendance") {
+    const rows = ctx.attendance || [];
+    const present = rows.filter((r) => /present|yes|1|attended/i.test(String(r.status || r.present || ""))).length;
+    const pct = rows.length ? Math.round((present / rows.length) * 100) : null;
+    main = html`
+      <div class="page-head"><h1 class="display">Attendance</h1><p>Sessions marked by your instructors</p></div>
+      <${AttendanceCalendar} rows=${rows} />
+      ${rows.length ? html`<div class="panel" style=${{ marginTop: 12 }}>
+        <div class="prog-label">${present} present of ${rows.length} recorded · ${pct}%</div>
+        <div class="prog-bar"><i style=${{ width: (pct || 0) + "%" }}></i></div>
+      </div>` : null}
+      <div class="panel lessons" style=${{ marginTop: 12 }}>
+        ${rows.length
+          ? rows.map((r) => {
+              const st = String(r.status || (r.present ? "Present" : "Absent") || "—");
+              const ok = /present|yes|attended/i.test(st);
+              return html`<div class="lesson" key=${r.id}>
+                <span class=${"badge tone-" + (ok ? "lime" : "coral")}>${ok ? "P" : "A"}</span>
+                <span class="lesson-text"><h4>${r.sessionTitle || r.topic || r.module || "Session"}</h4>
+                  <p>${[r.date || r.sessionDate || "", st].filter(Boolean).join(" · ")}</p></span>
+              </div>`;
+            })
+          : html`<${Empty} title="No attendance yet" body="After classes are marked, your presence record will appear here." />`}
+      </div>
+    `;
+  } else if (section === "certificates") {
+    const certs = ctx.certificates || [];
+    const idStatus = student?.idCardStatus || (certs.find((c) => c.idCardStatus) || {}).idCardStatus || "";
+    main = html`
+      <div class="page-head"><h1 class="display">Certificates & ID</h1><p>Credentials on your academy file</p></div>
+      <section class="stats">
+        <div class="stat stat-mist">
+          <div class="lbl">Student ID card</div>
+          <div class="num" style=${{ fontSize: 20 }}>${idStatus || (student?.reg ? "On file" : "Not issued yet")}</div>
+          <div class="lbl">${student?.reg ? "Reg " + student.reg : "Issued after profile and fees are complete."}</div>
+        </div>
+        <div class="stat stat-ink">
+          <div class="lbl">Programme certificate</div>
+          <div class="num" style=${{ fontSize: 20 }}>${student?.certificateCode || (certs[0] && (certs[0].code || certs[0].certificateCode)) || "Not issued yet"}</div>
+          <div class="lbl">${student?.program ? String(student.program) : "Appears when the academy publishes your certificate."}</div>
+        </div>
+      </section>
+      <div class="panel lessons" style=${{ marginTop: 12 }}>
+        ${certs.length
+          ? certs.map((c) => html`<div class="lesson" key=${c.id}>
+              <span class="badge tone-lime">${(c.status || "OK").toString().slice(0, 3).toUpperCase()}</span>
+              <span class="lesson-text"><h4>${c.title || c.type || "Credential"}</h4>
+                <p>${[c.certificateCode || c.code || "", c.issuedAt || c.date || c.status || ""].filter(Boolean).join(" · ")}</p></span>
+            </div>`)
+          : html`<${Empty} title="No certificate records yet" body="When ID cards or certificates are issued for you, the status will show above and in this list." />`}
+      </div>
+    `;
+  } else if (section === "messages") {
+    main = html`
+      <div class="page-head"><h1 class="display">Messages</h1><p>Write to the academy office</p></div>
+      <${MessagesScreen} messages=${ctx.messages || []} student=${student} setSection=${setSection} />`;
+  } else if (section === "transcript") {
+    main = html`
+      <div class="page-head"><h1 class="display">Transcript</h1><p>Full published results</p></div>
+      <${TranscriptView} student=${student} grades=${grades || []} />
+    `;
+  } else if (section === "settings") {
+    main = html`<${SettingsScreen} student=${student} user=${ctx.user} onLogout=${onLogout} setSection=${setSection} />`;
+  } else if (section === "profile") {
     main = html`
       <div class="page-head"><h1 class="display">Profile</h1><p>How the academy has you on file</p></div>
       <div class="panel" style=${{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
@@ -282,7 +364,7 @@ export function DesktopView({ ctx }) {
   }
 
   if (!main) {
-    main = html`<div class="page-head"><h1 class="display">Open on this view</h1>
+    main = html`<div class="page-head"><h1 class="display">Page not found</h1>
       <p class="muted">This section opens in the focused learning view.</p>
       <button type="button" class="pill-ink" onClick=${() => setSection("dashboard")}>Back to dashboard</button></div>`;
   }

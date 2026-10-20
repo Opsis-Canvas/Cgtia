@@ -347,53 +347,38 @@ export const index_html = `
 
 
   <!-- SaaS Automated Dual-Track Marquee Section -->
-  <!-- Internship & Placement Partners — stacked grid for fast scanning -->
-<!-- SaaS Automated Dual-Track Marquee Section -->
+  <!-- Internship & Placement Partners — three counter-moving rows of partner tiles -->
   <section data-home-section="partners" class="w-full pb-32 overflow-hidden marquee-container">
     <div class="w-full max-w-7xl mx-auto px-6 mb-12">
       <div class="w-full border-t border-slate-200/50 pt-12">
         <span data-cms="homePartnersLabel" class="text-xs font-bold tracking-widest text-slate-400 uppercase block mb-2">Clinical Network</span>
-        <h2 data-cms="homePartnersTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Internship & Placement Partners</h2>
+        <h2 data-cms="homePartnersTitle" class="font-editorial text-3xl md:text-4xl text-blue-950 font-bold">Internship &amp; Placement Partners</h2>
       </div>
     </div>
 
-    <div class="saas-edge-mask w-full flex flex-col gap-10 py-2 select-none">
-      <div class="w-full overflow-hidden flex">
-        <div class="animate-marquee-left gap-20 items-center px-4">
-          <span class="font-editorial text-2xl font-bold tracking-tight text-blue-950/80 hover:text-blue-950 cursor-pointer transition-colors duration-300">Grace Haven Care Home</span>
-          <span class="font-sans-clean text-lg font-light tracking-[0.25em] uppercase text-slate-700/80 hover:text-slate-900 cursor-pointer transition-colors duration-300">RADIANT HEALTH CLINIC</span>
-          <span class="font-editorial italic text-2xl tracking-wide text-blue-900/70 hover:text-blue-900 cursor-pointer transition-colors duration-300">Wellspring Nursing Services</span>
-          <span class="font-sans-clean text-xs font-bold tracking-[0.4em] uppercase text-slate-600/80 hover:text-slate-900 cursor-pointer transition-colors duration-300">ST. JUDE MEDICAL CENTER</span>
-          <span class="font-editorial text-2xl font-semibold tracking-tighter text-slate-800/80 hover:text-slate-950 cursor-pointer transition-colors duration-300">Comfort Hands Agency</span>
-          
-          <span class="font-editorial text-2xl font-bold tracking-tight text-blue-950/80 hover:text-blue-950 cursor-pointer transition-colors duration-300">Grace Haven Care Home</span>
-          <span class="font-sans-clean text-lg font-light tracking-[0.25em] uppercase text-slate-700/80 hover:text-slate-900 cursor-pointer transition-colors duration-300">RADIANT HEALTH CLINIC</span>
-          <span class="font-editorial italic text-2xl tracking-wide text-blue-900/70 hover:text-blue-900 cursor-pointer transition-colors duration-300">Wellspring Nursing Services</span>
-          <span class="font-sans-clean text-xs font-bold tracking-[0.4em] uppercase text-slate-600/80 hover:text-slate-900 cursor-pointer transition-colors duration-300">ST. JUDE MEDICAL CENTER</span>
-          <span class="font-editorial text-2xl font-semibold tracking-tighter text-slate-800/80 hover:text-slate-950 cursor-pointer transition-colors duration-300">Comfort Hands Agency</span>
+    <div class="saas-edge-mask w-full flex flex-col gap-5 select-none">
+      <div class="partner-row">
+        <div class="animate-marquee-left gap-4 items-center py-1">
+          <span class="partner-tile"><span class="partner-mark" aria-hidden="true">GH</span><span class="partner-name">Grace Haven Care Home</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">RH</span><span class="partner-name">Radiant Health Clinic</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">WN</span><span class="partner-name">Wellspring Nursing Services</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">SJ</span><span class="partner-name">St. Jude Medical Center</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">CH</span><span class="partner-name">Comfort Hands Agency</span></span>
+          <span class="partner-tile"><span class="partner-mark" aria-hidden="true">GH</span><span class="partner-name">Grace Haven Care Home</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">RH</span><span class="partner-name">Radiant Health Clinic</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">WN</span><span class="partner-name">Wellspring Nursing Services</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">SJ</span><span class="partner-name">St. Jude Medical Center</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">CH</span><span class="partner-name">Comfort Hands Agency</span></span>
         </div>
       </div>
-
-      <div class="w-full overflow-hidden flex">
-        <div class="animate-marquee-right gap-20 items-center px-4">
-          <span class="font-sans-clean text-xs font-bold tracking-[0.35em] uppercase text-slate-700/80 hover:text-slate-950 cursor-pointer transition-colors duration-300">ELDER BRIDGE FOUNDATION</span>
-          <span class="font-editorial text-2xl font-bold italic tracking-tight text-blue-950/70 hover:text-blue-950 cursor-pointer transition-colors duration-300">HopeCare Multispecialty</span>
-          <span class="font-sans-clean text-base font-medium tracking-widest uppercase text-slate-600/80 hover:text-slate-900 cursor-pointer transition-colors duration-300">Mainland Home Health</span>
-          <span class="font-editorial text-2xl font-light tracking-tight text-blue-900/80 hover:text-blue-950 cursor-pointer transition-colors duration-300">Serenity Elder Care</span>
-          <span class="font-sans-clean text-xs font-bold tracking-[0.5em] uppercase text-slate-500/70 hover:text-slate-800 cursor-pointer transition-colors duration-300">TRUSTLINE CLINICS</span>
-          
-          <span class="font-sans-clean text-xs font-bold tracking-[0.35em] uppercase text-slate-700/80 hover:text-slate-950 cursor-pointer transition-colors duration-300">ELDER BRIDGE FOUNDATION</span>
-          <span class="font-editorial text-2xl font-bold italic tracking-tight text-blue-950/70 hover:text-blue-950 cursor-pointer transition-colors duration-300">HopeCare Multispecialty</span>
-          <span class="font-sans-clean text-base font-medium tracking-widest uppercase text-slate-600/80 hover:text-slate-900 cursor-pointer transition-colors duration-300">Mainland Home Health</span>
-          <span class="font-editorial text-2xl font-light tracking-tight text-blue-900/80 hover:text-blue-950 cursor-pointer transition-colors duration-300">Serenity Elder Care</span>
-          <span class="font-sans-clean text-xs font-bold tracking-[0.5em] uppercase text-slate-500/70 hover:text-slate-800 cursor-pointer transition-colors duration-300">TRUSTLINE CLINICS</span>
+      <div class="partner-row">
+        <div class="animate-marquee-right gap-4 items-center py-1">
+          <span class="partner-tile"><span class="partner-mark" aria-hidden="true">EB</span><span class="partner-name">Elder Bridge Foundation</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">HM</span><span class="partner-name">HopeCare Multispecialty</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">MH</span><span class="partner-name">Mainland Home Health</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">SE</span><span class="partner-name">Serenity Elder Care</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">TC</span><span class="partner-name">Trustline Clinics</span></span>
+          <span class="partner-tile"><span class="partner-mark" aria-hidden="true">EB</span><span class="partner-name">Elder Bridge Foundation</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">HM</span><span class="partner-name">HopeCare Multispecialty</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">MH</span><span class="partner-name">Mainland Home Health</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">SE</span><span class="partner-name">Serenity Elder Care</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">TC</span><span class="partner-name">Trustline Clinics</span></span>
+        </div>
+      </div>
+      <div class="partner-row">
+        <div class="animate-marquee-left gap-4 items-center py-1">
+          <span class="partner-tile"><span class="partner-mark" aria-hidden="true">TC</span><span class="partner-name">Trustline Clinics</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">SE</span><span class="partner-name">Serenity Elder Care</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">MH</span><span class="partner-name">Mainland Home Health</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">HM</span><span class="partner-name">HopeCare Multispecialty</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">EB</span><span class="partner-name">Elder Bridge Foundation</span></span>
+          <span class="partner-tile"><span class="partner-mark" aria-hidden="true">TC</span><span class="partner-name">Trustline Clinics</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">SE</span><span class="partner-name">Serenity Elder Care</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">MH</span><span class="partner-name">Mainland Home Health</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">HM</span><span class="partner-name">HopeCare Multispecialty</span></span><span class="partner-tile"><span class="partner-mark" aria-hidden="true">EB</span><span class="partner-name">Elder Bridge Foundation</span></span>
         </div>
       </div>
     </div>
   </section>
 
   
-
   <!-- Masonry Post Card Grid Workspace -->
   <section data-home-section="insights" class="w-full max-w-7xl mx-auto px-6 pb-36">
     <div class="text-left mb-12">
@@ -991,7 +976,7 @@ export const index_html = `
         <div>
   <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Password / Login Code</label>
   <div class="relative">
-    <input required type="password" id="loginPasswordInput" placeholder="••••••••" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition pr-12">
+    <input required type="password" id="loginPasswordInput" data-auth-password name="password" autocomplete="current-password" placeholder="••••••••" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition pr-12">
     <button type="button" onclick="togglePasswordVisibility('loginPasswordInput', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 smooth-transition z-10">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path d="M12 4.5C7.5 4.5 3.5 7.5 1.5 12c2 4.5 6 7.5 10.5 7.5s8.5-3 10.5-7.5c-2-4.5-6-7.5-10.5-7.5zM12 16.5a4.5 4.5 0 110-9 4.5 4.5 0 010 9z" />

@@ -469,7 +469,7 @@ function LoginGate({ onAuthed }) {
             ${showPw ? "Hide" : "Show"}
           </button>
         </div>
-        ${err ? html`<p class="err" role="alert">${err}</p>` : null}
+        ${err ? html`<div class="status-banner is-error" role="alert"><span aria-hidden="true">!</span><span>${err}</span></div>` : null}
         <button type="submit" class="pill-ink" disabled=${loading}>${loading ? "Signing in…" : "Sign in"}</button>
       </form>
       <p style=${{ marginTop: 16, fontSize: 13 }}><a href="/" style=${{ color: "var(--muted)" }}>← Back to website</a></p>

@@ -1,5 +1,5 @@
 
-import { createElement, useCallback, useState, useEffect } from "react";
+import { createElement, useCallback, useState, useEffect, useRef } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed, formatLessonHtml } from "./shared.js";
@@ -414,6 +414,170 @@ function Tile({ s, onClick }) {
 }
 
 
+
+/* ---------- shared helpers for the redesigned result, attendance and transcript ---------- */
+function toDayKey(v) {
+  if (!v) return "";
+  if (typeof v === "string") { const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[1] + "-" + m[2] + "-" + m[3] : ""; }
+  if (v.toDate) { const d = v.toDate(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  return "";
+}
+function pick(obj, keys) {
+  for (const k of keys) if (obj && obj[k] != null && obj[k] !== "") return obj[k];
+  return "—";
+}
+
+/* Score ring: starts slow, builds and shakes harder, then lands on the real percentage */
+export function ScoreResult({ pct, auto, score, total, answered, title, sub, onBack }) {
+  const target = auto ? pct : 100;
+  const reduce = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [val, setVal] = useState(reduce ? target : 0);
+  const [building, setBuilding] = useState(!reduce);
+  const [jitter, setJitter] = useState({ x: 0, y: 0, r: 0 });
+  useEffect(() => {
+    if (reduce) return undefined;
+    const DUR = 3600;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now) => {
+      const t = Math.min(1, (now - t0) / DUR);
+      const climb = 0.86;
+      const eased = t < climb
+        ? Math.pow(t / climb, 2.4) * 0.9
+        : 0.9 + (1 - Math.pow(1 - (t - climb) / (1 - climb), 2)) * 0.1;
+      setVal(Math.round(target * eased));
+      const amp = t < climb ? 0.4 + 3.4 * Math.pow(t / climb, 2) : 0;
+      setJitter({ x: Math.sin(now / 26) * amp, y: Math.cos(now / 31) * amp * 0.6, r: Math.sin(now / 37) * amp * 0.5 });
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else { setVal(target); setJitter({ x: 0, y: 0, r: 0 }); setBuilding(false); }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  const passed = auto && pct >= 70;
+  const tone = !auto ? "is-neutral" : passed ? "is-pass" : "is-retry";
+  const heading = !auto ? "Answers received" : passed ? "Well done" : "Keep practising";
+  const lead = auto
+    ? "You scored " + score + " out of " + total + " on this check."
+    : "You answered " + answered + " of " + total + ". Your instructor will mark this.";
+  return html`<div class="result-screen">
+    <${PageHead} title="Done" sub=${sub} onBack=${onBack} backLabel="Tests" />
+    <div class=${"result-hero " + tone + (building ? " is-building" : " is-done")}>
+      <div class="result-ring"
+        style=${{ "--deg": (val * 3.6) + "deg", transform: "translate(" + jitter.x + "px," + jitter.y + "px) rotate(" + jitter.r + "deg)" }}>
+        <span class="result-ring-val">${auto ? val + "%" : "✓"}</span>
+      </div>
+      <div class="result-copy">
+        <h3 class="display">${heading}</h3>
+        <p class="result-lead">${lead}</p>
+        <div class="result-stats">
+          <div><strong>${answered}</strong><span>Answered</span></div>
+          <div><strong>${auto ? score : "—"}</strong><span>Correct</span></div>
+          <div><strong>${total}</strong><span>Questions</span></div>
+        </div>
+        <button type="button" class="btn-block" onClick=${onBack}>Back to tests</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* Branded month calendar: green dot = present, plum = absent, gold ring = today */
+export function AttendanceCalendar({ rows }) {
+  const now = new Date();
+  const [cursor, setCursor] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
+  const marks = {};
+  (rows || []).forEach((r) => {
+    const k = toDayKey(r.date || r.sessionDate);
+    if (!k) return;
+    marks[k] = /present|yes|attended/i.test(String(r.status || r.present || "")) ? "P" : "A";
+  });
+  const y = cursor.getFullYear();
+  const m = cursor.getMonth();
+  const lead = new Date(y, m, 1).getDay();
+  const days = new Date(y, m + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push(null);
+  for (let d = 1; d <= days; d++) cells.push(d);
+  const keyOf = (d) => y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  const todayKey = y === now.getFullYear() && m === now.getMonth() ? toDayKey(now) : "";
+  // toDayKey reads Date-like values via toDate(); build a local key for "today"
+  const todayLocal = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  const monthName = cursor.toLocaleString("en-GB", { month: "long" });
+  const monthRows = Object.keys(marks).filter((k) => k.startsWith(y + "-" + String(m + 1).padStart(2, "0")));
+  const monthPresent = monthRows.filter((k) => marks[k] === "P").length;
+  return html`<div class="att-cal">
+    <div class="att-head">
+      <button type="button" class="att-nav" aria-label="Previous month" onClick=${() => setCursor(new Date(y, m - 1, 1))}>‹</button>
+      <div class="att-title"><strong>${monthName} ${y}</strong><span>${monthRows.length ? monthPresent + " of " + monthRows.length + " present" : "No sessions marked"}</span></div>
+      <button type="button" class="att-nav" aria-label="Next month" onClick=${() => setCursor(new Date(y, m + 1, 1))}>›</button>
+    </div>
+    <div class="att-dow">${["S", "M", "T", "W", "T", "F", "S"].map((d, i) => html`<span key=${i}>${d}</span>`)}</div>
+    <div class="att-grid">
+      ${cells.map((d, i) => {
+        if (d == null) return html`<span key=${"e" + i} class="att-cell is-empty"></span>`;
+        const k = keyOf(d);
+        const st = marks[k] || "";
+        const cls = "att-cell" + (st === "P" ? " is-p" : st === "A" ? " is-a" : "") + (k === todayLocal ? " is-today" : "");
+        return html`<span key=${i} class=${cls}>${d}</span>`;
+      })}
+    </div>
+    <div class="att-legend"><span><i class="dot dot-p"></i>Present</span><span><i class="dot dot-a"></i>Absent</span><span><i class="dot dot-t"></i>Today</span></div>
+  </div>`;
+}
+
+/* Transcript: one table with every assessment column, printable, with the student photo */
+export function TranscriptView({ student, grades }) {
+  const list = (grades || []).slice().sort((a, b) => String(a.courseCode || a.courseTitle || "").localeCompare(String(b.courseCode || b.courseTitle || "")));
+  const nums = list.map((g) => Number(g.score)).filter((n) => !Number.isNaN(n));
+  const avg = nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : null;
+  const issued = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const name = student?.name || "Student";
+  return html`<div class="tx-wrap">
+    <div class="tx-actions">
+      <button type="button" class="pill-ink" onClick=${() => { try { window.print(); } catch (_) {} }}>Print / save as PDF</button>
+    </div>
+    <article class="tx-sheet">
+      <header class="tx-head">
+        <div class="tx-photo">
+          ${student?.avatar
+            ? html`<img src=${student.avatar} alt=${name} />`
+            : html`<span>${String(name).charAt(0).toUpperCase()}</span>`}
+        </div>
+        <div class="tx-id">
+          <span class="tx-kicker">Academic transcript</span>
+          <h2>${name}</h2>
+          <p>Reg ${student?.reg || "—"} · ${student?.program || "Programme TBD"}</p>
+          <p class="tx-date">Issued ${issued}</p>
+        </div>
+        <img class="tx-logo" src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="56" height="56" />
+      </header>
+      <div class="tx-summary">
+        <div><strong>${list.length}</strong><span>Modules</span></div>
+        <div><strong>${avg != null ? avg : "—"}</strong><span>Average</span></div>
+        <div><strong>${student?.cohort || "—"}</strong><span>Cohort</span></div>
+      </div>
+      ${list.length
+        ? html`<div class="tx-scroll"><table class="tx-table">
+            <thead><tr><th>Course</th><th>CA</th><th>Test</th><th>Exam</th><th>Attend.</th><th>Score</th><th>Grade</th><th>Remark</th></tr></thead>
+            <tbody>
+              ${list.map((g) => html`<tr key=${g.id}>
+                <td><strong>${g.courseCode || ""}</strong>${g.courseTitle ? html`<span class="tx-course">${g.courseTitle}</span>` : null}</td>
+                <td>${pick(g, ["ca", "caScore"])}</td>
+                <td>${pick(g, ["test", "testScore"])}</td>
+                <td>${pick(g, ["exam", "examScore"])}</td>
+                <td>${pick(g, ["attendance", "attendancePct"])}</td>
+                <td>${g.score != null ? g.score : "—"}</td>
+                <td><span class="tx-grade">${g.grade || "—"}</span></td>
+                <td>${g.remark || "—"}</td>
+              </tr>`)}
+            </tbody>
+          </table></div>`
+        : html`<${Empty} title="Transcript empty" body="Published grades will build your transcript here module by module." />`}
+      <footer class="tx-foot"><span>CGTIA · CareEd student record</span><span>Verify with the academy office</span></footer>
+    </article>
+  </div>`;
+}
+
 function TakeTest({ assessment, questions, onBack }) {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -454,7 +618,12 @@ function TakeTest({ assessment, questions, onBack }) {
   if (!assessment) {
     return html`<div>
       <${PageHead} title="Test" onBack=${onBack} backLabel="Exit" />
-      <${Empty} title="Not found" body="This test is no longer available." />
+      <div class="status-card is-error" role="alert">
+        <span class="status-icon" aria-hidden="true">!</span>
+        <h3>Test not available</h3>
+        <p>This test has been closed or moved. Go back to your tests list to see what is open.</p>
+        <button type="button" class="status-btn" onClick=${onBack}>Back to tests</button>
+      </div>
     </div>`;
   }
   if (done || (questions.length && idx >= questions.length)) {
@@ -463,28 +632,10 @@ function TakeTest({ assessment, questions, onBack }) {
       if (q.correct != null && String(answers[i]) === String(q.correct)) score += 1;
     });
     const total = questions.length || 1;
-    const pct = Math.round((score / total) * 100);
     const auto = questions.some((q) => q.correct != null);
-    return html`<div class="result-screen">
-      <${PageHead} title="Done" sub=${assessment.title} onBack=${onBack} backLabel="Tests" />
-      <div class="result-hero">
-        <div class="result-ring" style=${{ "--pct": pct }}>
-          <span class="result-ring-val">${auto ? pct + "%" : "✓"}</span>
-        </div>
-        <h3 class="display">${auto ? (pct >= 70 ? "Well done" : "Submitted") : "Answers received"}</h3>
-        <p class="result-lead">
-          ${auto
-            ? "You scored " + score + " out of " + total + " on this check."
-            : "You answered " + Object.keys(answers).length + " of " + total + ". Your instructor will mark this."}
-        </p>
-        <div class="result-stats">
-          <div><strong>${Object.keys(answers).length}</strong><span>Answered</span></div>
-          <div><strong>${auto ? score : "—"}</strong><span>Correct</span></div>
-          <div><strong>${total}</strong><span>Questions</span></div>
-        </div>
-        <button type="button" class="btn-block" onClick=${onBack}>Back to tests</button>
-      </div>
-    </div>`;
+    const answered = Object.keys(answers).length;
+    const pct = Math.round((score / total) * 100);
+    return html`<${ScoreResult} pct=${pct} auto=${auto} score=${score} total=${total} answered=${answered} sub=${assessment.title} onBack=${onBack} />`;
   }
   const q = questions[idx] || null;
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
@@ -581,7 +732,7 @@ function LessonList({ lessons, prog, cid, setSection }) {
 }
 
 
-function MessagesScreen({ messages, student, setSection }) {
+export function MessagesScreen({ messages, student, setSection }) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
@@ -647,7 +798,7 @@ function MessagesScreen({ messages, student, setSection }) {
   </div>`;
 }
 
-function SettingsScreen({ student, user, onLogout, setSection }) {
+export function SettingsScreen({ student, user, onLogout, setSection }) {
   const [pw1, setPw1] = useState("");
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState("");
@@ -830,13 +981,16 @@ export function MobileView({ ctx }) {
       ${(promos || []).length ? html`<section class="dash-promo-strip">
         <div class="m-section-h"><h3 class="display">Offers</h3></div>
         <div class="promo-scroll">
-          ${(promos || []).map((p) => html`<article class="promo-chip" key=${p.id}
+          ${(promos || []).map((p) => html`<article class=${"promo-chip" + (p.linkUrl ? " has-link" : " is-plain")} key=${p.id}
             role=${p.linkUrl ? "button" : undefined}
             onClick=${p.linkUrl ? () => { try { window.open(p.linkUrl, "_blank", "noopener"); } catch (_) {} } : undefined}>
-            ${p.badge ? html`<span class="promo-badge">${p.badge}</span>` : null}
+            <div class="promo-top">
+              ${p.badge ? html`<span class="promo-badge">${p.badge}</span>` : html`<span class="promo-badge is-soft">Offer</span>`}
+              ${p.promoAmount ? html`<span class="promo-amount">${p.promoAmount}</span>` : null}
+            </div>
             <strong>${p.title}</strong>
-            <p>${(p.body || "").slice(0, 80)}${(p.body || "").length > 80 ? "…" : ""}</p>
-            ${p.linkUrl ? html`<span class="promo-cta">${p.linkLabel || "View"}</span>` : null}
+            ${p.body ? html`<p>${p.body}</p>` : null}
+            <span class="promo-cta">${p.linkUrl ? (p.linkLabel || "View offer") + " →" : "Ask the office"}</span>
           </article>`)}
         </div>
       </section>` : null}
@@ -850,7 +1004,7 @@ export function MobileView({ ctx }) {
               <h4>${a.title || "Notice"}</h4>
               <p>${(a.body || "").slice(0, 90)}${(a.body || "").length > 90 ? "…" : ""}</p>
             </div>
-            <span class="notice-chev">›</span>
+            ${a.linkUrl ? html`<button type="button" class="notice-link" onClick=${(e) => { e.stopPropagation(); try { window.open(a.linkUrl, "_blank", "noopener"); } catch (_) {} }}>${a.linkLabel || "Open link"}</button>` : html`<span class="notice-chev">›</span>`}
           </article>`)}
         </div>
       </section>` : null}
@@ -1257,11 +1411,12 @@ export function MobileView({ ctx }) {
     const pct = rows.length ? Math.round((present / rows.length) * 100) : null;
     body = html`
       <${PageHead} title="Attendance" sub="Sessions marked by your instructors" onBack=${() => setSection("dashboard")} backLabel="Home" />
-      ${rows.length ? html`<div class="panel" style=${{ marginBottom: 12 }}>
+      <${AttendanceCalendar} rows=${rows} />
+      ${rows.length ? html`<div class="panel" style=${{ marginTop: 12 }}>
         <div class="prog-label">${present} present of ${rows.length} recorded · ${pct}%</div>
         <div class="prog-bar"><i style=${{ width: (pct || 0) + "%" }}></i></div>
       </div>` : null}
-      <div class="m-list">
+      <div class="m-list" style=${{ marginTop: 12 }}>
         ${rows.length
           ? rows.map((r) => {
               const st = String(r.status || (r.present ? "Present" : "Absent") || "—");
@@ -1305,31 +1460,9 @@ export function MobileView({ ctx }) {
   } else if (section === "messages") {
     body = html`<${MessagesScreen} messages=${messages || []} student=${student} setSection=${setSection} />`;
   } else if (section === "transcript") {
-    const list = (grades || []).slice().sort((a, b) => String(a.courseCode || a.courseTitle || "").localeCompare(String(b.courseCode || b.courseTitle || "")));
-    const nums = list.map((g) => Number(g.score)).filter((n) => !Number.isNaN(n));
-    const avg = nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : null;
     body = html`
       <${PageHead} title="Transcript" sub="Full published results" onBack=${() => setSection("grades")} backLabel="Grades" />
-      <div class="panel" style=${{ marginBottom: 12 }}>
-        <div class="cred-label">Student</div>
-        <strong style=${{ fontSize: 16 }}>${student?.name || "—"}</strong>
-        <p style=${{ color: "var(--muted)", fontSize: 12, marginTop: 4 }}>${student?.reg || "No reg yet"} · ${student?.program || "Programme TBD"}</p>
-        <div style=${{ display: "flex", gap: 16, marginTop: 12 }}>
-          <div><div class="cred-label">Modules</div><strong>${list.length}</strong></div>
-          <div><div class="cred-label">Average</div><strong>${avg != null ? avg : "—"}</strong></div>
-        </div>
-      </div>
-      <div class="m-list">
-        ${list.length
-          ? list.map((g) => html`<article class="m-card" key=${g.id}>
-              <span class="badge tone-lime">${g.grade || (g.score != null ? g.score : "·")}</span>
-              <div class="m-card-text">
-                <h4>${g.courseTitle || g.courseCode || "Course"}</h4>
-                <p>${[g.courseCode && g.courseTitle ? g.courseCode : "", g.score != null ? "Score " + g.score : "", g.remark || "", g.term || g.session || ""].filter(Boolean).join(" · ")}</p>
-              </div>
-            </article>`)
-          : html`<${Empty} title="Transcript empty" body="Published grades will build your transcript here module by module." />`}
-      </div>
+      <${TranscriptView} student=${student} grades=${grades || []} />
     `;
   } else if (section === "settings") {
     body = html`<${SettingsScreen} student=${student} user=${user} onLogout=${onLogout} setSection=${setSection} />`;

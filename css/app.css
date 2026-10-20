@@ -140,11 +140,11 @@
     }
 
     .animate-marquee-left {
-      animation: marqueeLeft 22s linear infinite;
+      animation: marqueeLeft 42s linear infinite;
     }
 
     .animate-marquee-right {
-      animation: marqueeRight 26s linear infinite;
+      animation: marqueeRight 48s linear infinite;
     }
 
     @media (hover: hover) {
@@ -152,6 +152,32 @@
       .marquee-container:hover .animate-marquee-right {
         animation-play-state: paused;
       }
+    }
+
+    /* Partner tiles — rounded cards with a monogram, sized by their name */
+    .partner-row { display: flex; width: 100%; overflow: hidden; }
+    .partner-tile {
+      display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0;
+      height: 66px; padding: 0 24px 0 12px; border-radius: 1.25rem;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(226, 232, 240, 0.95);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 28px -14px rgba(30, 58, 138, 0.22);
+      white-space: nowrap; cursor: pointer;
+      transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+    .partner-tile:hover {
+      transform: translateY(-2px);
+      border-color: rgba(30, 58, 138, 0.22);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 16px 34px -14px rgba(30, 58, 138, 0.32);
+    }
+    .partner-mark {
+      width: 40px; height: 40px; border-radius: 0.95rem; display: grid; place-items: center;
+      background: linear-gradient(135deg, #eef2ff 0%, #dbe4ff 100%); color: #1e3a8a;
+      font-family: Montserrat, Inter, sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.04em;
+    }
+    .partner-name {
+      font-family: Montserrat, Inter, sans-serif; font-weight: 600; font-size: 15px;
+      letter-spacing: -0.01em; color: #0f172a;
     }
 
     .saas-edge-mask {

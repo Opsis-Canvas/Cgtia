@@ -1,10 +1,24 @@
 
-import { createElement } from "react";
+import { createElement, useEffect, useState } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
 import { ImageSlot } from "./shared.js";
 import { ASSETS } from "./assets.js";
 const html = htm.bind(createElement);
+
+/* Loading carousel: three slides slide in one after another; no text until the first slide loads */
+function LoadingCarousel() {
+  const slides = [ASSETS.onboardingPerson.url, ASSETS.bannerPerson.url, ASSETS.logo];
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((v) => (v + 1) % slides.length), 1500);
+    return () => clearInterval(t);
+  }, []);
+  return html`<div class="ob-carousel" aria-hidden="true">
+    ${slides.map((src, k) => html`<img key=${k} src=${src} alt="" class=${"ob-slide" + (k === i ? " is-on" : k === (i + slides.length - 1) % slides.length ? " is-prev" : "")} />`)}
+    <div class="ob-dots">${slides.map((_, k) => html`<span key=${k} class=${"ob-dot" + (k === i ? " on" : "")}></span>`)}</div>
+  </div>`;
+}
 
 /**
  * mode: "loading" — branded load screen (spinner, no CTA)
@@ -12,7 +26,16 @@ const html = htm.bind(createElement);
  */
 export function OnboardingView({ onStart, mode = "welcome" }) {
   const loading = mode === "loading";
-  return html`<div class=${"ob" + (loading ? " ob-loading" : "")}>
+  if (loading) {
+    return html`<div class="ob ob-loading">
+      <${LoadingCarousel} />
+      <div class="ob-load ob-load-late" aria-live="polite">
+        <span>Getting your details ready…</span>
+        <small>Modules, results and fees</small>
+      </div>
+    </div>`;
+  }
+  return html`<div class="ob">
     <span class="ob-brand">CGTIA</span>
     <span class="ob-block b-blue" aria-hidden="true"></span>
     <span class="ob-block b-yellow" aria-hidden="true"></span>

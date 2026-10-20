@@ -101,7 +101,10 @@ window.handleAuthSubmit = async function (event) {
   const form = document.getElementById("authForm");
   if (!form) return false;
   const email = (form.querySelector('input[type="email"]') || {}).value || "";
-  const password = (form.querySelector('input[type="password"]') || {}).value || "";
+  // Read the password by a stable hook, not by input type: the eye toggle switches
+  // the field to type="text", so a type selector found nothing and sent an empty password.
+  const pwField = form.querySelector("[data-auth-password]");
+  const password = pwField ? pwField.value : "";
   const submitBtn = document.getElementById("authSubmitBtn");
   const errorEl = document.getElementById("authErrorMsg");
   if (errorEl) errorEl.classList.add("hidden");
