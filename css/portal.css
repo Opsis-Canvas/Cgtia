@@ -2783,3 +2783,216 @@ section.m-banner {
   max-width: none !important;
   max-height: none !important;
 }
+
+/* =====================================================================
+   Round 4 — match the compact reference dashboard (second screenshot)
+   - Sand banner, person visible on the right
+   - Compact card (not a tall empty blue block)
+   - Pastel stat tiles in light mode
+   - Comfortable text, not jammed
+   ===================================================================== */
+
+/* --- Banner: compact, sand in light, blue only in dark --- */
+.m-banner {
+  position: relative !important;
+  overflow: visible !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin-top: 36px !important;
+  padding: 18px 128px 18px 18px !important;
+  border-radius: 22px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  background: #f3e6c4 !important; /* sand / cream like the reference */
+  color: #0f172a !important;
+  box-shadow: 0 10px 28px -18px rgba(15, 18, 108, 0.35);
+}
+.m-banner h2 {
+  color: #0f172a !important;
+  font-size: 17px !important;
+  line-height: 1.25 !important;
+  margin: 0 0 6px !important;
+  font-weight: 800 !important;
+}
+.m-banner p {
+  color: #5c5346 !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  margin: 0 0 12px !important;
+  max-width: 17em;
+}
+.m-banner .pill-ink {
+  background: #0f126c !important;
+  color: #fff !important;
+  height: 36px !important;
+  padding: 0 18px !important;
+  font-size: 13px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  margin-top: 2px !important;
+}
+.m-banner-copy {
+  position: relative;
+  z-index: 2;
+  width: auto !important;
+  max-width: 58% !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0 !important;
+}
+
+/* Figure always visible, right edge, slight top overhang */
+.m-banner-img,
+.m-banner .slot-img,
+.m-banner img.slot-img {
+  display: block !important;
+  position: absolute !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 5 !important;
+  pointer-events: none !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  transform: none !important;
+  max-width: none !important;
+  max-height: none !important;
+  /* width/height/right/bottom come from assets.js inline styles */
+}
+.m-banner .slot.is-empty {
+  display: grid !important;
+  place-items: center;
+  position: absolute !important;
+  z-index: 5 !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  border: 1px dashed rgba(15, 18, 108, 0.25) !important;
+  color: #64748b !important;
+  border-radius: 12px;
+  font-size: 10px;
+  text-align: center;
+  transform: none !important;
+}
+
+/* Dark mode banner stays blue, text light, person still visible */
+[data-theme="dark"] .m-banner {
+  background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.55);
+}
+[data-theme="dark"] .m-banner h2 { color: #fff !important; }
+[data-theme="dark"] .m-banner p { color: rgba(255, 255, 255, 0.82) !important; }
+[data-theme="dark"] .m-banner .pill-ink {
+  background: #fff !important;
+  color: #0f126c !important;
+}
+[data-theme="dark"] .m-banner .slot.is-empty {
+  background: rgba(15, 23, 42, 0.4) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  color: #cbd5e1 !important;
+}
+
+/* --- Stat tiles: pastel in light mode (reference), navy only in dark --- */
+.m-tiles .m-tile {
+  border-radius: 20px !important;
+  padding: 16px 14px !important;
+  min-height: 100px !important;
+  border: 0 !important;
+  color: #0f172a !important;
+  filter: none !important;
+}
+.m-tiles .m-tile .num,
+.m-tiles .m-tile .num span,
+.m-tiles .m-tile .lbl,
+.m-tiles .m-tile .tile-icon {
+  color: inherit !important;
+}
+.m-tiles .m-tile .lbl { opacity: 0.75 !important; font-size: 12px !important; }
+.m-tiles .m-tile .num { font-size: 26px !important; font-weight: 800 !important; }
+.m-tiles .m-tile .tile-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7) !important;
+  color: #0f172a !important;
+  display: grid; place-items: center; margin-bottom: 8px;
+}
+
+/* Tone classes from TILE_TONE in mobile.view.js */
+.m-tile.sky,
+.m-tiles .m-tile.sky { background: #d4eef8 !important; color: #0f172a !important; }
+.m-tile.sky-soft,
+.m-tiles .m-tile.sky-soft { background: #dbeafe !important; color: #0f172a !important; }
+.m-tile.lilac,
+.m-tiles .m-tile.lilac { background: #e8dff8 !important; color: #0f172a !important; }
+.m-tile.mint,
+.m-tiles .m-tile.mint { background: #d8f3e4 !important; color: #0f172a !important; }
+
+/* Kill the forced navy/blue tile override in light mode */
+.m-tiles .m-tile:nth-child(odd),
+.m-tiles .m-tile:nth-child(even) {
+  background: unset; /* fall through to .sky / .lilac / .mint */
+}
+.m-tiles .m-tile.sky:nth-child(n) { background: #d4eef8 !important; }
+.m-tiles .m-tile.sky-soft:nth-child(n) { background: #dbeafe !important; }
+.m-tiles .m-tile.lilac:nth-child(n) { background: #e8dff8 !important; }
+.m-tiles .m-tile.mint:nth-child(n) { background: #d8f3e4 !important; }
+
+/* Dark mode tiles stay brand navy / blue with white type */
+[data-theme="dark"] .m-tiles .m-tile,
+[data-theme="dark"] .m-tiles .m-tile.sky,
+[data-theme="dark"] .m-tiles .m-tile.sky-soft,
+[data-theme="dark"] .m-tiles .m-tile.lilac,
+[data-theme="dark"] .m-tiles .m-tile.mint {
+  color: #fff !important;
+}
+[data-theme="dark"] .m-tiles .m-tile:nth-child(odd),
+[data-theme="dark"] .m-tiles .m-tile.sky,
+[data-theme="dark"] .m-tiles .m-tile.sky-soft {
+  background: linear-gradient(140deg, #0f126c 0%, #1b2590 100%) !important;
+}
+[data-theme="dark"] .m-tiles .m-tile:nth-child(even),
+[data-theme="dark"] .m-tiles .m-tile.lilac,
+[data-theme="dark"] .m-tiles .m-tile.mint {
+  background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
+}
+[data-theme="dark"] .m-tiles .m-tile .num,
+[data-theme="dark"] .m-tiles .m-tile .num span,
+[data-theme="dark"] .m-tiles .m-tile .lbl,
+[data-theme="dark"] .m-tiles .m-tile .tile-icon {
+  color: #fff !important;
+}
+[data-theme="dark"] .m-tiles .m-tile .tile-icon {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+}
+[data-theme="dark"] .m-tiles .m-tile .lbl { opacity: 0.88 !important; }
+
+/* More tiles: white cards, soft icons (reference look) */
+.more-tile {
+  background: #fff !important;
+  border: 1px solid #e8edf5 !important;
+  color: #0f172a !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 16px -12px rgba(15, 18, 108, 0.25);
+}
+.more-tile .tile-icon {
+  background: #eef3ff !important;
+  color: #0948e6 !important;
+}
+[data-theme="dark"] .more-tile {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+  box-shadow: none;
+}
+[data-theme="dark"] .more-tile .tile-icon {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+/* Notices row — compact, not oversized */
+.notice-link,
+.dash-notice,
+.m-list .notice-row {
+  border-radius: 16px !important;
+  padding: 12px 14px !important;
+}
