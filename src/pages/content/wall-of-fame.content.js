@@ -6,7 +6,7 @@ export const wall_of_fame_html = `
   <!-- Faded Sticky Header -->
   <header class="faded-sticky-header w-full smooth-transition">
     <div class="w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
-      <a href="/" data-pill-label="Home" class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950">CGTIA.</a>
+      <a href="/" data-pill-label="Home" class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950"><span class="inline-flex items-center gap-2"><img src="/assets/brand/cgtia-logo.webp" alt="" width="32" height="32" class="w-8 h-8 object-contain" /><span>CGTIA</span></span></a>
       <nav class="hidden md:flex space-x-7 text-xs font-semibold tracking-widest uppercase text-slate-500">
         <a href="/" class="hover:text-blue-950 smooth-transition">Home</a>
         <a href="/about" class="hover:text-blue-950 smooth-transition">About</a>

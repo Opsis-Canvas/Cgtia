@@ -279,7 +279,7 @@ export function DesktopView({ ctx }) {
 
   return html`<div class="d-shell">
     <aside class="d-side">
-      <div class="logo">CGTIA</div>
+      <div class="logo careed-brand"><img src="/assets/brand/cgtia-logo.webp" alt="" width="28" height="28" style="width:28px;height:28px;object-fit:contain" /><span>CGTIA</span></div>
       <div class="profile">
         <${Avatar} src=${student?.avatar} name=${name} size=${58} />
         <h2>${name}</h2>

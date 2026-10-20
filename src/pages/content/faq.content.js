@@ -1,7 +1,7 @@
 export const faq_html = `
   <header class="faded-sticky-header w-full">
     <div class="w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
-      <a href="/" class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950">CGTIA.</a>
+      <a href="/" class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950"><span class="inline-flex items-center gap-2"><img src="/assets/brand/cgtia-logo.webp" alt="" width="32" height="32" class="w-8 h-8 object-contain" /><span>CGTIA</span></span></a>
       <nav class="hidden md:flex space-x-7 text-xs font-semibold tracking-widest uppercase text-slate-500">
         <a href="/about" class="hover:text-blue-950">About</a>
         <a href="/programs" class="hover:text-blue-950">Programmes</a>

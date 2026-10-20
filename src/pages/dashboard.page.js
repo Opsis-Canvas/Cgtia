@@ -387,20 +387,27 @@ function BrandLoading({ isDesktop }) {
 function LoginGate({ onAuthed }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
     setErr("");
+    const em = email.trim();
+    const pw = password;
+    if (!em || !pw) {
+      setErr("Enter both your email and password.");
+      return;
+    }
     setLoading(true);
     try {
       const { auth, signInWithEmailAndPassword } = await firebaseAuth();
-      const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      const cred = await signInWithEmailAndPassword(auth, em, pw);
       onAuthed(cred.user);
     } catch (ex) {
       const code = ex && ex.code;
-      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") {
+      if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-email") {
         setErr("That email or password does not match. Use the password or one-time code sent after payment.");
       } else if (code === "auth/too-many-requests") {
         setErr("Too many tries. Wait a minute, then try again.");
@@ -414,15 +421,25 @@ function LoginGate({ onAuthed }) {
 
   return html`<div class="auth-wrap">
     <div class="auth-card">
-      <span class="brand">CGTIA</span>
+      <div class="auth-logo-row">
+        <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="48" height="48" />
+        <span class="brand">CGTIA</span>
+      </div>
       <h1>Student sign in</h1>
       <p class="sub">Use the email from your application and the password or one-time code you received after payment.</p>
       <form onSubmit=${submit}>
         <label>Email</label>
         <input type="email" required autocomplete="username" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="you@email.com" />
         <label>Password</label>
-        <input type="password" required autocomplete="current-password" value=${password} onInput=${(e) => setPassword(e.target.value)} placeholder="••••••••" />
-        ${err ? html`<p class="err">${err}</p>` : null}
+        <div class="pw-field">
+          <input type=${showPw ? "text" : "password"} required autocomplete="current-password"
+            value=${password} onInput=${(e) => setPassword(e.target.value)} placeholder="••••••••" />
+          <button type="button" class="pw-toggle" aria-label=${showPw ? "Hide password" : "Show password"}
+            onClick=${(e) => { e.preventDefault(); e.stopPropagation(); setShowPw(!showPw); }}>
+            ${showPw ? "Hide" : "Show"}
+          </button>
+        </div>
+        ${err ? html`<p class="err" role="alert">${err}</p>` : null}
         <button type="submit" class="pill-ink" disabled=${loading}>${loading ? "Signing in…" : "Sign in"}</button>
       </form>
       <p style=${{ marginTop: 16, fontSize: 13 }}><a href="/" style=${{ color: "var(--muted)" }}>← Back to website</a></p>
@@ -555,9 +572,10 @@ export function DashboardPage() {
         { id: "score", value: avg != null ? avg : "—", total: avg != null ? 100 : null, label: avg != null ? "Average score" : "Awaiting scores", tone: "lime" }
       ]
     : [
-        { id: "courses", value: courses.length, label: "Courses on your track", icon: "book", tall: true },
+        { id: "courses", value: courses.length, label: "Modules on your track", icon: "book", tall: true },
         { id: "grades", value: grades.length, label: "Published results", icon: "chart" },
-        { id: "fees", value: avg != null ? avg : "₦" + (paidTotal >= 1000 ? Math.round(paidTotal / 1000) + "k" : paidTotal), label: avg != null ? "Average score" : "Fees recorded", icon: "card" }
+        { id: "score", value: avg != null ? avg : "—", label: avg != null ? "Average score" : "No scores yet", icon: "chart" },
+        { id: "fees", value: "₦" + (paidTotal >= 1000 ? Math.round(paidTotal / 1000) + "k" : paidTotal), label: "Fees recorded", icon: "card" }
       ];
 
   // Fix desktop stats - total null shows ugly - adjust StatCard already handles total != null

@@ -6,7 +6,10 @@ export const index_html = `
   <!-- Faded Sticky Header -->
   <header class="faded-sticky-header w-full smooth-transition">
     <div class="w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
-      <span class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950">CGTIA.</span>
+      <a href="/" class="flex items-center gap-2.5 group">
+        <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="36" height="36" class="w-9 h-9 object-contain" />
+        <span class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950">CGTIA</span>
+      </a>
       <nav class="hidden md:flex space-x-7 text-xs font-semibold tracking-widest uppercase text-slate-500">
         <a href="/" class="text-blue-950 hover:text-blue-950 smooth-transition">Home</a>
         <a href="/about" class="hover:text-blue-950 smooth-transition">About</a>
