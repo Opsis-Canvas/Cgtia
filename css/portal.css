@@ -161,24 +161,51 @@ h1, h2, h3, h4, p { margin: 0; }
   flex: none; border: 0; border-radius: 999px; background: var(--ink); color: #fff; font-weight: 600;
 }
 
-/* 2 × 2 tiles: tall tile spans both rows; total block 164px */
-.m-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.m-tile {
-  height: 76px; border-radius: 18px; padding: 12px;
-  display: flex; align-items: center; gap: 10px; min-width: 0;
+/* 2 × 2 equal stat cards */
+.m-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
-.m-tile.tall { grid-row: span 2; height: auto; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 14px; }
-.m-tile.sky { background: var(--sky); }
-.m-tile.lilac { background: var(--lilac); }
-.m-tile.mint { background: var(--mint); }
+.m-tile {
+  min-height: 96px;
+  border-radius: 20px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.m-tile.tall { /* equal cards — ignore tall */ }
+.m-tile.sky { background: #d8eef8; }
+.m-tile.sky-soft { background: #e0f2fe; }
+.m-tile.lilac { background: #e8e0f7; }
+.m-tile.mint { background: #d8f3e4; }
 .tile-icon {
-  width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.7);
+  width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, 0.75);
   display: grid; place-items: center; flex: none;
 }
-.m-tile .num { font-size: 20px; }
-.m-tile.tall .num { font-size: 26px; }
-.m-tile .num span { font-size: 13px; opacity: 0.45; margin-left: 1px; }
-.m-tile .lbl { font-size: 10.5px; line-height: 1.2; margin-top: 3px; opacity: 0.75; }
+.m-tile .tile-body { min-width: 0; width: 100%; }
+.m-tile .num {
+  font-family: Montserrat, sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.m-tile .num span { font-size: 13px; opacity: 0.45; margin-left: 1px; font-weight: 600; }
+.m-tile .lbl {
+  font-size: 11px;
+  line-height: 1.25;
+  margin-top: 4px;
+  opacity: 0.72;
+  font-weight: 600;
+  color: var(--ink);
+}
 
 .m-section-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .m-section-h h3 { font-size: 16px; }
@@ -269,7 +296,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .d-banner-img.is-empty { background: transparent; }
 
 /* ---------- MENU DRAWER (slides in from the left) ---------- */
-.drawer { position: fixed; inset: 0; z-index: 20; visibility: hidden; transition: visibility 0.3s; }
+.drawer { position: fixed; inset: 0; z-index: 90; visibility: hidden; transition: visibility 0.3s; }
 .drawer.open { visibility: visible; }
 .drawer-scrim { position: absolute; inset: 0; background: rgba(24, 23, 28, 0.35); opacity: 0; transition: opacity 0.3s; }
 .drawer.open .drawer-scrim { opacity: 1; }
@@ -1022,8 +1049,7 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 .careed-foot img { width: 22px; height: 22px; object-fit: contain; }
 .careed-foot b { color: var(--ink); font-weight: 800; }
-.m-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.m-tile.tall { grid-row: span 1; min-height: 110px; }
+/* tiles already defined above */
 .pw-field { position: relative; display: flex; align-items: center; }
 .pw-field input { width: 100%; padding-right: 64px; box-sizing: border-box; }
 .pw-toggle {
@@ -1080,3 +1106,32 @@ h1, h2, h3, h4, p { margin: 0; }
   color: #f1f5f9;
 }
 [data-theme="dark"] .notif-scrim { background: rgba(0,0,0,0.55); }
+
+.sticky-top.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+.careed-foot {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 18px 12px max(20px, env(safe-area-inset-bottom));
+}
+.careed-foot img {
+  width: 36px !important; height: 36px !important;
+  object-fit: contain; flex-shrink: 0;
+}
+.careed-foot-text { display: flex; flex-direction: column; line-height: 1.15; }
+.careed-foot-text strong {
+  font-family: Montserrat, sans-serif;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.careed-foot-text span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.m-tile.is-click { cursor: pointer; }
+.m-tile.is-click:active { transform: scale(0.98); }

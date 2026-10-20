@@ -7,7 +7,7 @@ import { ASSETS } from "./assets.js";
 import { MenuDrawer } from "./drawer.view.js";
 
 const html = htm.bind(createElement);
-const TILE_TONE = { courses: "sky", grades: "lilac", fees: "mint" };
+const TILE_TONE = { courses: "sky", grades: "lilac", score: "sky-soft", fees: "mint" };
 
 function BackBtn({ label, onClick }) {
   return html`<div class="page-head-row">
@@ -400,10 +400,12 @@ function LessonView({ section, courses, student, setSection }) {
 
 
 function Tile({ s, onClick }) {
-  return html`<div role=${onClick ? "button" : undefined} class=${"m-tile " + (TILE_TONE[s.id] || "sky") + (s.tall ? " tall" : "") + (onClick ? " is-click" : "")}
+  const tone = TILE_TONE[s.id] || s.tone || "sky";
+  return html`<div role=${onClick ? "button" : undefined}
+    class=${"m-tile " + tone + (onClick ? " is-click" : "")}
     onClick=${onClick}>
-    <span class="tile-icon">${Icon({ name: s.icon || "grid", size: 20 })}</span>
-    <div>
+    <span class="tile-icon">${Icon({ name: s.icon || "grid", size: 18 })}</span>
+    <div class="tile-body">
       <div class="num">${s.value}${s.total != null ? html`<span>/${s.total}</span>` : null}</div>
       <div class="lbl">${s.label}</div>
     </div>
@@ -1345,7 +1347,7 @@ export function MobileView({ ctx }) {
   }
 
   return html`<div class=${"m-app" + ((menuOpen || notifOpen) ? " is-locked" : "")}>
-    <header class="m-top sticky-top">
+    <header class=${"m-top sticky-top" + (menuOpen || notifOpen ? " is-hidden" : "")}>
       <button class="icon-btn" aria-label="Open menu" aria-expanded=${menuOpen}
         onClick=${() => setMenuOpen(true)}>${Icon({ name: "menu", size: 18 })}</button>
       <div class="m-top-r">
@@ -1362,8 +1364,11 @@ export function MobileView({ ctx }) {
     ${body}
     </div>
     <footer class="careed-foot" aria-label="CareEd powered by CGTIA">
-      <img src="/assets/brand/cgtia-logo.webp" alt="" width="22" height="22" />
-      <span><b>CareEd</b> · Powered by CGTIA</span>
+      <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="32" height="32" />
+      <div class="careed-foot-text">
+        <strong>CareEd</strong>
+        <span>Powered by CGTIA</span>
+      </div>
     </footer>
     <${MenuDrawer}
       open=${menuOpen}

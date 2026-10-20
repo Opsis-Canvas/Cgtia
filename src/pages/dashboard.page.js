@@ -572,7 +572,7 @@ export function DashboardPage() {
         { id: "score", value: avg != null ? avg : "—", total: avg != null ? 100 : null, label: avg != null ? "Average score" : "Awaiting scores", tone: "lime" }
       ]
     : [
-        { id: "courses", value: courses.length, label: "Modules on your track", icon: "book", tall: true },
+        { id: "courses", value: courses.length, label: "Modules on your track", icon: "book" },
         { id: "grades", value: grades.length, label: "Published results", icon: "chart" },
         { id: "score", value: avg != null ? avg : "—", label: avg != null ? "Average score" : "No scores yet", icon: "chart" },
         { id: "fees", value: "₦" + (paidTotal >= 1000 ? Math.round(paidTotal / 1000) + "k" : paidTotal), label: "Fees recorded", icon: "card" }
