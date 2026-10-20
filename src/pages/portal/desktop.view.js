@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries } from "./mobile.view.js";
 
 const html = htm.bind(createElement);
 
@@ -324,7 +324,7 @@ export function DesktopView({ ctx }) {
   } else if (section === "messages") {
     main = html`
       <div class="page-head"><h1 class="display">Messages</h1><p>Write to the academy office</p></div>
-      <${MessagesScreen} messages=${ctx.messages || []} student=${student} setSection=${setSection} />`;
+      <${MyQueries} student=${student} /><${MessagesScreen} messages=${ctx.messages || []} student=${student} setSection=${setSection} />`;
   } else if (section === "transcript") {
     main = html`
       <div class="page-head"><h1 class="display">Transcript</h1><p>Full published results</p></div>
@@ -333,34 +333,8 @@ export function DesktopView({ ctx }) {
   } else if (section === "settings") {
     main = html`<${SettingsScreen} student=${student} user=${ctx.user} onLogout=${onLogout} setSection=${setSection} />`;
   } else if (section === "profile") {
-    main = html`
-      <div class="page-head"><h1 class="display">Profile</h1><p>How the academy has you on file</p></div>
-      <div class="panel" style=${{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
-        <${Avatar} src=${student?.avatar} name=${name} size=${72} />
-        <div>
-          <h2 class="display" style=${{ fontSize: 22 }}>${name}</h2>
-          <p style=${{ color: "var(--muted)", marginTop: 4 }}>${student?.email || ""}</p>
-        </div>
-      </div>
-      <div class="panel" style=${{ marginTop: 16 }}>
-        <table class="table-plain">
-          <tbody>
-            <tr><td>Reg number</td><td><strong>${student?.reg || "—"}</strong></td></tr>
-            <tr><td>Programme</td><td><strong>${student?.program || "—"}</strong></td></tr>
-            <tr><td>Cohort</td><td><strong>${student?.cohort || "—"}</strong></td></tr>
-            <tr><td>Status</td><td><strong>${student?.status || "—"}</strong></td></tr>
-            <tr><td>Phone</td><td><strong>${student?.phone || "—"}</strong></td></tr>
-            <tr><td>Start date</td><td><strong>${student?.startDate || "—"}</strong></td></tr>
-            <tr><td>Certificate code</td><td><strong>${student?.certificateCode || "—"}</strong></td></tr>
-            <tr><td>Next of kin</td><td><strong>${student?.nextOfKin || "—"}</strong></td></tr>
-            <tr><td>Profile form</td><td><strong>${student?.profileCompleted ? "Completed" : "Not completed yet"}</strong></td></tr>
-          </tbody>
-        </table>
-        ${!linked
-          ? html`<${Empty} title="Student file not linked" body="Your login is fine. Ask admissions to put this exact email on your student record so reg number, programme, and results can load." />`
-          : html`<p style=${{ color: "var(--muted)", fontSize: 13, marginTop: 12 }}>Legal details such as NIN are held by the academy. Contact the office to update them.</p>`}
-      </div>
-    `;
+    main = html`<div class="page-head"><h1 class="display">Profile</h1><p>How the academy has you on file</p></div>
+      <${ProfileCard} student=${student} linked=${linked} name=${name} />`;
   }
 
   if (!main) {

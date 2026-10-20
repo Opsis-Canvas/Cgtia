@@ -1699,3 +1699,76 @@ body.is-portal::before, body.is-portal::after { display: none !important; }
   .result-ring { width: 180px; height: 180px; }
   .result-ring-val { font-size: 38px; }
 }
+
+/* ===== Round 4: navy/blue only, white line gone, profile, queries, module sheet ===== */
+html, body, body.is-portal, #root { background-color: #eef1f7 !important; background-image: none !important; }
+body.is-portal { min-height: 100dvh; }
+#root { min-height: 100dvh; }
+body.mesh-gradient-canvas::before, body.mesh-gradient-canvas::after { display: none !important; }
+
+/* Gold and beige are gone: banner is navy-to-blue, lime grade badges become blue, coral is red only */
+.m-banner { background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important; color: #fff; }
+.m-banner h2 { color: #fff; }
+.m-banner p { color: rgba(255,255,255,0.82); }
+.m-banner .pill-ink { background: #fff; color: #0f126c; }
+[data-theme="dark"] .m-banner { background: linear-gradient(135deg, #0a0e4a 0%, #0736b8 100%) !important; }
+.badge.tone-lime, .badge.tone-mint, .badge.tone-mist, .badge.tone-sky, .badge.tone-sky-soft, .badge.tone-lilac { background: #eaf1ff; color: #0948e6; }
+.badge.tone-coral { background: #fee2e2; color: #b91c1c; }
+.badge.tone-ink { background: #0f126c; color: #fff; }
+.m-tiles .m-tile { background: linear-gradient(140deg, #0f126c 0%, #1b2590 100%) !important; }
+.m-tiles .m-tile:nth-child(even) { background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important; }
+
+/* Spacing: even rhythm between banner, tiles, sections */
+.m-app { gap: 22px; }
+.m-tiles { gap: 12px; }
+.m-section-h { margin: 6px 0 2px; }
+.more-grid { gap: 12px; }
+
+/* Long buttons: sized to the content, centred, never full phone width */
+.btn-block, .btn-block.secondary { max-width: 340px !important; width: 100%; margin-left: auto; margin-right: auto; }
+
+/* Module sheet: clean navy panel, centred progress ring */
+.ring-sheet { background: #0b0f3d; border-radius: 28px 28px 0 0; }
+.ring-svg circle:last-child { stroke: #0948e6; }
+.ring-dot { background: #151b4f; border: 1px solid rgba(255,255,255,0.18); }
+.ring-dot.done { background: #0948e6; border-color: #0948e6; }
+.ring-dot.current { background: #fff; color: #0f126c; border-color: #fff; }
+.ring-close {
+  display: block; width: 100%; max-width: 340px; margin: 14px auto 0; height: 50px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer;
+}
+
+/* Profile */
+.pf { display: flex; flex-direction: column; gap: 14px; }
+.pf-hero {
+  display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: 24px; background: #fff;
+  border: 1px solid #dfe6f3; box-shadow: 0 16px 30px -26px rgba(15,18,108,0.5);
+}
+.pf-hero .avatar { background: linear-gradient(140deg, #0f126c, #0948e6) !important; color: #fff; }
+.pf-id { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.pf-id h2 { margin: 0; font-family: Montserrat, Inter, sans-serif; font-size: 18px; color: #0f126c; line-height: 1.25; word-break: break-word; }
+.pf-id p { margin: 0; font-size: 12px; color: #64748b; word-break: break-all; }
+.pf-chip { align-self: flex-start; margin-top: 4px; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 5px 10px; border-radius: 999px; }
+.pf-chip.is-ok { background: #eaf1ff; color: #0948e6; }
+.pf-chip.is-warn { background: #fee2e2; color: #b91c1c; }
+.pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pf-cell { background: #fff; border: 1px solid #dfe6f3; border-radius: 18px; padding: 14px 14px 13px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pf-cell span { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+.pf-cell strong { font-size: 14px; color: #0f172a; font-weight: 700; word-break: break-word; line-height: 1.3; }
+.pf-note { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #0f126c; color: #fff; border-radius: 18px; padding: 14px 16px; }
+.pf-note span { font-size: 12px; opacity: .75; }
+.pf-note strong { font-size: 14px; }
+.pf-foot { margin: 2px 4px 0; font-size: 12px; color: #64748b; line-height: 1.5; }
+
+/* Answer queries: status and the office reply */
+.mq { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.mq-item { background: #fff; border: 1px solid #dfe6f3; border-left: 4px solid #0948e6; border-radius: 18px; padding: 14px 16px; }
+.mq-item.is-done { border-left-color: #0f126c; }
+.mq-top { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: #64748b; }
+.mq-top em { font-style: normal; font-weight: 800; color: #0948e6; text-transform: uppercase; letter-spacing: .04em; font-size: 10px; }
+.mq-msg { margin: 8px 0 0; font-size: 13px; color: #334155; line-height: 1.5; }
+.mq-reply { margin-top: 10px; background: #eaf1ff; border-radius: 14px; padding: 10px 12px; font-size: 13px; color: #0f126c; line-height: 1.5; }
+.mq-reply span { display: block; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #0948e6; margin-bottom: 4px; }
+
+/* Desktop: profile grid wider */
+@media (min-width: 860px) { .pf-grid { grid-template-columns: repeat(3, 1fr); } .pf-hero { padding: 26px; } }

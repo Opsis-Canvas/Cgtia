@@ -138,7 +138,7 @@ function LessonRingNav({ lessons, prog, cid, currentId, onPick, onClose }) {
           </button>`;
         })}
       </div>
-      <button type="button" class="btn-block secondary" style=${{ background: "transparent", color: "#fff", borderColor: "rgba(255,255,255,0.2)" }} onClick=${onClose}>Close</button>
+      <button type="button" class="ring-close" onClick=${onClose}>Close</button>
     </div>
   </div>`;
 }
@@ -471,7 +471,7 @@ export function ScoreResult({ pct, auto, score, total, answered, sub, onBack, qu
       <div class="result-ring" style=${{ transform: "translate(" + jitter.x + "px," + jitter.y + "px) rotate(" + jitter.r + "deg)" }}>
         <svg viewBox="0 0 200 200" aria-hidden="true">
           <circle class="ring-track" cx="100" cy="100" r=${RING_R} />
-          <circle class="ring-fill" cx="100" cy="100" r=${RING_R} stroke-dasharray=${RING_C} stroke-dashoffset=${dash} transform="rotate(-90 100 100)" />
+          <circle class="ring-fill" cx="100" cy="100" r=${RING_R} stroke=${val >= 70 ? "#0948e6" : "#b91c1c"} stroke-dasharray=${RING_C} stroke-dashoffset=${dash} transform="rotate(-90 100 100)" />
         </svg>
         <span class="result-ring-val">${auto ? val + "%" : "✓"}</span>
       </div>
@@ -488,6 +488,70 @@ export function ScoreResult({ pct, auto, score, total, answered, sub, onBack, qu
       </div>
     </div>
   </div>`;
+}
+
+
+/* Profile: identity card, record grid, status notes */
+export function ProfileCard({ student, linked, name }) {
+  const rows = [
+    ["Reg number", student?.reg],
+    ["Programme", student?.program],
+    ["Cohort", student?.cohort],
+    ["Status", student?.status],
+    ["Start date", student?.startDate],
+    ["Phone", student?.phone],
+    ["Certificate code", student?.certificateCode],
+    ["Next of kin", student?.nextOfKin]
+  ];
+  return html`<div class="pf">
+    <section class="pf-hero">
+      <${Avatar} src=${student?.avatar} name=${name} size=${72} />
+      <div class="pf-id">
+        <h2>${name}</h2>
+        <p>${student?.email || ""}</p>
+        <span class=${"pf-chip " + (linked ? "is-ok" : "is-warn")}>${linked ? "File linked" : "File not linked"}</span>
+      </div>
+    </section>
+    <section class="pf-grid">
+      ${rows.map(([k, v]) => html`<div class="pf-cell" key=${k}><span>${k}</span><strong>${v || "—"}</strong></div>`)}
+    </section>
+    <section class="pf-note">
+      <span>Profile form</span>
+      <strong>${student?.profileCompleted ? "Completed" : "Not completed yet"}</strong>
+    </section>
+    ${linked
+      ? html`<p class="pf-foot">NIN and other legal details stay with the academy office. Contact them to update anything here.</p>`
+      : html`<${Empty} title="Student file not linked" body="Ask admissions to put this exact email on your student record." />`}
+  </div>`;
+}
+
+/* The student's own answer queries, with the office reply once resolved */
+export function MyQueries({ student }) {
+  const [rows, setRows] = useState([]);
+  const email = String(student?.email || "").toLowerCase();
+  useEffect(() => {
+    if (!email) return;
+    (async () => {
+      try {
+        const { db, api } = await getFirebase();
+        const snap = await api.getDocs(api.query(api.collection(db, "answerQueries"), api.where("studentEmail", "==", email)));
+        const list = [];
+        snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+        const ms = (t) => (t && t.toMillis ? t.toMillis() : 0);
+        list.sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+        setRows(list);
+      } catch (_) { setRows([]); }
+    })();
+  }, [email]);
+  if (!rows.length) return null;
+  return html`<section class="mq">
+    <h4 class="review-h">Your answer queries</h4>
+    ${rows.map((r) => html`<article class=${"mq-item " + (r.status === "resolved" ? "is-done" : "is-open")} key=${r.id}>
+      <div class="mq-top"><span>${r.assessmentTitle || "Test"} · Q${(Number(r.questionIndex) || 0) + 1}</span><em>${r.status === "resolved" ? "Resolved" : "Under review"}</em></div>
+      <p class="mq-msg">${r.message || ""}</p>
+      ${r.reply ? html`<div class="mq-reply"><span>Office reply</span>${r.reply}</div>` : null}
+    </article>`)}
+  </section>`;
 }
 
 /* Question-by-question review (only when the office switched review on for this test) */
@@ -1529,7 +1593,7 @@ export function MobileView({ ctx }) {
       </div>
     `;
   } else if (section === "messages") {
-    body = html`<${MessagesScreen} messages=${messages || []} student=${student} setSection=${setSection} />`;
+    body = html`<${MyQueries} student=${student} /><${MessagesScreen} messages=${messages || []} student=${student} setSection=${setSection} />`;
   } else if (section === "transcript") {
     body = html`
       <${PageHead} title="Transcript" sub="Full published results" onBack=${() => setSection("grades")} backLabel="Grades" />
@@ -1538,30 +1602,7 @@ export function MobileView({ ctx }) {
   } else if (section === "settings") {
     body = html`<${SettingsScreen} student=${student} user=${user} onLogout=${onLogout} setSection=${setSection} />`;
   } else {
-    body = html`
-      <div class="page-head"><h1 class="display">Profile</h1><p>Your academy file</p></div>
-      <div class="panel" style=${{ display: "flex", gap: 14, alignItems: "center" }}>
-        <${Avatar} src=${student?.avatar} name=${name} size=${56} />
-        <div>
-          <b style=${{ fontFamily: "Montserrat, sans-serif", fontSize: 16 }}>${name}</b>
-          <p style=${{ color: "var(--muted)", fontSize: 12, marginTop: 2 }}>${student?.email || ""}</p>
-        </div>
-      </div>
-      <div class="panel" style=${{ marginTop: 12 }}>
-        <div class="m-card"><div class="m-card-text"><h4>Reg number</h4><p>${student?.reg || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Programme</h4><p>${student?.program || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Cohort</h4><p>${student?.cohort || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Status</h4><p>${student?.status || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Phone</h4><p>${student?.phone || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Start date</h4><p>${student?.startDate || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Certificate code</h4><p>${student?.certificateCode || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Next of kin</h4><p>${student?.nextOfKin || "—"}</p></div></div>
-        <div class="m-card" style=${{ marginTop: 8 }}><div class="m-card-text"><h4>Profile form</h4><p>${student?.profileCompleted ? "Completed" : "Not completed yet"}</p></div></div>
-        ${!linked
-          ? html`<div style=${{ marginTop: 12 }}><${Empty} title="Student file not linked" body="Ask admissions to put this exact email on your student record." /></div>`
-          : html`<p style=${{ color: "var(--muted)", fontSize: 12, marginTop: 12, lineHeight: 1.4 }}>NIN and other legal details stay with the academy office. Contact them if something needs updating.</p>`}
-      </div>
-    `;
+    body = html`<${ProfileCard} student=${student} linked=${linked} name=${name} />`;
   }
 
   return html`<div class=${"m-app" + ((menuOpen || notifOpen) ? " is-locked" : "")}>

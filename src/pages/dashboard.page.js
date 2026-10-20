@@ -378,10 +378,9 @@ async function loadPortalData(user) {
   return { student, courses, grades, payments, assessments, announcements, promos, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
 }
 
-function BrandLoading({ isDesktop }) {
-  return isDesktop
-    ? html`<${OnboardingDesktop} mode="loading" />`
-    : html`<${OnboardingView} mode="loading" />`;
+function BrandLoading() {
+  // One splash for every screen size: navy, pulsing mark, swiping placeholder
+  return html`<${OnboardingView} mode="loading" />`;
 }
 
 function LoginGate({ onAuthed }) {
@@ -613,7 +612,7 @@ export function DashboardPage() {
     setPhase("auth");
   }
 
-  if (phase === "splash") return html`<${BrandLoading} isDesktop=${isDesktop} />`;
+  if (phase === "splash") return html`<${BrandLoading} />`;
 
   const exitModal = exitOpen ? html`<div class="exit-scrim" role="dialog" aria-modal="true" aria-label="Leave CareEd">
     <div class="exit-card">

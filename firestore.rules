@@ -348,6 +348,20 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Answer queries: a student files one per question; staff reply and resolve.
+    match /answerQueries/{qid} {
+      allow create: if isSignedIn()
+        && request.resource.data.studentEmail is string
+        && request.auth.token.email is string
+        && request.resource.data.studentEmail == request.auth.token.email
+        && request.resource.data.status == 'open';
+      allow read: if isAdmin() || isStaff()
+        || (isSignedIn() && resource.data.studentEmail is string && request.auth.token.email is string
+            && resource.data.studentEmail == request.auth.token.email);
+      allow update: if isAdmin() || isStaff();
+      allow delete: if isAdmin();
+    }
+
     // =======================================================
     // 5. TRAINEE / INSTRUCTOR PORTAL
     // =======================================================
