@@ -1981,3 +1981,536 @@ body.mesh-gradient-canvas::before, body.mesh-gradient-canvas::after { display: n
 [data-theme="dark"] .btn-block.secondary { background: transparent !important; color: #f1f5f9 !important; border: 1px solid #475569 !important; }
 [data-theme="dark"] .tts-player { background: #1e3a8a; }
 [data-theme="dark"] .lesson-pill { background: #1d4ed8; }
+
+/* =====================================================================
+   Night mode polish — screenshots fix (Oct 2026)
+   Fixes: white empty boxes, huge light strip/line, calendar/forms,
+   schedule rows, transcript, messages, fees, certificates, attendance,
+   test result, lesson fade gradients, dashboard banner overflow,
+   sticky header soft fade, contrast on hard-coded light surfaces.
+   ===================================================================== */
+
+/* Kill the forced light shell background that shows as a white band */
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] body.is-portal {
+  background: #0b1020 !important;
+  color: #e8eef8;
+}
+[data-theme="dark"] .m-app,
+[data-theme="dark"] .desk-shell,
+[data-theme="dark"] .d-shell,
+[data-theme="dark"] .d-main,
+[data-theme="dark"] .m-scroll {
+  background: #0b1020 !important;
+}
+
+/* Sticky top: soft fade like a content mask (dashboard / every page) */
+[data-theme="dark"] .m-app .sticky-top {
+  background: linear-gradient(
+    to bottom,
+    rgba(11, 16, 32, 0.98) 0%,
+    rgba(11, 16, 32, 0.85) 55%,
+    rgba(11, 16, 32, 0) 100%
+  ) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Empty states — no pure white cards */
+[data-theme="dark"] .empty,
+[data-theme="dark"] .empty-state {
+  background: #141c2e !important;
+  border: 1px dashed #334155 !important;
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .empty h4,
+[data-theme="dark"] .empty-state h4 {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .empty p,
+[data-theme="dark"] .empty-state p {
+  color: #94a3b8 !important;
+}
+
+/* Calendar / attendance day cells */
+[data-theme="dark"] .day,
+[data-theme="dark"] .att-cell,
+[data-theme="dark"] .att-cal .day,
+[data-theme="dark"] .cal-grid .day {
+  background: #1a2438 !important;
+  color: #e2e8f0 !important;
+  border-color: #26324a;
+}
+[data-theme="dark"] .day.sel,
+[data-theme="dark"] .att-cell.today,
+[data-theme="dark"] .day.today {
+  background: transparent !important;
+  box-shadow: inset 0 0 0 2px #f59e0b;
+  color: #f8fafc !important;
+}
+[data-theme="dark"] .att-cal,
+[data-theme="dark"] .panel.att-cal {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+}
+[data-theme="dark"] .cal-title,
+[data-theme="dark"] .cal-title b {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .cal-grid .dow {
+  color: #94a3b8 !important;
+}
+
+/* Schedule rows */
+[data-theme="dark"] .sch-row,
+[data-theme="dark"] .sch-list .sch-row {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .sch-h {
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .sch-time {
+  background: #1e3a5f !important;
+}
+[data-theme="dark"] .sch-time b {
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .sch-time small {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .sch-text strong {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .sch-text small {
+  color: #94a3b8 !important;
+}
+
+/* Messages compose + list */
+[data-theme="dark"] .msg-compose,
+[data-theme="dark"] .compose-card,
+[data-theme="dark"] .m-card.compose {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+}
+[data-theme="dark"] .msg-compose label,
+[data-theme="dark"] .compose-card label {
+  color: #94a3b8 !important;
+}
+
+/* Fees */
+[data-theme="dark"] .fees-balance {
+  background: linear-gradient(145deg, #0a1128 0%, #1a2f55 55%, #243b67 100%) !important;
+  color: #fff !important;
+}
+[data-theme="dark"] .fees-action {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .fees-action strong {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .fees-action span {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .tx-row {
+  border-bottom-color: #243044 !important;
+}
+[data-theme="dark"] .tx-ico {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .tx-mid h4 {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .tx-mid p {
+  color: #94a3b8 !important;
+}
+
+/* Transcript card */
+[data-theme="dark"] .tx-sheet,
+[data-theme="dark"] .transcript-card,
+[data-theme="dark"] .tx-card {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .tx-table th {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .tx-table td {
+  border-bottom-color: #243044 !important;
+  color: #e2e8f0 !important;
+}
+[data-theme="dark"] .tx-head {
+  border-bottom-color: #c9a227 !important;
+}
+[data-theme="dark"] .tx-foot {
+  border-top-color: #243044 !important;
+  color: #94a3b8 !important;
+}
+
+/* Certificates / ID list rows */
+[data-theme="dark"] .cert-row,
+[data-theme="dark"] .id-row,
+[data-theme="dark"] .status-card {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+
+/* Profile grid cells */
+[data-theme="dark"] .pf-cell,
+[data-theme="dark"] .pf-grid > * {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .pf-cell span {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .pf-cell strong {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .pf-chip {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+/* Filter chips (transactions) */
+[data-theme="dark"] .filter-chips button {
+  background: #1a2438 !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .filter-chips button.on {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #fff !important;
+}
+
+/* Quiz / test interview options */
+[data-theme="dark"] .quiz-opt,
+[data-theme="dark"] .quiz-card .quiz-opt,
+[data-theme="dark"] .opt-row {
+  background: #141c2e !important;
+  border-color: #334155 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .quiz-opt.on,
+[data-theme="dark"] .quiz-opt:has(input:checked),
+[data-theme="dark"] .quiz-opt.selected {
+  background: #1e3a5f !important;
+  border-color: #3b82f6 !important;
+}
+[data-theme="dark"] .quiz-result-card {
+  background: #141c2e !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .quiz-result-card p {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .quiz-result-card.ok .emoji {
+  background: #14532d !important;
+}
+[data-theme="dark"] .quiz-result-card.bad .emoji {
+  background: #7f1d1d !important;
+}
+[data-theme="dark"] .result-stats {
+  background: #1a2438 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .result-ring .ring-track {
+  stroke: #334155 !important;
+}
+[data-theme="dark"] .result-ring .ring-fill {
+  stroke: #3b82f6 !important;
+}
+
+/* More tiles / quick links */
+[data-theme="dark"] .more-tile {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .more-tile .tile-icon {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+/* Promo chips plain */
+[data-theme="dark"] .promo-chip.is-plain {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+
+/* Notifications panel */
+[data-theme="dark"] .notif-panel {
+  background: #0f172a !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .notif-head {
+  border-bottom-color: #243044 !important;
+}
+[data-theme="dark"] .notif-btn .dot {
+  border-color: #0f172a !important;
+}
+
+/* Lesson reading fades (scroll blend) */
+[data-theme="dark"] .lesson-fade-top {
+  background: linear-gradient(to bottom, #0b1020 25%, transparent) !important;
+}
+[data-theme="dark"] .lesson-fade-bottom {
+  background: linear-gradient(to top, #0b1020 25%, transparent) !important;
+}
+[data-theme="dark"] .lesson-nav-sheet {
+  background: #141c2e !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .lesson-body,
+[data-theme="dark"] .prose p {
+  color: #e2e8f0 !important;
+}
+
+/* Form fields on compose / profile */
+[data-theme="dark"] .m-app input,
+[data-theme="dark"] .m-app textarea,
+[data-theme="dark"] .m-app select,
+[data-theme="dark"] .auth-card input,
+[data-theme="dark"] .auth-card textarea {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+[data-theme="dark"] .m-app input::placeholder,
+[data-theme="dark"] .m-app textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Dashboard banner: keep person image overflowing the card edge */
+[data-theme="dark"] .m-banner {
+  background: linear-gradient(135deg, #0a0e4a 0%, #0736b8 55%, #1d4ed8 100%) !important;
+  overflow: visible !important;
+  position: relative;
+  color: #fff !important;
+}
+[data-theme="dark"] .m-banner h2,
+[data-theme="dark"] .m-banner p {
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .m-banner p {
+  opacity: 0.85;
+}
+[data-theme="dark"] .m-banner-img,
+[data-theme="dark"] .m-banner .slot-img,
+[data-theme="dark"] .m-banner .slot.is-empty {
+  z-index: 2;
+  pointer-events: none;
+}
+/* Let the placeholder / person rise above the card (match light-mode behavior) */
+.m-banner {
+  overflow: visible !important;
+}
+.m-banner-img,
+.m-banner .slot-img {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  max-height: 118%;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+  object-position: bottom right;
+  z-index: 2;
+  transform: translateY(6%);
+}
+.m-banner .slot.is-empty {
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  z-index: 2;
+  transform: translateY(8%);
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+[data-theme="dark"] .m-banner .slot.is-empty {
+  background: rgba(15, 23, 42, 0.35) !important;
+  border: 1px dashed rgba(148, 163, 184, 0.5) !important;
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .m-banner .slot.is-empty b {
+  color: #f1f5f9 !important;
+}
+
+/* Light mode still gets soft sand banner; image still protrudes */
+.m-banner {
+  background: var(--sand, #f5e3bd);
+}
+
+/* Skeleton in dark */
+[data-theme="dark"] .skel,
+[data-theme="dark"] .skel-row,
+[data-theme="dark"] .skel-banner,
+[data-theme="dark"] .skel-tile,
+[data-theme="dark"] .skel-line {
+  background: linear-gradient(90deg, #1a2438 25%, #243044 37%, #1a2438 63%) !important;
+  background-size: 400% 100% !important;
+}
+
+/* Tables / list cards residual whites */
+[data-theme="dark"] .m-list .m-card,
+[data-theme="dark"] .feed-card,
+[data-theme="dark"] .list-card {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+}
+
+/* Drawer */
+[data-theme="dark"] .drawer-panel,
+[data-theme="dark"] .drawer {
+  background: #0f172a !important;
+  border-color: #243044 !important;
+}
+[data-theme="dark"] .drawer-nav a,
+[data-theme="dark"] .drawer-nav button {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .drawer-nav a.on,
+[data-theme="dark"] .drawer-nav button.on {
+  background: #1e3a5f !important;
+  color: #fff !important;
+}
+
+/* Page head subtitle */
+[data-theme="dark"] .page-head p {
+  color: #94a3b8 !important;
+}
+
+/* CareEd foot */
+[data-theme="dark"] .careed-foot-text strong {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .careed-foot-text span {
+  color: #94a3b8 !important;
+}
+
+/* Toggle mini (settings night mode switch row) */
+[data-theme="dark"] .toggle-mini {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+[data-theme="dark"] .toggle-mini.on {
+  background: #1d4ed8 !important;
+  color: #fff !important;
+}
+
+/* Any leftover pure white panels inside the app shell */
+[data-theme="dark"] .m-app .panel,
+[data-theme="dark"] .m-app .m-card,
+[data-theme="dark"] .m-app .more-tile,
+[data-theme="dark"] .m-app .feed-card,
+[data-theme="dark"] .m-app .auth-card,
+[data-theme="dark"] .m-app .quiz-card,
+[data-theme="dark"] .m-app .status-card,
+[data-theme="dark"] .m-app .att-cal,
+[data-theme="dark"] .m-app .sch-row,
+[data-theme="dark"] .m-app .fees-action {
+  background-color: #141c2e !important;
+}
+
+/* Soften hard white borders that read as “white lines” */
+[data-theme="dark"] .m-app,
+[data-theme="dark"] .m-scroll,
+[data-theme="dark"] .sticky-top,
+[data-theme="dark"] .page-head,
+[data-theme="dark"] section {
+  border-color: transparent;
+}
+[data-theme="dark"] hr,
+[data-theme="dark"] .divider {
+  border-color: #243044 !important;
+  background: #243044 !important;
+}
+
+/* Desktop sidebar in dark */
+[data-theme="dark"] .d-side {
+  background: #0f172a !important;
+  border-color: #243044 !important;
+}
+[data-theme="dark"] .d-nav a {
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .d-nav a.on {
+  background: #1e3a5f !important;
+  color: #fff !important;
+}
+
+/* Warn banner stays readable */
+[data-theme="dark"] .warn-banner {
+  background: #422006 !important;
+  color: #fde68a !important;
+}
+[data-theme="dark"] .lock-inline-warn {
+  background: #422006 !important;
+  color: #fdba74 !important;
+  border-color: #9a3412 !important;
+}
+
+/* Chip status tones */
+[data-theme="dark"] .chip-status {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .chip-status.ok {
+  background: rgba(52, 211, 153, 0.15) !important;
+  color: #34d399 !important;
+}
+[data-theme="dark"] .chip-status.warn {
+  background: rgba(251, 191, 36, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+/* Badge tones that were light */
+[data-theme="dark"] .badge.tone-lock {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .badge.tone-done {
+  background: rgba(52, 211, 153, 0.2) !important;
+  color: #34d399 !important;
+  box-shadow: inset 0 0 0 1.5px #166534 !important;
+}
+[data-theme="dark"] .tone-mist {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+/* Progress bars */
+[data-theme="dark"] .prog-bar,
+[data-theme="dark"] .ls-bar {
+  background: #1e293b !important;
+}
+
+/* Settings rows / form-row on profile */
+[data-theme="dark"] .settings-row,
+[data-theme="dark"] .form-row,
+[data-theme="dark"] .pf-form-bar {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+
+/* Ensure no white flash under safe-area / bottom footer */
+[data-theme="dark"] .careed-foot {
+  background: transparent !important;
+}
