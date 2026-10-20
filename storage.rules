@@ -12,6 +12,13 @@ service firebase.storage {
              && request.resource.contentType.matches('application/pdf|image/png|image/jpeg');
     }
 
+    // ---------- Student passport photos: admin uploads, signed-in students read ----------
+    match /student-photos/{file} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin() && request.resource.size < 3 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
     // ---------- Licensing application documents ----------
     // Licensing applicants never get an account (per the site's auth flow —
     // only Certificate/Diploma/Higher-Diploma students are provisioned one
