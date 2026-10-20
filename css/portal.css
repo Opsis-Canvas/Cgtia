@@ -2514,3 +2514,175 @@ html[data-theme="dark"] body.is-portal {
 [data-theme="dark"] .careed-foot {
   background: transparent !important;
 }
+
+/* =====================================================================
+   Round 2 fixes — banner top protrusion, white boxes, See all brand color
+   ===================================================================== */
+
+/* See all / .see → brand blue (not olive green) for light + dark */
+.see {
+  color: #0948e6 !important;
+  font-weight: 700;
+}
+.see:active, .see:hover { color: #0f126c !important; }
+[data-theme="dark"] .see {
+  color: #60a5fa !important;
+}
+[data-theme="dark"] .see:active,
+[data-theme="dark"] .see:hover {
+  color: #93c5fd !important;
+}
+.see-all-row button {
+  color: #0948e6 !important;
+  background: transparent !important;
+  border: 0 !important;
+  font-weight: 700;
+}
+[data-theme="dark"] .see-all-row button {
+  color: #60a5fa !important;
+}
+
+/* Dashboard banner: person protrudes ABOVE the card (head over the top edge) */
+.m-banner {
+  overflow: visible !important;
+  position: relative;
+  isolation: isolate;
+}
+.m-banner-copy {
+  position: relative;
+  z-index: 2;
+}
+.m-banner-img,
+.m-banner .slot-img,
+.m-banner img.slot-img {
+  position: absolute !important;
+  right: 4px !important;
+  bottom: -4px !important;
+  top: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  width: auto !important;
+  max-width: 46% !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  z-index: 3 !important;
+  /* Lift so the head clears the top of the card */
+  transform: translateY(-18%) !important;
+  pointer-events: none;
+}
+.m-banner .slot.is-empty {
+  position: absolute !important;
+  right: 10px !important;
+  bottom: 0 !important;
+  z-index: 3 !important;
+  transform: translateY(-12%) !important;
+}
+/* Give the scroll area room so the protruding head is not clipped by a parent */
+.m-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.m-app .m-scroll > .m-banner,
+.m-scroll > section.m-banner,
+section.m-banner {
+  margin-top: 28px; /* space for the head above the card */
+}
+
+/* Transcript summary pills (Modules / Average / Cohort) — were pure white in dark */
+[data-theme="dark"] .tx-sheet {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .tx-summary div {
+  background: #1a2438 !important;
+  border: 1px solid #243044 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .tx-summary strong {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .tx-summary span {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .tx-id h2,
+[data-theme="dark"] .tx-kicker {
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .tx-id p,
+[data-theme="dark"] .tx-date {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .tx-table thead th {
+  background: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+[data-theme="dark"] .tx-table tbody tr:nth-child(even) td {
+  background: #111827 !important;
+}
+[data-theme="dark"] .tx-table td {
+  color: #e2e8f0 !important;
+  border-bottom-color: #243044 !important;
+}
+[data-theme="dark"] .tx-course {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .tx-photo {
+  background: linear-gradient(145deg, #0f126c, #0948e6) !important;
+  color: #fff !important;
+}
+
+/* Credential cards (Certificates & ID rows) + grade/score boxes in Result detail */
+[data-theme="dark"] .cred-card {
+  background: #1a2438 !important;
+  border-color: #334155 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .cred-card strong {
+  color: #f1f5f9 !important;
+}
+[data-theme="dark"] .cred-card p,
+[data-theme="dark"] .cred-label {
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .cred-grid .cred-card {
+  background: #1a2438 !important;
+}
+
+/* Panel wrapping result detail — ensure nested white boxes are gone */
+[data-theme="dark"] .panel .cred-card {
+  background: #1a2438 !important;
+  border: 1px solid #334155 !important;
+}
+[data-theme="dark"] .panel {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+
+/* Empty state already covered; reinforce dashed list on certificates */
+[data-theme="dark"] .empty {
+  background: #141c2e !important;
+  border: 1px dashed #334155 !important;
+  color: #94a3b8 !important;
+}
+[data-theme="dark"] .empty h4 {
+  color: #e2e8f0 !important;
+}
+
+/* Secondary buttons that were white pills */
+[data-theme="dark"] .btn-block.secondary {
+  background: transparent !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #475569 !important;
+}
+
+/* Notices row on dashboard (light mode white card is fine; dark needs surface) */
+[data-theme="dark"] .notice-link,
+[data-theme="dark"] .dash-notice,
+[data-theme="dark"] .promo-chip.is-plain {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
