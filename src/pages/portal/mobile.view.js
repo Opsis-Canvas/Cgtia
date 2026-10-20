@@ -461,14 +461,27 @@ function TakeTest({ assessment, questions, onBack }) {
     questions.forEach((q, i) => {
       if (q.correct != null && String(answers[i]) === String(q.correct)) score += 1;
     });
-    return html`<div>
-      <${PageHead} title="Submitted" sub=${assessment.title} onBack=${onBack} backLabel="Exit" />
-      <div class="quiz-result-card ok">
-        <div class="emoji">✓</div>
-        <h3>Answers sent</h3>
-        <p>You answered ${Object.keys(answers).length} of ${questions.length} questions.
-        ${questions.some((q) => q.correct != null) ? " Score: " + score + " / " + questions.length + "." : " Your instructor will mark this."}</p>
-        <div class="btn-row"><button type="button" class="btn-block" onClick=${onBack}>Back to tests</button></div>
+    const total = questions.length || 1;
+    const pct = Math.round((score / total) * 100);
+    const auto = questions.some((q) => q.correct != null);
+    return html`<div class="result-screen">
+      <${PageHead} title="Done" sub=${assessment.title} onBack=${onBack} backLabel="Tests" />
+      <div class="result-hero">
+        <div class="result-ring" style=${{ "--pct": pct }}>
+          <span class="result-ring-val">${auto ? pct + "%" : "✓"}</span>
+        </div>
+        <h3 class="display">${auto ? (pct >= 70 ? "Well done" : "Submitted") : "Answers received"}</h3>
+        <p class="result-lead">
+          ${auto
+            ? "You scored " + score + " out of " + total + " on this check."
+            : "You answered " + Object.keys(answers).length + " of " + total + ". Your instructor will mark this."}
+        </p>
+        <div class="result-stats">
+          <div><strong>${Object.keys(answers).length}</strong><span>Answered</span></div>
+          <div><strong>${auto ? score : "—"}</strong><span>Correct</span></div>
+          <div><strong>${total}</strong><span>Questions</span></div>
+        </div>
+        <button type="button" class="btn-block" onClick=${onBack}>Back to tests</button>
       </div>
     </div>`;
   }

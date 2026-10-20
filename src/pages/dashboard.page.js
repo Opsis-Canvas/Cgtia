@@ -1,7 +1,7 @@
 /**
  * CGTIA Student Portal — EasyKorean layout language, CGTIA brand
  */
-import { createElement, useEffect, useMemo, useState } from "react";
+import { createElement, useCallback, useEffect, useMemo, useState } from "react";
 import htm from "htm";
 import { getFirebase } from "../services/firebase.service.js";
 import { OnboardingView } from "./portal/onboarding.view.js";
@@ -452,7 +452,13 @@ export function DashboardPage() {
   const [phase, setPhase] = useState("splash");
   const [user, setUser] = useState(null);
   const [data, setData] = useState(null);
-  const [section, setSection] = useState("dashboard");
+  const [section, setSection] = useState(() => {
+    try {
+      const h = (location.hash || "").replace(/^#\/?/, "");
+      return h || "dashboard";
+    } catch (_) { return "dashboard"; }
+  });
+  const [exitOpen, setExitOpen] = useState(false);
 
   useEffect(() => {
     ensureCss();
@@ -508,6 +514,44 @@ export function DashboardPage() {
     return () => { cancelled = true; try { unsub(); } catch (_) {} };
   }, []);
 
+  const navigateSection = useCallback((next) => {
+    const target = next || "dashboard";
+    setSection((prev) => {
+      if (prev === target) return prev;
+      try {
+        history.pushState({ portal: true, section: target }, "", "#/" + encodeURIComponent(target));
+      } catch (_) {}
+      return target;
+    });
+  }, []);
+
+  useEffect(() => {
+    // Seed history so first back stays in portal
+    try {
+      if (!history.state || !history.state.portal) {
+        history.replaceState({ portal: true, section }, "", "#/" + encodeURIComponent(section || "dashboard"));
+      }
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    const onPop = (e) => {
+      const st = e.state;
+      if (st && st.portal && st.section) {
+        setSection(st.section);
+        return;
+      }
+      // Left portal stack — offer exit instead of dumping to public site immediately
+      try {
+        history.pushState({ portal: true, section: "dashboard" }, "", "#/dashboard");
+      } catch (_) {}
+      setSection("dashboard");
+      setExitOpen(true);
+    };
+    addEventListener("popstate", onPop);
+    return () => removeEventListener("popstate", onPop);
+  }, []);
+
   const nav = useMemo(() => {
     const ps = (data && data.portalSettings) || {};
     return NAV_ALL.filter((n) => {
@@ -536,6 +580,16 @@ export function DashboardPage() {
   }
 
   if (phase === "splash") return html`<${BrandLoading} isDesktop=${isDesktop} />`;
+
+  const exitModal = exitOpen ? html`<div class="exit-scrim" role="dialog" aria-modal="true" aria-label="Leave CareEd">
+    <div class="exit-card">
+      <h3>Leave CareEd?</h3>
+      <p>You can come back anytime with the same email and password.</p>
+      <button type="button" class="btn-block" onClick=${() => setExitOpen(false)}>Stay in CareEd</button>
+      <button type="button" class="btn-block secondary" style=${{ marginTop: 8 }}
+        onClick=${() => { try { location.href = "/"; } catch (_) { location.assign("/"); } }}>Leave to website</button>
+    </div>
+  </div>` : null;
   if (phase === "onboard") {
     const done = () => {
       try { localStorage.setItem(ONBOARD_KEY, "1"); } catch (_) {}
@@ -589,7 +643,7 @@ export function DashboardPage() {
     student: (data && data.student) || { name: user.email, email: user.email, role: "Student" },
     nav,
     section,
-    setSection,
+    setSection: navigateSection,
     stats: isDesktop ? deskStats : stats,
     courses,
     grades,
@@ -608,7 +662,9 @@ export function DashboardPage() {
     user
   };
 
-  return isDesktop
+  return html`${isDesktop
     ? html`<${DesktopView} ctx=${ctx} />`
-    : html`<${MobileView} ctx=${ctx} />`;
+    : html`<${MobileView} ctx=${ctx} />`}
+  ${exitModal}`;
 }
+
