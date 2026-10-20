@@ -2996,3 +2996,171 @@ section.m-banner {
   border-radius: 16px !important;
   padding: 12px 14px !important;
 }
+
+/* =====================================================================
+   Round 5 — RESTORE brand blue/navy colors (do not change palette)
+   Keep only: compact banner proportions + visible person on the right.
+   ===================================================================== */
+
+/* Banner: brand navy → blue (both light and dark) */
+.m-banner {
+  position: relative !important;
+  overflow: visible !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin-top: 40px !important;
+  padding: 20px 140px 20px 20px !important;
+  border-radius: 24px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 32px -16px rgba(15, 18, 108, 0.45);
+}
+.m-banner h2 {
+  color: #fff !important;
+  font-size: 17px !important;
+  line-height: 1.25 !important;
+  margin: 0 0 6px !important;
+  font-weight: 800 !important;
+}
+.m-banner p {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  margin: 0 0 12px !important;
+  max-width: 18em;
+}
+.m-banner .pill-ink {
+  background: #fff !important;
+  color: #0f126c !important;
+  height: 38px !important;
+  padding: 0 20px !important;
+  font-size: 13px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  margin-top: 2px !important;
+  font-weight: 700 !important;
+}
+.m-banner-copy {
+  position: relative;
+  z-index: 2;
+  width: auto !important;
+  max-width: 58% !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0 !important;
+}
+
+/* Person: visible, right edge (size from assets.js) */
+.m-banner-img,
+.m-banner .slot-img,
+.m-banner img.slot-img {
+  display: block !important;
+  position: absolute !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 5 !important;
+  pointer-events: none !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  transform: none !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+.m-banner .slot.is-empty {
+  display: grid !important;
+  place-items: center;
+  position: absolute !important;
+  z-index: 5 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 12px;
+  font-size: 10px;
+  text-align: center;
+  transform: none !important;
+}
+
+[data-theme="dark"] .m-banner {
+  background: linear-gradient(135deg, #0a0e4a 0%, #0736b8 100%) !important;
+}
+
+/* Stat tiles: brand navy / blue with white type (both themes) */
+.m-tiles .m-tile {
+  border-radius: 20px !important;
+  padding: 16px 14px !important;
+  min-height: 100px !important;
+  border: 0 !important;
+  color: #fff !important;
+  filter: none !important;
+}
+.m-tiles .m-tile .num,
+.m-tiles .m-tile .num span,
+.m-tiles .m-tile .lbl,
+.m-tiles .m-tile .tile-icon {
+  color: #fff !important;
+}
+.m-tiles .m-tile .lbl { opacity: 0.88 !important; font-size: 12px !important; }
+.m-tiles .m-tile .num { font-size: 26px !important; font-weight: 800 !important; }
+.m-tiles .m-tile .tile-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+  display: grid; place-items: center; margin-bottom: 8px;
+}
+
+/* Force brand gradients — override any pastel rules from Round 4 */
+.m-tiles .m-tile,
+.m-tiles .m-tile.sky,
+.m-tiles .m-tile.sky-soft,
+.m-tiles .m-tile.lilac,
+.m-tiles .m-tile.mint,
+.m-tiles .m-tile:nth-child(odd),
+.m-tiles .m-tile:nth-child(even) {
+  color: #fff !important;
+}
+.m-tiles .m-tile:nth-child(odd),
+.m-tiles .m-tile.sky,
+.m-tiles .m-tile.sky-soft {
+  background: linear-gradient(140deg, #0f126c 0%, #1b2590 100%) !important;
+}
+.m-tiles .m-tile:nth-child(even),
+.m-tiles .m-tile.lilac,
+.m-tiles .m-tile.mint {
+  background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
+}
+
+[data-theme="dark"] .m-tiles .m-tile:nth-child(odd),
+[data-theme="dark"] .m-tiles .m-tile.sky,
+[data-theme="dark"] .m-tiles .m-tile.sky-soft {
+  background: linear-gradient(140deg, #0f126c 0%, #1b2590 100%) !important;
+}
+[data-theme="dark"] .m-tiles .m-tile:nth-child(even),
+[data-theme="dark"] .m-tiles .m-tile.lilac,
+[data-theme="dark"] .m-tiles .m-tile.mint {
+  background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
+}
+
+/* More tiles stay white cards with blue icons (brand UI) */
+.more-tile {
+  background: #fff !important;
+  border: 1px solid #dfe6f3 !important;
+  color: #0f126c !important;
+  border-radius: 18px !important;
+}
+.more-tile .tile-icon {
+  background: #eaf1ff !important;
+  color: #0948e6 !important;
+}
+[data-theme="dark"] .more-tile {
+  background: #141c2e !important;
+  border-color: #243044 !important;
+  color: #e8eef8 !important;
+}
+[data-theme="dark"] .more-tile .tile-icon {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
