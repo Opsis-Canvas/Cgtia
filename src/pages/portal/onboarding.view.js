@@ -12,7 +12,7 @@ const html = htm.bind(createElement);
  */
 export function OnboardingView({ onStart, mode = "welcome" }) {
   const loading = mode === "loading";
-  return html`<div class="ob">
+  return html`<div class=${"ob" + (loading ? " ob-loading" : "")}>
     <span class="ob-brand">CGTIA</span>
     <span class="ob-block b-blue" aria-hidden="true"></span>
     <span class="ob-block b-yellow" aria-hidden="true"></span>

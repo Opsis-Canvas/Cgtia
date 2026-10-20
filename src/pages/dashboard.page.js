@@ -394,12 +394,21 @@ function LoginGate({ onAuthed }) {
   async function submit(e) {
     e.preventDefault();
     setErr("");
-    const em = email.trim();
-    const pw = password;
-    if (!em || !pw) {
-      setErr("Enter both your email and password.");
+    // Read live DOM values — avoids Show/Hide / autofill drift
+    const form = e.currentTarget;
+    const fd = form ? new FormData(form) : null;
+    const em = String((fd && fd.get("email")) || email || "").trim();
+    const pw = String((fd && fd.get("password")) || password || "");
+    if (!em) {
+      setErr("Enter the email you used with the academy.");
       return;
     }
+    if (!pw) {
+      setErr("Enter your password or one-time code, then tap Sign in.");
+      return;
+    }
+    setEmail(em);
+    setPassword(pw);
     setLoading(true);
     try {
       const { auth, signInWithEmailAndPassword } = await firebaseAuth();
@@ -408,7 +417,7 @@ function LoginGate({ onAuthed }) {
     } catch (ex) {
       const code = ex && ex.code;
       if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-email") {
-        setErr("That email or password does not match. Use the password or one-time code sent after payment.");
+        setErr("That email or password does not match. Check both fields and try again — Show/Hide does not change your password.");
       } else if (code === "auth/too-many-requests") {
         setErr("Too many tries. Wait a minute, then try again.");
       } else {
@@ -427,15 +436,18 @@ function LoginGate({ onAuthed }) {
       </div>
       <h1>Student sign in</h1>
       <p class="sub">Use the email from your application and the password or one-time code you received after payment.</p>
-      <form onSubmit=${submit}>
-        <label>Email</label>
-        <input type="email" required autocomplete="username" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="you@email.com" />
-        <label>Password</label>
+      <form onSubmit=${submit} autoComplete="on">
+        <label for="cgtia-email">Email</label>
+        <input id="cgtia-email" name="email" type="email" required autocomplete="username"
+          value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="you@email.com" />
+        <label for="cgtia-password">Password</label>
         <div class="pw-field">
-          <input type=${showPw ? "text" : "password"} required autocomplete="current-password"
-            value=${password} onInput=${(e) => setPassword(e.target.value)} placeholder="••••••••" />
+          <input id="cgtia-password" name="password" type=${showPw ? "text" : "password"} required
+            autocomplete="current-password" value=${password}
+            onInput=${(e) => setPassword(e.target.value)} placeholder="••••••••" />
           <button type="button" class="pw-toggle" aria-label=${showPw ? "Hide password" : "Show password"}
-            onClick=${(e) => { e.preventDefault(); e.stopPropagation(); setShowPw(!showPw); }}>
+            onMouseDown=${(e) => e.preventDefault()}
+            onClick=${(e) => { e.preventDefault(); e.stopPropagation(); setShowPw((v) => !v); }}>
             ${showPw ? "Hide" : "Show"}
           </button>
         </div>
@@ -662,9 +674,10 @@ export function DashboardPage() {
     user
   };
 
-  return html`${isDesktop
-    ? html`<${DesktopView} ctx=${ctx} />`
-    : html`<${MobileView} ctx=${ctx} />`}
+  // One UI for phone + desktop so every portal feature stays in sync
+  return html`<div class=${isDesktop ? "desk-shell" : undefined}>
+    <${MobileView} ctx=${ctx} />
+  </div>
   ${exitModal}`;
 }
 

@@ -332,6 +332,8 @@
         container.classList.add('pointer-events-auto', 'bg-slate-950/40', 'backdrop-blur-md');
         drawer.style.transform = 'translateY(0)';
         drawer.style.opacity = '1';
+        drawer.style.visibility = 'visible';
+        drawer.style.pointerEvents = 'auto';
         document.body.style.overflow = 'hidden';
       } else {
         container.classList.remove('pointer-events-auto', 'bg-slate-950/40', 'backdrop-blur-md');
@@ -579,6 +581,8 @@
         container.classList.add('pointer-events-auto', 'bg-slate-950/40', 'backdrop-blur-md');
         drawer.style.transform = 'translateY(0)';
         drawer.style.opacity = '1';
+        drawer.style.visibility = 'visible';
+        drawer.style.pointerEvents = 'auto';
         document.body.style.overflow = 'hidden';
         const errorEl = document.getElementById('authErrorMsg');
         if (errorEl) errorEl.classList.add('hidden');

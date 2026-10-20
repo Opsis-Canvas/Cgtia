@@ -665,3 +665,28 @@
   align-items: center;
 }
  
+
+/* Desktop Apply / Auth / Payment — force drawer visible & interactive when open */
+#applyScreen.pointer-events-auto,
+#statusScreen.pointer-events-auto,
+#paymentScreen.pointer-events-auto,
+#authScreen.pointer-events-auto {
+  pointer-events: auto !important;
+  z-index: 80 !important;
+}
+#applyScreen.pointer-events-auto #applyDrawer,
+#statusScreen.pointer-events-auto #statusDrawer,
+#paymentScreen.pointer-events-auto #paymentDrawer,
+#authScreen.pointer-events-auto #authDrawer {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
+/* Closed sheets must never capture clicks */
+#applyScreen.pointer-events-none,
+#statusScreen.pointer-events-none,
+#paymentScreen.pointer-events-none,
+#authScreen.pointer-events-none {
+  pointer-events: none !important;
+}

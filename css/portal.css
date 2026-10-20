@@ -1141,8 +1141,8 @@ h1, h2, h3, h4, p { margin: 0; }
 .m-tile.is-click { cursor: pointer; }
 .m-tile.is-click:active { transform: scale(0.98); }
 
-/* Full-bleed loading / onboarding */
-.ob, .obd {
+/* Full-bleed only while loading splash */
+.ob.ob-loading, .obd.ob-loading {
   position: fixed !important;
   inset: 0 !important;
   width: 100vw !important;
@@ -1253,3 +1253,36 @@ h1, h2, h3, h4, p { margin: 0; }
 }
 [data-theme="dark"] .result-stats { background: #141c2e; }
 [data-theme="dark"] .result-ring::before { background: #0c1222; }
+
+/* Desktop portal — same app UI, wider stage */
+.desk-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #eef1f6;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+.desk-shell .m-app {
+  max-width: 480px;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper, #f6f7fb);
+  box-shadow: 0 0 0 1px rgba(15,23,42,0.04), 0 20px 50px rgba(15,23,42,0.06);
+}
+@media (min-width: 1100px) {
+  .desk-shell .m-app { max-width: 520px; }
+}
+
+/* Auth always clickable */
+.auth-wrap, .auth-card, .auth-card input, .auth-card button {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 2;
+}
+.auth-card input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 16px; /* prevents iOS zoom; works on desktop too */
+}

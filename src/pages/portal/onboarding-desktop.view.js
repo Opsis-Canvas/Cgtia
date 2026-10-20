@@ -7,7 +7,7 @@ const html = htm.bind(createElement);
 
 export function OnboardingDesktop({ onStart, mode = "welcome" }) {
   const loading = mode === "loading";
-  return html`<div class="obd">
+  return html`<div class=${"obd" + (loading ? " ob-loading" : "")}>
     <section class="obd-copy">
       <span class="brand">CGTIA</span>
       <div class="obd-text">

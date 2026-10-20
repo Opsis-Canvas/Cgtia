@@ -40,6 +40,8 @@ function openSheet(screenId, drawerId) {
   if (drawer) {
     drawer.style.transform = "translateY(0)";
     drawer.style.opacity = "1";
+    drawer.style.visibility = "visible";
+    drawer.style.pointerEvents = "auto";
   }
   document.body.style.overflow = "hidden";
 }
@@ -54,6 +56,8 @@ function closeSheet(screenId, drawerId) {
   if (drawer) {
     drawer.style.transform = "";
     drawer.style.opacity = "";
+    drawer.style.visibility = "";
+    drawer.style.pointerEvents = "";
   }
   document.body.style.overflow = "";
 }
