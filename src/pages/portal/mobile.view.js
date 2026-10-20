@@ -5,6 +5,7 @@ import { Icon } from "./icons.js";
 import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed, formatLessonHtml } from "./shared.js";
 import { ASSETS } from "./assets.js";
 import { MenuDrawer } from "./drawer.view.js";
+import { getFirebase } from "../../services/firebase.service.js";
 
 const html = htm.bind(createElement);
 const TILE_TONE = { courses: "sky", grades: "lilac", score: "sky-soft", fees: "mint" };
@@ -428,7 +429,9 @@ function pick(obj, keys) {
 }
 
 /* Score ring: starts slow, builds and shakes harder, then lands on the real percentage */
-export function ScoreResult({ pct, auto, score, total, answered, title, sub, onBack }) {
+const RING_R = 86;
+const RING_C = 2 * Math.PI * RING_R;
+export function ScoreResult({ pct, auto, score, total, answered, sub, onBack, questions, answers, assessment, student }) {
   const target = auto ? pct : 100;
   const reduce = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const [val, setVal] = useState(reduce ? target : 0);
@@ -460,11 +463,16 @@ export function ScoreResult({ pct, auto, score, total, answered, title, sub, onB
   const lead = auto
     ? "You scored " + score + " out of " + total + " on this check."
     : "You answered " + answered + " of " + total + ". Your instructor will mark this.";
+  const dash = RING_C * (1 - val / 100);
+  const showReview = !!(assessment && assessment.showReview === true && auto && questions && questions.length);
   return html`<div class="result-screen">
     <${PageHead} title="Done" sub=${sub} onBack=${onBack} backLabel="Tests" />
     <div class=${"result-hero " + tone + (building ? " is-building" : " is-done")}>
-      <div class="result-ring"
-        style=${{ "--deg": (val * 3.6) + "deg", transform: "translate(" + jitter.x + "px," + jitter.y + "px) rotate(" + jitter.r + "deg)" }}>
+      <div class="result-ring" style=${{ transform: "translate(" + jitter.x + "px," + jitter.y + "px) rotate(" + jitter.r + "deg)" }}>
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <circle class="ring-track" cx="100" cy="100" r=${RING_R} />
+          <circle class="ring-fill" cx="100" cy="100" r=${RING_R} stroke-dasharray=${RING_C} stroke-dashoffset=${dash} transform="rotate(-90 100 100)" />
+        </svg>
         <span class="result-ring-val">${auto ? val + "%" : "✓"}</span>
       </div>
       <div class="result-copy">
@@ -475,10 +483,73 @@ export function ScoreResult({ pct, auto, score, total, answered, title, sub, onB
           <div><strong>${auto ? score : "—"}</strong><span>Correct</span></div>
           <div><strong>${total}</strong><span>Questions</span></div>
         </div>
+        ${showReview ? html`<${ReviewAnswers} questions=${questions} answers=${answers || {}} assessment=${assessment} student=${student} />` : null}
         <button type="button" class="btn-block" onClick=${onBack}>Back to tests</button>
       </div>
     </div>
   </div>`;
+}
+
+/* Question-by-question review (only when the office switched review on for this test) */
+function ReviewAnswers({ questions, answers, assessment, student }) {
+  const [open, setOpen] = useState(null);
+  const [text, setText] = useState("");
+  const [sent, setSent] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const optText = (q, i) => (answers[i] != null && (q.options || [])[answers[i]] != null) ? q.options[answers[i]] : "No answer";
+  async function send(i, q, yours, correct) {
+    if (!text.trim()) { setErr("Write a short reason for your query first."); return; }
+    setBusy(true); setErr("");
+    try {
+      const { db, api } = await getFirebase();
+      await api.addDoc(api.collection(db, "answerQueries"), {
+        assessmentId: assessment.id || "",
+        assessmentTitle: assessment.title || "",
+        questionIndex: i,
+        questionPrompt: q.prompt || q.text || "",
+        yourAnswer: yours,
+        correctAnswer: correct,
+        message: text.trim(),
+        studentId: student?.id || "",
+        studentName: student?.name || "",
+        studentEmail: student?.email || "",
+        status: "open",
+        reply: "",
+        createdAt: api.serverTimestamp()
+      });
+      setSent({ ...sent, [i]: true });
+      setOpen(null); setText("");
+    } catch (e) {
+      setErr("Your query could not be sent. Check your connection and try again.");
+    } finally { setBusy(false); }
+  }
+  return html`<section class="review">
+    <h4 class="review-h">Review your answers</h4>
+    ${questions.map((q, i) => {
+      const ok = answers[i] != null && String(answers[i]) === String(q.correct);
+      const yours = optText(q, i);
+      const correct = (q.options || [])[q.correct] != null ? q.options[q.correct] : "—";
+      return html`<article class=${"rv-item " + (ok ? "is-ok" : "is-bad")} key=${i}>
+        <div class="rv-top"><span class="rv-no">Q${i + 1}</span><span class="rv-state">${ok ? "Correct" : "Wrong"}</span></div>
+        <p class="rv-q">${q.prompt || q.text || "Question"}</p>
+        <p class="rv-line"><span>Your answer</span>${yours}</p>
+        ${ok ? null : html`<p class="rv-line"><span>Correct answer</span>${correct}</p>`}
+        ${sent[i]
+          ? html`<p class="rv-sent">Query sent. The office will review it.</p>`
+          : open === i
+            ? html`<div class="rv-query">
+                <textarea rows="3" value=${text} placeholder="Why do you think this marking is wrong?" onInput=${(e) => setText(e.target.value)}></textarea>
+                ${err ? html`<p class="rv-err" role="alert">${err}</p>` : null}
+                <div class="rv-actions">
+                  <button type="button" class="rv-send" disabled=${busy} onClick=${() => send(i, q, yours, correct)}>${busy ? "Sending…" : "Send query"}</button>
+                  <button type="button" class="rv-cancel" onClick=${() => { setOpen(null); setText(""); setErr(""); }}>Cancel</button>
+                </div>
+              </div>`
+            : html`<button type="button" class="rv-ask" onClick=${() => { setOpen(i); setText(""); setErr(""); }}>${ok ? "Question this answer" : "Query this answer"}</button>`}
+      </article>`;
+    })}
+  </section>`;
 }
 
 /* Branded month calendar: green dot = present, plum = absent, gold ring = today */
@@ -578,7 +649,7 @@ export function TranscriptView({ student, grades }) {
   </div>`;
 }
 
-function TakeTest({ assessment, questions, onBack }) {
+function TakeTest({ assessment, questions, onBack, student }) {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [left, setLeft] = useState((assessment?.timerMinutes || 0) * 60);
@@ -635,7 +706,7 @@ function TakeTest({ assessment, questions, onBack }) {
     const auto = questions.some((q) => q.correct != null);
     const answered = Object.keys(answers).length;
     const pct = Math.round((score / total) * 100);
-    return html`<${ScoreResult} pct=${pct} auto=${auto} score=${score} total=${total} answered=${answered} sub=${assessment.title} onBack=${onBack} />`;
+    return html`<${ScoreResult} pct=${pct} auto=${auto} score=${score} total=${total} answered=${answered} sub=${assessment.title} onBack=${onBack} questions=${questions} answers=${answers} assessment=${assessment} student=${student} />`;
   }
   const q = questions[idx] || null;
   const mm = String(Math.floor(left / 60)).padStart(2, "0");
@@ -1356,7 +1427,7 @@ export function MobileView({ ctx }) {
     const tid = String(section).slice(5);
     const a = (assessments || []).find((x) => x.id === tid);
     const qs = Array.isArray(a?.questions) ? a.questions : [];
-    body = html`<${TakeTest} assessment=${a} questions=${qs} onBack=${() => setSection("assessments")} />`;
+    body = html`<${TakeTest} assessment=${a} questions=${qs} student=${ctx.student} onBack=${() => setSection("assessments")} />`;
   } else if (String(section || "").startsWith("grade:")) {
     const gid = String(section).slice(6);
     const g = (grades || []).find((x) => String(x.id) === gid);

@@ -6,17 +6,19 @@ import { ImageSlot } from "./shared.js";
 import { ASSETS } from "./assets.js";
 const html = htm.bind(createElement);
 
-/* Loading carousel: three slides slide in one after another; no text until the first slide loads */
+/* One placeholder repeated as a swipe track along the bottom */
 function LoadingCarousel() {
-  const slides = [ASSETS.onboardingPerson.url, ASSETS.bannerPerson.url, ASSETS.logo];
-  const [i, setI] = useState(0);
+  const src = ASSETS.onboardingPerson.url;
+  const N = 30;
+  const [step, setStep] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % slides.length), 1500);
+    const t = setInterval(() => setStep((v) => v + 1), 1400);
     return () => clearInterval(t);
   }, []);
-  return html`<div class="ob-carousel" aria-hidden="true">
-    ${slides.map((src, k) => html`<img key=${k} src=${src} alt="" class=${"ob-slide" + (k === i ? " is-on" : k === (i + slides.length - 1) % slides.length ? " is-prev" : "")} />`)}
-    <div class="ob-dots">${slides.map((_, k) => html`<span key=${k} class=${"ob-dot" + (k === i ? " on" : "")}></span>`)}</div>
+  return html`<div class="ob-swipe" aria-hidden="true">
+    <div class="ob-track" style=${{ width: (N * 100) + "%", transform: "translate3d(" + (-step * 100 / N) + "%,0,0)" }}>
+      ${Array.from({ length: N }, (_, k) => html`<img key=${k} src=${src} alt="" style=${{ flex: "0 0 " + (100 / N) + "%" }} />`)}
+    </div>
   </div>`;
 }
 
@@ -27,12 +29,16 @@ function LoadingCarousel() {
 export function OnboardingView({ onStart, mode = "welcome" }) {
   const loading = mode === "loading";
   if (loading) {
-    return html`<div class="ob ob-loading">
-      <${LoadingCarousel} />
-      <div class="ob-load ob-load-late" aria-live="polite">
-        <span>Getting your details ready…</span>
-        <small>Modules, results and fees</small>
+    return html`<div class="ob ob-loading ob-splash" style=${{ position: "fixed", inset: 0, background: "#0f126c", overflow: "hidden" }}>
+      <div class="ob-mark" aria-hidden="true">
+        <img src=${ASSETS.logo} alt="" width="52" height="52" style=${{ width: 52, height: 52, objectFit: "contain" }} />
       </div>
+      <div class="ob-brandline" aria-live="polite">
+        <strong>CareEd</strong>
+        <span>by CGTIA</span>
+        <small>Getting your details ready…</small>
+      </div>
+      <${LoadingCarousel} />
     </div>`;
   }
   return html`<div class="ob">

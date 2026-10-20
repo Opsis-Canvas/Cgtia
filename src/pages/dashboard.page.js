@@ -479,6 +479,10 @@ function LoginGate({ onAuthed }) {
 
 export function DashboardPage() {
   const isDesktop = useIsDesktop();
+  useEffect(() => {
+    document.body.classList.add("is-portal");
+    return () => document.body.classList.remove("is-portal");
+  }, []);
   const [phase, setPhase] = useState("splash");
   const [user, setUser] = useState(null);
   const [data, setData] = useState(null);
