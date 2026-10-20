@@ -105,46 +105,42 @@ function MiniQuiz({ title, subtitle, questions, passPercent, onPass, onBack, fai
   </div>`;
 }
 
+/* Lesson list sheet: progress, status per lesson, locked until the previous one is done */
 function LessonRingNav({ lessons, prog, cid, currentId, onPick, onClose }) {
-  const n = Math.max(lessons.length, 1);
-  const cur = lessons.findIndex((l, i) => String(l.id != null ? l.id : i) === String(currentId));
-  const curL = cur >= 0 ? lessons[cur] : null;
-  return html`<div class="ring-backdrop" onClick=${onClose}>
-    <div class="ring-sheet" onClick=${(e) => e.stopPropagation()}>
-      <h4>Jump to a lesson</h4>
-      <p class="ring-sub">Completed lessons light up green</p>
-      <div class="ring-wrap">
-        <svg class="ring-svg" viewBox="0 0 100 100" aria-hidden="true">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3" />
-        </svg>
-        <div class="ring-center">
-          <strong>${curL?.title || "Select"}</strong>
-          <span>${cur >= 0 ? (cur + 1) + " of " + lessons.length : lessons.length + " lessons"}</span>
+  const total = lessons.length;
+  const idOf = (ls, i) => String(ls.id != null ? ls.id : i);
+  const doneCount = lessons.filter((l, i) => prog.completed.includes(idOf(l, i))).length;
+  const pct = total ? Math.round((doneCount / total) * 100) : 0;
+  return html`<div class="ls-backdrop" onClick=${onClose}>
+    <div class="ls-sheet" role="dialog" aria-modal="true" aria-label="Lessons" onClick=${(e) => e.stopPropagation()}>
+      <div class="ls-handle" aria-hidden="true"></div>
+      <div class="ls-head">
+        <div>
+          <h4>Lessons</h4>
+          <p>${doneCount} of ${total} completed</p>
         </div>
-        ${lessons.map((ls, i) => {
-          const id = String(ls.id != null ? ls.id : i);
-          const ang = (-90 + (360 / n) * i) * (Math.PI / 180);
-          const x = 50 + 42 * Math.cos(ang);
-          const y = 50 + 42 * Math.sin(ang);
-          const done = prog.completed.includes(id);
-          const open = i === 0 || prog.completed.includes(String(lessons[i - 1].id != null ? lessons[i - 1].id : (i - 1)));
-          const current = String(currentId) === id;
-          const cls = "ring-dot" + (done ? " done" : "") + (current ? " current" : "") + (!open ? " locked" : "");
-          return html`<button type="button" key=${id} class=${cls}
-            style=${{ left: x + "%", top: y + "%" }}
-            disabled=${!open}
-            onClick=${() => { if (open) onPick(id); }}>
-            ${String(i + 1).padStart(2, "0")}
-          </button>`;
-        })}
+        <button type="button" class="ls-x" aria-label="Close" onClick=${onClose}>×</button>
       </div>
-      <button type="button" class="ring-close" onClick=${onClose}>Close</button>
+      <div class="ls-bar" aria-hidden="true"><i style=${{ width: pct + "%" }}></i></div>
+      <ol class="ls-list">
+        ${lessons.map((ls, i) => {
+          const id = idOf(ls, i);
+          const done = prog.completed.includes(id);
+          const open = i === 0 || prog.completed.includes(idOf(lessons[i - 1], i - 1));
+          const current = id === String(currentId);
+          const cls = "ls-item" + (done ? " is-done" : "") + (current ? " is-current" : "") + (!open ? " is-locked" : "");
+          const note = current ? "Reading now" : done ? "Completed" : open ? "Ready to read" : "Finish the previous lesson first";
+          return html`<li key=${id}>
+            <button type="button" class=${cls} disabled=${!open} onClick=${() => { if (open) onPick(id); }}>
+              <span class="ls-num">${done ? "✓" : String(i + 1).padStart(2, "0")}</span>
+              <span class="ls-text"><strong>${ls.title || "Lesson " + (i + 1)}</strong><small>${note}</small></span>
+            </button>
+          </li>`;
+        })}
+      </ol>
     </div>
   </div>`;
 }
-
-
-
 
 const FONT_STEPS = ["sm", "md", "lg", "xl"];
 function loadFontStep() {
@@ -385,8 +381,8 @@ function LessonView({ section, courses, student, setSection }) {
           : (idx + 1 < lessons.length ? "Mark done · Next lesson" : "Mark done · Finish module")}
       </button>
     </div>
-    <button type="button" class="fab-lessons" aria-label="Lesson map" onClick=${() => setNavOpen(true)}>
-      ${Icon({ name: "grid", size: 22 })}
+    <button type="button" class="lesson-pill" aria-label="Open lesson list" onClick=${() => setNavOpen(true)}>
+      ${Icon({ name: "grid", size: 16 })}<span>Lessons</span><b>${idx + 1}/${lessons.length}</b>
     </button>
     ${navOpen ? html`<${LessonRingNav}
       lessons=${lessons}

@@ -46,7 +46,7 @@ function ensureCss() {
   if (document.querySelector("link[data-portal-css]")) return;
   const link = document.createElement("link");
   link.rel = "stylesheet";
-  link.href = "/css/portal.css";
+  link.href = "/css/portal.css?v=r6";  // version tag forces fresh CSS on phones that cached the old file
   link.setAttribute("data-portal-css", "1");
   document.head.appendChild(link);
   // Montserrat / Inter if available on public site; else system stack in CSS
