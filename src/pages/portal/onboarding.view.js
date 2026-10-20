@@ -6,20 +6,9 @@ import { ImageSlot } from "./shared.js";
 import { ASSETS } from "./assets.js";
 const html = htm.bind(createElement);
 
-/* One placeholder repeated as a swipe track along the bottom */
+/* One placeholder, rising once from the bottom edge */
 function LoadingCarousel() {
-  const src = ASSETS.onboardingPerson.url;
-  const N = 30;
-  const [step, setStep] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setStep((v) => v + 1), 1400);
-    return () => clearInterval(t);
-  }, []);
-  return html`<div class="ob-swipe" aria-hidden="true">
-    <div class="ob-track" style=${{ width: (N * 100) + "%", transform: "translate3d(" + (-step * 100 / N) + "%,0,0)" }}>
-      ${Array.from({ length: N }, (_, k) => html`<img key=${k} src=${src} alt="" style=${{ flex: "0 0 " + (100 / N) + "%" }} />`)}
-    </div>
-  </div>`;
+  return html`<img class="ob-hero" src=${ASSETS.onboardingPerson.url} alt="" aria-hidden="true" />`;
 }
 
 /**
@@ -33,12 +22,8 @@ export function OnboardingView({ onStart, mode = "welcome" }) {
       <div class="ob-mark" aria-hidden="true">
         <img src=${ASSETS.logo} alt="" width="52" height="52" style=${{ width: 52, height: 52, objectFit: "contain" }} />
       </div>
-      <div class="ob-brandline" aria-live="polite">
-        <strong>CareEd</strong>
-        <span>by CGTIA</span>
-        <small>Getting your details ready…</small>
-      </div>
       <${LoadingCarousel} />
+      <p class="ob-status" aria-live="polite">Getting your details ready…</p>
     </div>`;
   }
   return html`<div class="ob">

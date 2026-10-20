@@ -143,6 +143,8 @@ function LessonRingNav({ lessons, prog, cid, currentId, onPick, onClose }) {
 }
 
 const FONT_STEPS = ["sm", "md", "lg", "xl"];
+const FONT_PX = { sm: 15, md: 17, lg: 19, xl: 22 };
+const escapeText = (t) => String(t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function loadFontStep() {
   try {
     const v = localStorage.getItem("cgtia_lesson_font");
@@ -243,8 +245,8 @@ function LessonTtsPlayer({ text, title }) {
 
   if (!open) {
     return html`<button type="button" class=${"tts-fab" + (playing ? " playing" : "")}
-      aria-label="Listen" onClick=${() => setOpen(true)}>
-      ${Icon({ name: "speaker", size: 22 })}
+      aria-label="Listen to this lesson" onClick=${() => setOpen(true)}>
+      ${Icon({ name: "speaker", size: 18 })}<span>Listen</span>
     </button>`;
   }
 
@@ -336,6 +338,7 @@ function LessonView({ section, courses, student, setSection }) {
   const speakText = l.ttsText || l.body || "";
   return html`<div>
     <${PageHead} title=${l.title || "Lesson"} sub=${(l.subheader || l.header || ((l.type || "text") + " · " + (idx + 1) + " of " + lessons.length))} onBack=${() => setSection("course:" + cid + ":lessons")} backLabel="Lessons" />
+    ${speakText ? html`<${LessonTtsPlayer} text=${speakText} title=${l.title || "Lesson"} />` : null}
     <div class="lesson-scroll">
       <div class="lesson-fade-top"></div>
       <div class="panel prose">
@@ -365,15 +368,15 @@ function LessonView({ section, courses, student, setSection }) {
             </div>`
           : null}
         <div class="lesson-body-wrap">
-          ${(l.header || l.subheader || l.body || (l.blocks && l.blocks.length))
+          ${(l.header || l.subheader || l.body || (l.blocks && l.blocks.length) || l.description)
             ? html`<div class=${"lesson-body fs-" + FONT_STEPS[fontStep]}
-                dangerouslySetInnerHTML=${{ __html: formatLessonHtml(l) }}></div>`
+                style=${{ "--lesson-fs": FONT_PX[FONT_STEPS[fontStep]] + "px" }}
+                dangerouslySetInnerHTML=${{ __html: formatLessonHtml(l) || ("<p>" + escapeText(l.description) + "</p>") }}></div>`
             : html`<p class="muted">No reading text for this lesson yet.</p>`}
           <div class="lesson-fade-bottom"></div>
         </div>
       </div>
     </div>
-    ${speakText ? html`<${LessonTtsPlayer} text=${speakText} title=${l.title || "Lesson"} />` : null}
     <div style=${{ padding: "16px 0 100px" }}>
       <button type="button" class="btn-block" onClick=${completeAndNext}>
         ${(Array.isArray(l.checkQuestions) && l.checkQuestions.filter((q) => q.prompt).length)
@@ -486,6 +489,71 @@ export function ScoreResult({ pct, auto, score, total, answered, sub, onBack, qu
   </div>`;
 }
 
+
+
+/* Grade colour: A green, B blue, C teal, D amber, E orange, F red */
+export function gradeTone(g) {
+  const k = String((g && g.grade) || "").trim().toUpperCase().charAt(0);
+  return "gr-" + (/[A-F]/.test(k) ? k.toLowerCase() : "x");
+}
+
+/* Schedule: each row is a section; tapping one opens its details */
+const SCH_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+function schKind(s) { return s.sectionType || "Class"; }
+function schProgram(p) {
+  if (!p || p === "all") return "All programmes";
+  return String(p).replace(/(^|[\s-])\w/g, (m) => m.toUpperCase()).replace(/-/g, " ");
+}
+export function ScheduleList({ schedule }) {
+  const [open, setOpen] = useState(null);
+  const list = schedule || [];
+  const byDay = {};
+  list.forEach((x) => { const d = x.day || x.weekday || "Other"; (byDay[d] = byDay[d] || []).push(x); });
+  const order = SCH_DAYS.filter((d) => byDay[d]).concat(Object.keys(byDay).filter((d) => !SCH_DAYS.includes(d)));
+  if (!list.length) {
+    return html`<${Empty} title="No timetable yet" body="When the academy publishes class times for your programme, they will show up here." />`;
+  }
+  return html`<div class="sch">
+    ${order.map((d) => html`<section class="sch-day" key=${d}>
+      <h3 class="sch-h">${d}</h3>
+      <div class="sch-list">
+        ${byDay[d].map((x) => html`<button type="button" class="sch-row" key=${x.id} onClick=${() => setOpen(x)}>
+          <span class="sch-time"><b>${(x.startTime || x.time || "—").toString().slice(0, 5)}</b><small>${x.endTime ? "to " + String(x.endTime).slice(0, 5) : ""}</small></span>
+          <span class="sch-text"><strong>${x.title || x.courseTitle || "Session"}</strong><small>${[x.room || x.venue || "", x.tutor || x.instructor || ""].filter(Boolean).join(" · ") || "Class session"}</small></span>
+          <span class=${"sch-kind is-" + schKind(x).toLowerCase().replace(/[^a-z]+/g, "-")}>${schKind(x)}</span>
+        </button>`)}
+      </div>
+    </section>`)}
+    ${open ? html`<${ScheduleSheet} item=${open} onClose=${() => setOpen(null)} />` : null}
+  </div>`;
+}
+
+function ScheduleSheet({ item, onClose }) {
+  const rows = [
+    ["Day", item.day || "—"],
+    ["Time", [item.startTime, item.endTime].filter(Boolean).map((t) => String(t).slice(0, 5)).join(" – ") || "—"],
+    ["Venue", item.room || item.venue || "—"],
+    ["Tutor", item.tutor || item.instructor || "—"],
+    ["Module", item.courseTitle ? (item.courseCode ? item.courseCode + " · " : "") + item.courseTitle : "—"],
+    ["Programme", schProgram(item.program)]
+  ];
+  return html`<div class="ls-backdrop" onClick=${onClose}>
+    <div class="ls-sheet" role="dialog" aria-modal="true" aria-label=${item.title || "Session"} onClick=${(e) => e.stopPropagation()}>
+      <div class="ls-handle" aria-hidden="true"></div>
+      <div class="ls-head">
+        <div>
+          <span class=${"sch-kind is-" + schKind(item).toLowerCase().replace(/[^a-z]+/g, "-")}>${schKind(item)}</span>
+          <h4 style=${{ marginTop: 8 }}>${item.title || item.courseTitle || "Session"}</h4>
+        </div>
+        <button type="button" class="ls-x" aria-label="Close" onClick=${onClose}>×</button>
+      </div>
+      <dl class="sch-details">
+        ${rows.map(([k, v]) => html`<div class="sch-d" key=${k}><dt>${k}</dt><dd>${v}</dd></div>`)}
+      </dl>
+      <p class="sch-foot">Your tutor marks attendance for this session. It appears under Attendance once recorded.</p>
+    </div>
+  </div>`;
+}
 
 /* Profile: identity card, record grid, status notes */
 export function ProfileCard({ student, linked, name }) {
@@ -698,7 +766,7 @@ export function TranscriptView({ student, grades }) {
                 <td>${pick(g, ["exam", "examScore"])}</td>
                 <td>${pick(g, ["attendance", "attendancePct"])}</td>
                 <td>${g.score != null ? g.score : "—"}</td>
-                <td><span class="tx-grade">${g.grade || "—"}</span></td>
+                <td><span class=${"tx-grade " + gradeTone(g)}>${g.grade || "—"}</span></td>
                 <td>${g.remark || "—"}</td>
               </tr>`)}
             </tbody>
@@ -1190,7 +1258,7 @@ export function MobileView({ ctx }) {
                 badge=${g.grade || "·"}
                 title=${g.courseTitle || g.courseCode || "Course"}
                 note=${g.score != null ? "Score " + g.score : "Published"}
-                tone="lime" />`)
+                tone=${gradeTone(g)} />`)
             : html`<${Empty} title="No results yet" body="Published grades will land here. Nothing else to do on your side." />`}
         </div>
       </section>
@@ -1512,29 +1580,9 @@ export function MobileView({ ctx }) {
       `}
     `;
   } else if (section === "schedule") {
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const byDay = {};
-    (schedule || []).forEach((s) => {
-      const d = s.day || s.weekday || "Other";
-      if (!byDay[d]) byDay[d] = [];
-      byDay[d].push(s);
-    });
     body = html`
       <${PageHead} title="Schedule" sub="Class times for your track" onBack=${() => setSection("dashboard")} backLabel="Home" />
-      ${(schedule || []).length
-        ? days.filter((d) => byDay[d]).concat(Object.keys(byDay).filter((d) => !days.includes(d))).map((d) => html`<section key=${d} style=${{ marginBottom: 14 }}>
-            <div class="m-section-h"><h3 class="display" style=${{ fontSize: 15 }}>${d}</h3></div>
-            <div class="m-list">
-              ${byDay[d].map((s) => html`<article class="m-card" key=${s.id}>
-                <span class="badge tone-sky">${(s.startTime || s.time || "—").toString().slice(0, 5)}</span>
-                <div class="m-card-text">
-                  <h4>${s.title || s.courseTitle || s.module || "Session"}</h4>
-                  <p>${[s.endTime ? "until " + s.endTime : "", s.room || s.venue || "", s.tutor || s.instructor || ""].filter(Boolean).join(" · ") || "Class session"}</p>
-                </div>
-              </article>`)}
-            </div>
-          </section>`)
-        : html`<${Empty} title="No timetable yet" body="When the academy publishes class times for your programme, they will show up here." />`}
+      <${ScheduleList} schedule=${schedule || []} />
     `;
   } else if (section === "attendance") {
     const rows = attendance || [];

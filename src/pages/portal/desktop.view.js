@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone } from "./mobile.view.js";
 
 const html = htm.bind(createElement);
 
@@ -38,7 +38,7 @@ function CourseRow({ c, i, onOpen }) {
 
 function GradeRow({ g }) {
   return html`<div class="lesson">
-    <span class="badge tone-lime">${g.grade || "·"}</span>
+    <span class=${"badge tone-" + gradeTone(g)}>${g.grade || "·"}</span>
     <span class="lesson-text">
       <h4>${g.courseTitle || g.courseCode || "Course"}</h4>
       <p>${g.score != null ? "Score " + g.score : (g.remark || "Published")}</p>
@@ -252,22 +252,9 @@ export function DesktopView({ ctx }) {
       </div>
     `;
   } else if (section === "schedule") {
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const list = ctx.schedule || [];
-    const byDay = {};
-    list.forEach((x) => { const d = x.day || x.weekday || "Other"; (byDay[d] = byDay[d] || []).push(x); });
     main = html`
       <div class="page-head"><h1 class="display">Schedule</h1><p>Class times for your track</p></div>
-      ${list.length
-        ? days.filter((d) => byDay[d]).concat(Object.keys(byDay).filter((d) => !days.includes(d))).map((d) => html`<div class="panel lessons" key=${d} style=${{ marginBottom: 12 }}>
-            <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>${d}</h3>
-            ${byDay[d].map((x) => html`<div class="lesson" key=${x.id}>
-              <span class="badge tone-sky">${(x.startTime || x.time || "—").toString().slice(0, 5)}</span>
-              <span class="lesson-text"><h4>${x.title || x.courseTitle || x.module || "Session"}</h4>
-                <p>${[x.endTime ? "until " + x.endTime : "", x.room || x.venue || "", x.tutor || x.instructor || ""].filter(Boolean).join(" · ") || "Class session"}</p></span>
-            </div>`)}
-          </div>`)
-        : html`<div class="panel"><${Empty} title="No timetable yet" body="When the academy publishes class times for your programme, they will show up here." /></div>`}
+      <${ScheduleList} schedule=${ctx.schedule || []} />
     `;
   } else if (section === "attendance") {
     const rows = ctx.attendance || [];
