@@ -42,15 +42,14 @@ export function Avatar({ src, name, size }) {
 export function ImageSlot({ asset, variant = "mobile", className = "" }) {
   if (!asset) return null;
   const box = asset[variant] || asset.mobile || {};
-  const style = { position: "absolute" };
+  const style = {};
   for (const k of ["width", "height", "left", "right", "top", "bottom"]) {
     if (box[k] !== undefined) style[k] = typeof box[k] === "number" ? box[k] + "px" : box[k];
   }
-  const cls = ("slot-img " + (className || "")).trim();
   if (asset.url) {
-    return html`<img class=${cls} style=${style} src=${asset.url} alt=${asset.alt || ""} decoding="async" />`;
+    return html`<img class=${"slot-img " + className} style=${style} src=${asset.url} alt=${asset.alt || ""} />`;
   }
-  return html`<div class=${("slot is-empty " + (className || "")).trim()} style=${style} role="img" aria-label=${asset.alt || asset.name}>
+  return html`<div class=${"slot is-empty " + className} style=${style} role="img" aria-label=${asset.alt || asset.name}>
     <span><b>${asset.name}</b><br />${box.width}×${box.height}</span>
   </div>`;
 }

@@ -1,7 +1,14 @@
 /**
- * PNG placeholders — set `url` to your transparent PNG.
- * Banner figure: sized to sit on the right of the card (same idea as the
- * compact reference dashboard). Slight overhang above the top edge is OK.
+ * Image placeholders — paste a transparent PNG URL into `url`.
+ *
+ * Same ideology as the EasyKorean student dashboard:
+ *   width / height  = exact box the PNG is drawn in
+ *   left / right    = distance from the container edge
+ *   bottom          = distance from the container's bottom edge
+ *
+ * bannerPerson height (168) is GREATER than the banner card height (140),
+ * so with bottom: 0 the head pops out above the top edge of the card.
+ * Swap any image into `url` — placement stays the same.
  */
 export const ASSETS = {
   logo: "/assets/brand/cgtia-logo.webp",
@@ -13,12 +20,12 @@ export const ASSETS = {
     mobile: { width: 354, height: 631, left: 13, bottom: 0 },
     desktop: { width: 520, height: 720, right: 4, bottom: 0 },
   },
+  // Dashboard banner: person pops out above the top edge of the card
   bannerPerson: {
     name: "Banner person PNG",
     url: "/assets/banner-person.webp",
     alt: "Student smiling",
-    /* Compact card (~150px). Figure a bit taller so the head can clear the top. */
-    mobile: { width: 132, height: 188, right: 6, bottom: -4 },
-    desktop: { width: 175, height: 240, right: 28, bottom: -6 },
+    mobile: { width: 120, height: 168, right: 12, bottom: 0 },
+    desktop: { width: 165, height: 210, right: 56, bottom: 0 },
   },
 };

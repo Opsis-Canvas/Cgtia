@@ -3164,3 +3164,139 @@ section.m-banner {
   background: #1e3a5f !important;
   color: #93c5fd !important;
 }
+
+/* =====================================================================
+   Round 6 — banner placement from EasyKorean reference (student-dashboard)
+   Ideology:
+     - Card has FIXED height 140px
+     - Person box height 168 > 140, bottom: 0 → head clears the top
+     - Only position:absolute on the img; size/offset from assets.js
+     - Copy takes ~56% width on the left
+   Brand color kept: navy→blue gradient (not sand).
+   ===================================================================== */
+
+/* Kill earlier banner overrides that broke the reference layout */
+.m-banner {
+  position: relative !important;
+  height: 140px !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin-top: 28px !important; /* room for the 28px head overhang (168-140) */
+  padding: 16px !important;
+  border-radius: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+.m-banner-copy {
+  width: 56% !important;
+  max-width: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 6px !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+.m-banner h2 {
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+}
+.m-banner p {
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.m-banner .pill-ink {
+  margin-top: 4px !important;
+  height: 32px !important;
+  padding: 0 14px !important;
+  font-size: 12px !important;
+  background: #fff !important;
+  color: #0f126c !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+}
+
+/* Person: absolute only — width/height/right/bottom come from assets.js inline */
+.m-banner-img,
+.m-banner .slot-img,
+.m-banner img.slot-img {
+  position: absolute !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 2 !important;
+  object-fit: contain !important;
+  object-position: bottom !important;
+  /* do not override width/height/right/bottom/transform — assets.js owns them */
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+  pointer-events: none !important;
+}
+.m-banner .slot.is-empty {
+  position: absolute !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  transform: none !important;
+}
+
+[data-theme="dark"] .m-banner {
+  background: linear-gradient(135deg, #0a0e4a 0%, #0736b8 100%) !important;
+}
+
+/* Desktop banner — same ideology, taller card */
+.d-banner {
+  position: relative !important;
+  height: 180px !important;
+  overflow: visible !important;
+  background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important;
+  color: #fff !important;
+  border-radius: 20px !important;
+  padding: 0 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  margin-top: 36px !important;
+}
+.d-banner-copy {
+  width: 56% !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+.d-banner h2 { color: #fff !important; }
+.d-banner p { color: rgba(255, 255, 255, 0.85) !important; }
+.d-banner .pill-ink {
+  background: #fff !important;
+  color: #0f126c !important;
+}
+.d-banner-img,
+.d-banner .slot-img {
+  position: absolute !important;
+  object-fit: contain !important;
+  object-position: bottom !important;
+  z-index: 2 !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+}
+
+/* Parent must not clip the overhanging head */
+.m-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.m-scroll > .m-banner {
+  margin-top: 28px !important;
+}
