@@ -3817,3 +3817,16 @@ section.m-banner.m-banner {
 }
 .notice-pic { margin: 0 -16px 12px; }
 .notice-pic .img-frame img { border-radius: 0; }
+
+/* ===== Round 14: card placeholder, inside or protruding ===== */
+.slide-card { border-radius: 26px; }
+@media (min-width: 860px) { .slide-card { border-radius: 28px; } }
+/* Inside: the picture stays within the card's edges */
+.slide-ph.is-inside { position: absolute; right: 0; bottom: 0; height: 94%; width: auto; max-width: 58%; object-fit: contain; object-position: right bottom; z-index: 1; pointer-events: none; }
+/* Protruding: the picture rises above the card's top edge, like the banner person */
+.slides.has-protrude { padding-top: 44px; }
+@media (min-width: 860px) { .slides.has-protrude { padding-top: 64px; } }
+.slides.has-protrude .slides-stage { overflow: visible; background: none; }
+.slides.has-protrude .slide-card { background: linear-gradient(135deg, #0a0e4a 0%, #0948e6 100%); }
+.slide-ph.is-protrude { position: absolute; right: 8px; bottom: 0; height: calc(100% + 44px); width: auto; max-width: 56%; object-fit: contain; object-position: right bottom; z-index: 3; pointer-events: none; }
+@media (min-width: 860px) { .slide-ph.is-protrude { height: calc(100% + 64px); max-width: 44%; } }

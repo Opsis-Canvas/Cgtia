@@ -267,6 +267,7 @@ async function loadPortalData(user) {
         bgMobile: a.bgMobile || "",
         bgDesktop: a.bgDesktop || "",
         placeholder: a.placeholder || "",
+        placeholderMode: a.placeholderMode === "protrude" ? "protrude" : "inside",
         order: Number(a.order) || 0
       });
     });

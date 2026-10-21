@@ -523,7 +523,8 @@ export function SlideCarousel({ slides, seconds }) {
   const go = (k) => setIdx((k + list.length) % list.length);
   const pause = () => setPaused(true);
   const resume = () => setPaused(false);
-  return html`<section class="slides" aria-roledescription="carousel" aria-label="Highlights"
+  const hasProtrude = list.some((x) => x.kind === "card" && x.placeholder && x.placeholderMode === "protrude");
+  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "")} aria-roledescription="carousel" aria-label="Highlights"
       onMouseEnter=${pause} onMouseLeave=${resume}
       onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
       onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
@@ -538,9 +539,10 @@ export function SlideCarousel({ slides, seconds }) {
         ${s.kind === "card"
           ? html`<div class="slide-card">
               ${(s.bgMobile || s.bgDesktop) ? html`<${ImageFrame} mobile=${s.bgMobile} desktop=${s.bgDesktop} alt="" />` : null}
-              ${s.placeholder ? html`<img class="slide-card-ph" src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
+              ${(s.placeholder && s.placeholderMode !== "protrude") ? html`<img class="slide-ph is-inside" src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
               <div class="slide-card-text"><h3>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>
-            </div>`
+            </div>
+            ${(s.placeholder && s.placeholderMode === "protrude") ? html`<img class="slide-ph is-protrude" src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}`
           : ((s.imageMobile || s.imageDesktop)
             ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
             : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`)}
