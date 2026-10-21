@@ -3300,3 +3300,55 @@ section.m-banner {
 .m-scroll > .m-banner {
   margin-top: 28px !important;
 }
+
+/* =====================================================================
+   Round 7 — force banner image visible + restore light-mode tile colors
+   ===================================================================== */
+
+/* Banner image: never hide, never collapse */
+.m-banner > img.slot-img,
+.m-banner > img.m-banner-img,
+.m-banner img.slot-img.m-banner-img,
+.m-banner .m-banner-img {
+  position: absolute !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 3 !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  pointer-events: none !important;
+  max-width: none !important;
+  max-height: none !important;
+  /* width/height/right/bottom come from ImageSlot inline styles (assets.js) */
+}
+
+/* Light + dark: brand navy / blue tiles (the product palette — not pastel) */
+.m-tiles .m-tile,
+.m-tiles .m-tile.sky,
+.m-tiles .m-tile.sky-soft,
+.m-tiles .m-tile.lilac,
+.m-tiles .m-tile.mint {
+  color: #fff !important;
+  border: 0 !important;
+  filter: none !important;
+}
+.m-tiles .m-tile .num,
+.m-tiles .m-tile .num span,
+.m-tiles .m-tile .lbl,
+.m-tiles .m-tile .tile-icon {
+  color: #fff !important;
+}
+.m-tiles .m-tile .tile-icon {
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+.m-tiles .m-tile:nth-child(odd),
+.m-tiles .m-tile.sky,
+.m-tiles .m-tile.sky-soft {
+  background: linear-gradient(140deg, #0f126c 0%, #1b2590 100%) !important;
+}
+.m-tiles .m-tile:nth-child(even),
+.m-tiles .m-tile.lilac,
+.m-tiles .m-tile.mint {
+  background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
+}
