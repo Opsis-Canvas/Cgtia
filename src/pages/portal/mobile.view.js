@@ -400,10 +400,11 @@ function LessonView({ section, courses, student, setSection }) {
 
 
 
-function Tile({ s, onClick }) {
-  const tone = TILE_TONE[s.id] || s.tone || "sky";
+function Tile({ s, onClick, idx }) {
+  /* Brand navy / blue only — matches the working light-mode reference */
+  const brand = (idx % 2 === 0) ? "brand-navy" : "brand-blue";
   return html`<div role=${onClick ? "button" : undefined}
-    class=${"m-tile " + tone + (onClick ? " is-click" : "")}
+    class=${"m-tile " + brand + (onClick ? " is-click" : "")}
     onClick=${onClick}>
     <span class="tile-icon">${Icon({ name: s.icon || "grid", size: 18 })}</span>
     <div class="tile-body">
@@ -1175,7 +1176,26 @@ export function MobileView({ ctx }) {
             ${linked ? "Courses" : "Profile"}
           </button>
         </div>
-        <${ImageSlot} asset=${ASSETS.bannerPerson} className="m-banner-img" />
+        <img
+          class="m-banner-img slot-img"
+          src="/assets/banner-person.webp"
+          alt="Student"
+          width="120"
+          height="168"
+          decoding="async"
+          style=${{
+            position: "absolute",
+            width: "120px",
+            height: "168px",
+            right: "12px",
+            bottom: "0px",
+            objectFit: "contain",
+            objectPosition: "bottom right",
+            zIndex: 3,
+            pointerEvents: "none",
+            display: "block"
+          }}
+        />
       </section>
       ${(promos || []).length ? html`<section class="dash-promo-strip">
         <div class="m-section-h"><h3 class="display">Offers</h3></div>
@@ -1208,7 +1228,7 @@ export function MobileView({ ctx }) {
         </div>
       </section>` : null}
       <section class="m-tiles">
-        ${stats.map((s) => html`<${Tile} key=${s.id} s=${s} onClick=${() => {
+        ${stats.map((s, idx) => html`<${Tile} key=${s.id} s=${s} idx=${idx} onClick=${() => {
           if (s.id === "courses" || s.go === "courses") setSection("courses");
           else if (s.id === "grades" || s.id === "score" || s.go === "grades") setSection("grades");
           else if (s.id === "fees" || s.go === "fees") setSection("fees");

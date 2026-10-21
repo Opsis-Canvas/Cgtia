@@ -3352,3 +3352,92 @@ section.m-banner {
 .m-tiles .m-tile.mint {
   background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
 }
+
+/* =====================================================================
+   Round 8 — hard guarantees: banner PNG + brand tile colors (light mode)
+   ===================================================================== */
+
+.m-banner {
+  position: relative !important;
+  height: 140px !important;
+  overflow: visible !important;
+  margin-top: 28px !important;
+  padding: 16px !important;
+  border-radius: 18px !important;
+  background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important;
+  color: #fff !important;
+}
+.m-banner-copy { width: 56% !important; position: relative; z-index: 1; }
+.m-banner h2 { color: #fff !important; font-size: 16px !important; margin: 0 !important; }
+.m-banner p { color: rgba(255,255,255,0.85) !important; font-size: 11.5px !important; margin: 0 !important; line-height: 1.35 !important; }
+.m-banner .pill-ink {
+  background: #fff !important; color: #0f126c !important;
+  height: 32px !important; padding: 0 14px !important; font-size: 12px !important;
+  border-radius: 999px !important; border: 0 !important; margin-top: 4px !important;
+}
+
+/* Banner person — never hide */
+img.m-banner-img,
+.m-banner > img {
+  position: absolute !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 3 !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  max-width: none !important;
+  max-height: none !important;
+  pointer-events: none !important;
+}
+
+/* Brand tiles — second screenshot (navy / blue, white type) */
+.m-tile.brand-navy,
+.m-tiles .m-tile.brand-navy,
+.m-tiles .m-tile:nth-child(odd) {
+  background: linear-gradient(140deg, #0f126c 0%, #1b2590 100%) !important;
+  color: #fff !important;
+}
+.m-tile.brand-blue,
+.m-tiles .m-tile.brand-blue,
+.m-tiles .m-tile:nth-child(even) {
+  background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
+  color: #fff !important;
+}
+.m-tiles .m-tile .num,
+.m-tiles .m-tile .num span,
+.m-tiles .m-tile .lbl,
+.m-tiles .m-tile .tile-icon,
+.m-tile.brand-navy .num,
+.m-tile.brand-navy .lbl,
+.m-tile.brand-navy .tile-icon,
+.m-tile.brand-blue .num,
+.m-tile.brand-blue .lbl,
+.m-tile.brand-blue .tile-icon {
+  color: #fff !important;
+}
+.m-tiles .m-tile .tile-icon,
+.m-tile.brand-navy .tile-icon,
+.m-tile.brand-blue .tile-icon {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #fff !important;
+}
+/* Kill pastel tone classes if any remain */
+.m-tile.sky,
+.m-tile.sky-soft,
+.m-tile.lilac,
+.m-tile.mint {
+  color: #fff !important;
+}
+.m-tile.sky:nth-child(odd),
+.m-tile.sky-soft:nth-child(odd),
+.m-tile.lilac:nth-child(odd),
+.m-tile.mint:nth-child(odd) {
+  background: linear-gradient(140deg, #0f126c 0%, #1b2590 100%) !important;
+}
+.m-tile.sky:nth-child(even),
+.m-tile.sky-soft:nth-child(even),
+.m-tile.lilac:nth-child(even),
+.m-tile.mint:nth-child(even) {
+  background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
+}
