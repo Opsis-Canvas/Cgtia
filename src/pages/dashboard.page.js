@@ -503,14 +503,24 @@ export function DashboardPage() {
   const isDesktop = useIsDesktop();
   // Night mode is the default for the student portal. Only an explicit "light" choice (made in Settings) turns it off.
   useEffect(() => {
-    let v = null;
-    try { v = localStorage.getItem("cgtia_theme"); } catch (_) {}
-    if (v === "light") {
-      document.documentElement.setAttribute("data-theme", "light");
-    } else {
-      try { localStorage.setItem("cgtia_theme", "dark"); } catch (_) {}
-      document.documentElement.setAttribute("data-theme", "dark");
-    }
+    const applyTheme = () => {
+      let v = null;
+      try { v = localStorage.getItem("cgtia_theme"); } catch (_) {}
+      if (v !== "light") { try { localStorage.setItem("cgtia_theme", "dark"); } catch (_) {} }
+      document.documentElement.setAttribute("data-theme", v === "light" ? "light" : "dark");
+    };
+    // Leaving the dashboard (back button, link, or hiding the page) must hand the public site back its own colours
+    const clearTheme = () => { try { document.documentElement.removeAttribute("data-theme"); } catch (_) {} };
+    // Coming back to the dashboard from the back-forward cache: restore the portal theme
+    const onShow = (e) => { if (e.persisted) applyTheme(); };
+    applyTheme();
+    window.addEventListener("pagehide", clearTheme);
+    window.addEventListener("pageshow", onShow);
+    return () => {
+      window.removeEventListener("pagehide", clearTheme);
+      window.removeEventListener("pageshow", onShow);
+      clearTheme();
+    };
   }, []);
   useEffect(() => {
     document.body.classList.add("is-portal");

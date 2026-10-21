@@ -617,19 +617,46 @@ function noticeDate(t) {
 }
 export function NoticeInbox({ items, setSection, limit = 4 }) {
   const list = (items || []).slice(0, limit);
+  const [openId, setOpenId] = useState(null);
   return html`<section class="inbox">
     <div class="m-section-h"><h3 class="display">Notices</h3></div>
-    <div class="inbox-list">
+    <div class="notice-stack">
       ${list.map((a) => {
-        const preview = String(a.body || a.message || "");
-        return html`<button type="button" class="inbox-row" key=${a.id} onClick=${() => setSection("notice:" + a.id)}>
-          <span class=${"inbox-dot" + (a.linkUrl ? " is-link" : "")} aria-hidden="true">${a.linkUrl ? "↗" : "•"}</span>
-          <span class="inbox-text"><strong>${a.title || "Notice"}</strong><small>${preview.length > 80 ? preview.slice(0, 80) + "…" : preview}</small></span>
-          <span class="inbox-time">${noticeDate(a.createdAt || a.publishedAt || a.date)}</span>
-        </button>`;
+        const open = openId === a.id;
+        const body = String(a.body || a.message || "");
+        return html`<article class=${"notice" + (open ? " is-open" : "") + (a.linkUrl ? " has-link" : "")} key=${a.id}>
+          <button type="button" class="notice-head" aria-expanded=${open ? "true" : "false"} onClick=${() => setOpenId(open ? null : a.id)}>
+            <span class="notice-ico" aria-hidden="true">${a.linkUrl ? "↗" : "i"}</span>
+            <span class="notice-title"><strong>${a.title || "Notice"}</strong><small>${noticeDate(a.createdAt || a.publishedAt || a.date)}</small></span>
+            <span class="notice-chev" aria-hidden="true">⌄</span>
+          </button>
+          <div class="notice-body"><div class="notice-body-in">
+            ${body ? html`<p>${body}</p>` : html`<p class="muted">No further details.</p>`}
+            <div class="notice-actions">
+              ${a.linkUrl ? html`<a class="notice-cta" href=${a.linkUrl} target="_blank" rel="noopener">${a.linkLabel || "Open link"} →</a>` : null}
+              <button type="button" class="notice-more" onClick=${() => setSection("notice:" + a.id)}>Full notice</button>
+            </div>
+          </div></div>
+        </article>`;
       })}
     </div>
   </section>`;
+}
+
+/* Attendance card: a visible summary that opens the attendance page */
+export function attendanceStrip(rows, onOpen) {
+  const list = rows || [];
+  const present = list.filter((r) => /present|yes|attended/i.test(String(r.status || r.present || ""))).length;
+  const pct = list.length ? Math.round((present / list.length) * 100) : null;
+  return html`<button type="button" class="att-strip" onClick=${onOpen}>
+    <span class="att-strip-ico" aria-hidden="true">${Icon({ name: "check", size: 18 })}</span>
+    <span class="att-strip-text">
+      <strong>${pct != null ? pct + "% attendance" : "Attendance"}</strong>
+      <small>${pct != null ? present + " of " + list.length + " sessions present" : "Sessions appear here once your tutor marks them"}</small>
+      ${pct != null ? html`<span class="att-strip-bar"><i style=${{ width: pct + "%" }}></i></span>` : null}
+    </span>
+    <span class="att-strip-go" aria-hidden="true">›</span>
+  </button>`;
 }
 
 /* Grade colour: A green, B blue, C teal, D amber, E orange, F red */
@@ -1378,6 +1405,7 @@ export function MobileView({ ctx }) {
           </button>`)}
         </div>
       </section>
+      ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
       <section>
         <div class="m-section-h">
           <h3 class="display">Modules</h3>
@@ -1387,21 +1415,6 @@ export function MobileView({ ctx }) {
           ${courses.length
             ? courses.slice(0, 3).map((c, i) => html`<${ModuleCard} key=${c.id} c=${c} i=${i} email=${ctx.student && ctx.student.email} onOpen=${() => setSection("course:" + c.id)} />`)
             : html`<${Empty} title="No modules yet" body="They will show here once your programme is on file." />`}
-        </div>
-      </section>
-      <section>
-        <div class="m-section-h">
-          <h3 class="display">Results</h3>
-          ${grades.length ? html`<button type="button" class="see" style=${{ border: 0, background: "none" }} onClick=${() => setSection("grades")}>See all</button>` : null}
-        </div>
-        <div class="m-list">
-          ${grades.length
-            ? grades.slice(0, 3).map((g) => html`<${ListCard} key=${g.id}
-                badge=${g.grade || "·"}
-                title=${g.courseTitle || g.courseCode || "Course"}
-                note=${g.score != null ? "Score " + g.score : "Published"}
-                tone=${gradeTone(g)} />`)
-            : html`<${Empty} title="No results yet" body="Published grades will land here. Nothing else to do on your side." />`}
         </div>
       </section>
     `;

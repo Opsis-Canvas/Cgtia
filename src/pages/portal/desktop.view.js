@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip } from "./mobile.view.js";
 import { loadProgress } from "./shared.js";
 
 const html = htm.bind(createElement);
@@ -74,6 +74,7 @@ export function DesktopView({ ctx }) {
           else if (s.id === "fees") setSection("fees");
         }}><${StatCard} s=${s} /></div>`)}
       </section>
+      ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
       ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
       ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${6} />` : null}
       <section class="d-cols">
@@ -87,15 +88,6 @@ export function DesktopView({ ctx }) {
             : null}
         </div>
         <div class="stack">
-          <div class="panel lessons">
-            <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>Recent results</h3>
-            ${grades.length
-              ? grades.slice(0, 4).map((g) => html`<${GradeRow} key=${g.id} g=${g} />`)
-              : html`<${Empty} title="No results yet" body="When a grade is published for you, it will appear here." />`}
-            ${grades.length
-              ? html`<button type="button" class="see" style=${{ alignSelf: "flex-end", border: 0, background: "none", cursor: "pointer" }} onClick=${() => setSection("grades")}>see all</button>`
-              : null}
-          </div>
           <div class="panel">
             <h3 class="display" style=${{ fontSize: 16, marginBottom: 10 }}>Fees snapshot</h3>
             <div class="num" style=${{ fontSize: 28 }}>₦${paidTotal.toLocaleString()}</div>
