@@ -524,7 +524,8 @@ export function SlideCarousel({ slides, seconds }) {
   const pause = () => setPaused(true);
   const resume = () => setPaused(false);
   const hasProtrude = list.some((x) => x.kind === "card" && x.placeholder && x.placeholderMode === "protrude");
-  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "")} aria-roledescription="carousel" aria-label="Highlights"
+  const isCardNow = !!(list[safeIdx] && list[safeIdx].kind === "card");
+  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
       onMouseEnter=${pause} onMouseLeave=${resume}
       onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
       onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
@@ -546,8 +547,8 @@ export function SlideCarousel({ slides, seconds }) {
           : ((s.imageMobile || s.imageDesktop)
             ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
             : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`)}
-        ${s.ctaUrl ? html`<a class="slide-cta" href=${s.ctaUrl} target="_blank" rel="noopener" tabindex=${k === safeIdx ? "0" : "-1"}>${s.ctaLabel || "Learn more"} →</a>` : null}
       </article>`)}
+      ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener">${list[safeIdx].ctaLabel || "Learn more"} →</a>` : null}
     </div>
     ${list.length > 1 ? html`<div class="slides-dots">
       ${list.map((_, k) => html`<button type="button" key=${k} class=${"slides-dot" + (k === safeIdx ? " on" : "")} aria-label=${"Show slide " + (k + 1)} onClick=${() => go(k)}></button>`)}

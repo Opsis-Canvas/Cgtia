@@ -3830,3 +3830,8 @@ section.m-banner.m-banner {
 .slides.has-protrude .slide-card { background: linear-gradient(135deg, #0a0e4a 0%, #0948e6 100%); }
 .slide-ph.is-protrude { position: absolute; right: 8px; bottom: 0; height: calc(100% + 44px); width: auto; max-width: 56%; object-fit: contain; object-position: right bottom; z-index: 3; pointer-events: none; }
 @media (min-width: 860px) { .slide-ph.is-protrude { height: calc(100% + 64px); max-width: 44%; } }
+
+/* ===== Round 15: card slides at banner height; one call-to-action layer above the stage ===== */
+.slides.is-card-now .slides-stage { aspect-ratio: auto; height: 230px; }
+@media (min-width: 860px) { .slides.is-card-now .slides-stage { height: 300px; } }
+.slides-stage > .slide-cta { position: absolute; left: 16px; bottom: 16px; z-index: 6; }
