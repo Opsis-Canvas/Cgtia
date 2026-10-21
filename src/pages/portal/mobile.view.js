@@ -492,6 +492,86 @@ export function ScoreResult({ pct, auto, score, total, answered, sub, onBack, qu
 
 
 
+
+/* Image frame: the graphic designer's file, shown at its exact size for phones (portrait) or desktop (landscape) */
+export function ImageFrame({ mobile, desktop, alt }) {
+  const m = mobile || desktop;
+  const d = desktop || mobile;
+  if (!m) return null;
+  return html`<picture class="img-frame">
+    ${d ? html`<source media="(min-width: 860px)" srcset=${d} />` : null}
+    <img src=${m} alt=${alt || ""} loading="lazy" decoding="async" />
+  </picture>`;
+}
+
+/* Dashboard carousel: admin-managed slides, autoplay, pause on hover (desktop) or on press-and-hold (phone), swipe, dots, CTA */
+export function SlideCarousel({ slides, seconds }) {
+  const list = slides || [];
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const touchX = useRef(null);
+  const ms = Math.max(3, Number(seconds) || 6) * 1000;
+  useEffect(() => {
+    if (list.length < 2 || paused) return undefined;
+    const t = setInterval(() => setIdx((i) => (i + 1) % list.length), ms);
+    return () => clearInterval(t);
+  }, [list.length, paused, ms]);
+  const safeIdx = list.length ? idx % list.length : 0;
+  if (!list.length) return null;
+  const go = (k) => setIdx((k + list.length) % list.length);
+  const pause = () => setPaused(true);
+  const resume = () => setPaused(false);
+  return html`<section class="slides" aria-roledescription="carousel" aria-label="Highlights"
+      onMouseEnter=${pause} onMouseLeave=${resume}
+      onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
+      onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
+      onTouchEnd=${(e) => {
+        if (touchX.current == null) return;
+        const dx = e.changedTouches[0].clientX - touchX.current;
+        touchX.current = null;
+        if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
+      }}>
+    <div class="slides-stage">
+      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}>
+        ${(s.imageMobile || s.imageDesktop)
+          ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
+          : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`}
+        ${s.ctaUrl ? html`<a class="slide-cta" href=${s.ctaUrl} target="_blank" rel="noopener" tabindex=${k === safeIdx ? "0" : "-1"}>${s.ctaLabel || "Learn more"} →</a>` : null}
+      </article>`)}
+    </div>
+    ${list.length > 1 ? html`<div class="slides-dots">
+      ${list.map((_, k) => html`<button type="button" key=${k} class=${"slides-dot" + (k === safeIdx ? " on" : "")} aria-label=${"Show slide " + (k + 1)} onClick=${() => go(k)}></button>`)}
+    </div>` : null}
+  </section>`;
+}
+
+/* Module card: number, title, progress, lesson count, status, next action */
+export function ModuleCard({ c, i, email, onOpen }) {
+  const lessons = Array.isArray(c.lessons) ? c.lessons : [];
+  const prog = loadProgress(email, c.id);
+  const done = lessons.filter((l, k) => prog.completed.includes(String(l.id != null ? l.id : k))).length;
+  const total = lessons.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const finished = total > 0 && done >= total;
+  const cta = finished ? "Completed" : done > 0 ? "Continue" : "Start";
+  return html`<article class=${"mod-card" + (finished ? " is-done" : "")} role="button" tabindex="0"
+      onClick=${onOpen} onKeyDown=${(e) => { if (e.key === "Enter") onOpen(); }}>
+    <div class="mod-top">
+      <span class="mod-num">${String(i + 1).padStart(2, "0")}</span>
+      <div class="mod-title"><h4>${c.title || c.code || "Module"}</h4><p>${c.code || "Module"}${c.program ? " · " + c.program : ""}</p></div>
+    </div>
+    <div class="mod-chips">
+      <span class="mod-chip">${total} lesson${total === 1 ? "" : "s"}</span>
+      ${(c.moduleQuizQuestions || []).length ? html`<span class="mod-chip">Module quiz</span>` : null}
+      ${prog.modulePassed ? html`<span class="mod-chip is-ok">Passed</span>` : null}
+    </div>
+    <div class="mod-foot">
+      <div class="mod-prog"><div class="mod-bar"><i style=${{ width: pct + "%" }}></i></div><small>${done} of ${total} · ${pct}%</small></div>
+      <span class="mod-cta">${cta} →</span>
+    </div>
+  </article>`;
+}
+
 /* Offers: swipeable cards with snap and dots (plain offers are white, linked ones are brand colour) */
 export function OffersCarousel({ promos }) {
   const ref = useRef(null);
@@ -515,6 +595,7 @@ export function OffersCarousel({ promos }) {
         const body = p.body || p.description || "";
         const amt = Number(p.promoAmount) > 0 ? "₦" + Number(p.promoAmount).toLocaleString("en-NG") : "";
         return html`<article class=${"offer" + (p.linkUrl ? " has-link" : "")} key=${p.id}>
+          ${(p.imageMobile || p.imageDesktop) ? html`<${ImageFrame} mobile=${p.imageMobile} desktop=${p.imageDesktop} alt=${p.title || ""} />` : null}
           <div class="offer-top"><span class="offer-tag">${p.badge || "Offer"}</span>${amt ? html`<span class="offer-amt">${amt}</span>` : null}</div>
           <h4>${p.title || "Offer"}</h4>
           ${body ? html`<p>${body}</p>` : null}
@@ -965,7 +1046,7 @@ function LessonList({ lessons, prog, cid, setSection }) {
   if (!lessons.length) {
     return html`<${Empty} title="No lessons yet" body="Your instructor will add videos and reading here." />`;
   }
-  return html`<div class="m-list">
+  return html`<div class="m-list lesson-list">
     ${lessons.map((l, i) => {
       const id = String(l.id != null ? l.id : i);
       const unlocked = i === 0 || prog.completed.includes(String(lessons[i - 1].id != null ? lessons[i - 1].id : (i - 1)));
@@ -1209,7 +1290,7 @@ export function MobileView({ ctx }) {
 
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
-    paidTotal, onLogout, linked, announcements, promos, assessments,
+    paidTotal, onLogout, linked, announcements, promos, slides, slideSeconds, assessments,
     certificates, attendance, schedule, messages, notifications, user
   } = ctx;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1239,6 +1320,7 @@ export function MobileView({ ctx }) {
         <p class="sm">Hello</p>
         <h1 class="display">${first}</h1>
       </section>
+      ${(slides || []).length ? html`<${SlideCarousel} slides=${slides} seconds=${slideSeconds} />` : html`
       <section class="m-banner">
         <div class="m-banner-copy">
           <h2 class="display">${linked ? "Your dashboard" : "Link your file"}</h2>
@@ -1269,6 +1351,7 @@ export function MobileView({ ctx }) {
           }}
         />
       </section>
+      `}
       ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
       ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${4} />` : null}
       <section class="m-tiles">
@@ -1302,12 +1385,7 @@ export function MobileView({ ctx }) {
         </div>
         <div class="m-list">
           ${courses.length
-            ? courses.slice(0, 3).map((c, i) => html`<${ListCard} key=${c.id}
-                badge=${String(i + 1).padStart(2, "0")}
-                title=${c.title || c.code}
-                note=${c.code || "Tap to open"}
-                tone=${i % 2 ? "mist" : "ink"}
-                onClick=${() => setSection("course:" + c.id)} />`)
+            ? courses.slice(0, 3).map((c, i) => html`<${ModuleCard} key=${c.id} c=${c} i=${i} email=${ctx.student && ctx.student.email} onOpen=${() => setSection("course:" + c.id)} />`)
             : html`<${Empty} title="No modules yet" body="They will show here once your programme is on file." />`}
         </div>
       </section>
@@ -1332,12 +1410,7 @@ export function MobileView({ ctx }) {
       <div class="page-head"><h1 class="display">Courses</h1><p>Your programme modules</p></div>
       <div class="m-list">
         ${courses.length
-          ? courses.map((c, i) => html`<${ListCard} key=${c.id}
-              badge=${String(i + 1).padStart(2, "0")}
-              title=${c.title || c.code}
-              note=${c.code || "Tap to open"}
-              tone=${i % 2 ? "mist" : "ink"}
-              onClick=${() => setSection("course:" + c.id)} />`)
+          ? courses.map((c, i) => html`<${ModuleCard} key=${c.id} c=${c} i=${i} email=${ctx.student && ctx.student.email} onOpen=${() => setSection("course:" + c.id)} />`)
           : html`<${Empty} title="Nothing to show yet" body="Your course list appears after admissions links your programme." />`}
       </div>
     `;
@@ -1501,6 +1574,7 @@ export function MobileView({ ctx }) {
     const n = (announcements || []).find((a) => String(a.id) === nid) || (announcements || [])[0];
     body = html`
       <${PageHead} title=${n?.title || "Notice"} sub="From the academy" onBack=${() => setSection("dashboard")} backLabel="Home" />
+      ${(n && (n.imageMobile || n.imageDesktop)) ? html`<${ImageFrame} mobile=${n.imageMobile} desktop=${n.imageDesktop} alt=${n.title || ""} />` : null}
       <div class="panel prose"><p>${n?.body || n?.message || "No further details."}</p>
         ${n?.linkUrl ? html`<div style=${{ marginTop: 16 }}>
           <button type="button" class="btn-block" onClick=${() => { try { window.open(n.linkUrl, "_blank", "noopener"); } catch (_) {} }}>

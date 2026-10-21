@@ -4,7 +4,8 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard } from "./mobile.view.js";
+import { loadProgress } from "./shared.js";
 
 const html = htm.bind(createElement);
 
@@ -28,12 +29,8 @@ function toEmbed(url) {
   return u;
 }
 
-function CourseRow({ c, i, onOpen }) {
-  return html`<div class="lesson is-click" role="button" onClick=${onOpen}>
-    <span class=${"badge tone-" + (i % 2 ? "mist" : "ink")}>${String(i + 1).padStart(2, "0")}</span>
-    <span class="lesson-text"><h4>${c.title || c.code}</h4><p>${c.code || "Open module"}</p></span>
-    ${Icon({ name: "arrow", size: 18 })}
-  </div>`;
+function CourseRow({ c, i, onOpen, email }) {
+  return html`<${ModuleCard} c=${c} i=${i} email=${email} onOpen=${onOpen} />`;
 }
 
 function GradeRow({ g }) {
@@ -49,13 +46,14 @@ function GradeRow({ g }) {
 export function DesktopView({ ctx }) {
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
-    paidTotal, onLogout, linked, announcements, promos, assessments
+    paidTotal, onLogout, linked, announcements, promos, slides, slideSeconds, assessments
   } = ctx;
   const name = student?.name || "Student";
 
   let main = null;
   if (section === "dashboard") {
     main = html`
+      ${(slides || []).length ? html`<${SlideCarousel} slides=${slides} seconds=${slideSeconds} />` : html`
       <section class="d-banner">
         <div class="d-banner-copy">
           <h2 class="display">${linked ? "Keep going" : "Almost there"}</h2>
@@ -68,6 +66,7 @@ export function DesktopView({ ctx }) {
         </div>
         <${ImageSlot} asset=${ASSETS.bannerPerson} variant="desktop" className="d-banner-img" />
       </section>
+      `}
       <section class="stats">
         ${stats.map((s) => html`<div key=${s.id} class="is-click" role="button" onClick=${() => {
           if (s.id === "courses") setSection("courses");
@@ -81,7 +80,7 @@ export function DesktopView({ ctx }) {
         <div class="panel lessons" aria-label="Courses">
           <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>Your modules</h3>
           ${courses.length
-            ? courses.slice(0, 6).map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} onOpen=${() => setSection("course:" + c.id)} />`)
+            ? courses.slice(0, 6).map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} email=${ctx.student && ctx.student.email} onOpen=${() => setSection("course:" + c.id)} />`)
             : html`<${Empty} title="No modules yet" body="When your programme is linked, the modules for your track will show up here." />`}
           ${courses.length > 6
             ? html`<button type="button" class="see" style=${{ alignSelf: "flex-end", border: 0, background: "none", cursor: "pointer" }} onClick=${() => setSection("courses")}>see all</button>`
@@ -110,7 +109,7 @@ export function DesktopView({ ctx }) {
       <div class="page-head"><h1 class="display">Courses</h1><p>Modules on your programme track</p></div>
       <div class="panel lessons">
         ${courses.length
-          ? courses.map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} onOpen=${() => setSection("course:" + c.id)} />`)
+          ? courses.map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} email=${ctx.student && ctx.student.email} onOpen=${() => setSection("course:" + c.id)} />`)
           : html`<${Empty} title="Nothing to show yet" body="Your course list appears after admissions links your programme. If you expected to see modules, message the office with your full name and email." />`}
       </div>
     `;

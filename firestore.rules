@@ -272,6 +272,12 @@ service cloud.firestore {
     // =======================================================
 
     /* promotions — e.g. 100k offer; public read for payment UI */
+    /* dashboard carousel slides: signed-in students read, staff manage */
+    match /dashboardSlides/{slideId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin() || isStaff();
+    }
+
     match /promotions/{promoId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();

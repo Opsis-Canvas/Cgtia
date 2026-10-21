@@ -234,6 +234,9 @@ async function loadPortalData(user) {
         badge: a.badge || "",
         promoAmount: a.promoAmount || "",
         imageUrl: a.imageUrl || a.graphicUrl || a.bannerUrl || "",
+        imageMobile: a.imageMobile || "",
+        imageDesktop: a.imageDesktop || "",
+        linkLabelResolved: a.linkLabel || "",
         ctaLabel: a.ctaLabel || a.linkLabel || a.bellButtonLabel || "Know more"
       };
       if (kind === "tuition" || kind === "promo" || kind === "promotion") {
@@ -245,6 +248,26 @@ async function loadPortalData(user) {
   } catch (e) {
     console.warn(e);
   }
+
+  let slides = [];
+  try {
+    const snap = await api.getDocs(api.collection(db, "dashboardSlides"));
+    snap.forEach((d) => {
+      const a = { id: d.id, ...d.data() };
+      if (a.trashed === true || a.active === false) return;
+      slides.push({
+        id: d.id,
+        title: a.title || "",
+        body: a.body || "",
+        ctaLabel: a.ctaLabel || "Learn more",
+        ctaUrl: a.ctaUrl || "",
+        imageMobile: a.imageMobile || "",
+        imageDesktop: a.imageDesktop || "",
+        order: Number(a.order) || 0
+      });
+    });
+    slides.sort((x, y) => x.order - y.order);
+  } catch (e) { console.warn(e); }
 
   let certificates = [];
   try {
@@ -375,7 +398,7 @@ async function loadPortalData(user) {
     nextOfKin: row?.nextOfKinName || (row?.nextOfKin && row.nextOfKin.name) || ""
   };
 
-  return { student, courses, grades, payments, assessments, announcements, promos, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
+  return { student, courses, grades, payments, assessments, announcements, promos, slides, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
 }
 
 function BrandLoading() {
@@ -697,6 +720,8 @@ export function DashboardPage() {
     linked: !!(data && data.linked),
     announcements: (data && data.announcements) || [],
     promos: (data && data.promos) || [],
+    slides: (data && data.slides) || [],
+    slideSeconds: Math.max(3, Math.min(30, Number(data && data.portalSettings && data.portalSettings.slideSeconds) || 6)),
     assessments: (data && data.assessments) || [],
     certificates: (data && data.certificates) || [],
     attendance: (data && data.attendance) || [],
