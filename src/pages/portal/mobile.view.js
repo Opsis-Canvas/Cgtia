@@ -491,6 +491,66 @@ export function ScoreResult({ pct, auto, score, total, answered, sub, onBack, qu
 
 
 
+
+/* Offers: swipeable cards with snap and dots (plain offers are white, linked ones are brand colour) */
+export function OffersCarousel({ promos }) {
+  const ref = useRef(null);
+  const [idx, setIdx] = useState(0);
+  const list = promos || [];
+  const step = (el) => (el && el.firstElementChild ? el.firstElementChild.getBoundingClientRect().width + 12 : 0);
+  function onScroll(e) {
+    const el = e.currentTarget;
+    const w = step(el) || 1;
+    setIdx(Math.min(list.length - 1, Math.max(0, Math.round(el.scrollLeft / w))));
+  }
+  function go(k) {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollTo({ left: k * step(el), behavior: "smooth" });
+  }
+  return html`<section class="offers">
+    <div class="m-section-h"><h3 class="display">Offers</h3>${list.length > 1 ? html`<span class="offers-count">${idx + 1} / ${list.length}</span>` : null}</div>
+    <div class="offers-track" ref=${ref} onScroll=${onScroll}>
+      ${list.map((p) => {
+        const body = p.body || p.description || "";
+        const amt = Number(p.promoAmount) > 0 ? "₦" + Number(p.promoAmount).toLocaleString("en-NG") : "";
+        return html`<article class=${"offer" + (p.linkUrl ? " has-link" : "")} key=${p.id}>
+          <div class="offer-top"><span class="offer-tag">${p.badge || "Offer"}</span>${amt ? html`<span class="offer-amt">${amt}</span>` : null}</div>
+          <h4>${p.title || "Offer"}</h4>
+          ${body ? html`<p>${body}</p>` : null}
+          ${p.linkUrl
+            ? html`<a class="offer-cta" href=${p.linkUrl} target="_blank" rel="noopener">${p.linkLabel || "View offer"} →</a>`
+            : html`<span class="offer-cta is-muted">Ask the office</span>`}
+        </article>`;
+      })}
+    </div>
+    ${list.length > 1 ? html`<div class="offers-dots">${list.map((p, k) => html`<button type="button" key=${p.id} class=${"offers-dot" + (k === idx ? " on" : "")} aria-label=${"Show offer " + (k + 1)} onClick=${() => go(k)}></button>`)}</div>` : null}
+  </section>`;
+}
+
+/* Notices: one inbox list, the same on phone and desktop (title, preview, date, link marker) */
+function noticeDate(t) {
+  const ms = t && t.toMillis ? t.toMillis() : (t ? new Date(t).getTime() : 0);
+  if (!ms || isNaN(ms)) return "";
+  return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+export function NoticeInbox({ items, setSection, limit = 4 }) {
+  const list = (items || []).slice(0, limit);
+  return html`<section class="inbox">
+    <div class="m-section-h"><h3 class="display">Notices</h3></div>
+    <div class="inbox-list">
+      ${list.map((a) => {
+        const preview = String(a.body || a.message || "");
+        return html`<button type="button" class="inbox-row" key=${a.id} onClick=${() => setSection("notice:" + a.id)}>
+          <span class=${"inbox-dot" + (a.linkUrl ? " is-link" : "")} aria-hidden="true">${a.linkUrl ? "↗" : "•"}</span>
+          <span class="inbox-text"><strong>${a.title || "Notice"}</strong><small>${preview.length > 80 ? preview.slice(0, 80) + "…" : preview}</small></span>
+          <span class="inbox-time">${noticeDate(a.createdAt || a.publishedAt || a.date)}</span>
+        </button>`;
+      })}
+    </div>
+  </section>`;
+}
+
 /* Grade colour: A green, B blue, C teal, D amber, E orange, F red */
 export function gradeTone(g) {
   const k = String((g && g.grade) || "").trim().toUpperCase().charAt(0);
@@ -731,6 +791,15 @@ export function TranscriptView({ student, grades }) {
   const avg = nums.length ? Math.round(nums.reduce((a, b) => a + b, 0) / nums.length) : null;
   const issued = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   const name = student?.name || "Student";
+  const txCols = (() => {
+    const seen = {}; const out = [];
+    list.forEach((g) => (g.componentDefs || []).forEach((c) => { if (!seen[c.key]) { seen[c.key] = true; out.push({ key: c.key, label: c.label || c.key }); } }));
+    return out.length ? out : [{ key: "ca", label: "CA" }, { key: "test", label: "Test" }, { key: "exam", label: "Exam" }, { key: "attendance", label: "Attend." }];
+  })();
+  const txVal = (g, k) => {
+    const v = (g.components && g.components[k] != null) ? g.components[k] : g[k];
+    return v != null && v !== "" ? v : "—";
+  };
   return html`<div class="tx-wrap">
     <div class="tx-actions">
       <button type="button" class="pill-ink" onClick=${() => { try { window.print(); } catch (_) {} }}>Print / save as PDF</button>
@@ -757,14 +826,11 @@ export function TranscriptView({ student, grades }) {
       </div>
       ${list.length
         ? html`<div class="tx-scroll"><table class="tx-table">
-            <thead><tr><th>Course</th><th>CA</th><th>Test</th><th>Exam</th><th>Attend.</th><th>Score</th><th>Grade</th><th>Remark</th></tr></thead>
+            <thead><tr><th>Course</th>${txCols.map((c) => html`<th key=${c.key}>${c.label}</th>`)}<th>Score</th><th>Grade</th><th>Remark</th></tr></thead>
             <tbody>
               ${list.map((g) => html`<tr key=${g.id}>
                 <td><strong>${g.courseCode || ""}</strong>${g.courseTitle ? html`<span class="tx-course">${g.courseTitle}</span>` : null}</td>
-                <td>${pick(g, ["ca", "caScore"])}</td>
-                <td>${pick(g, ["test", "testScore"])}</td>
-                <td>${pick(g, ["exam", "examScore"])}</td>
-                <td>${pick(g, ["attendance", "attendancePct"])}</td>
+                ${txCols.map((c) => html`<td key=${c.key}>${txVal(g, c.key)}</td>`)}
                 <td>${g.score != null ? g.score : "—"}</td>
                 <td><span class=${"tx-grade " + gradeTone(g)}>${g.grade || "—"}</span></td>
                 <td>${g.remark || "—"}</td>
@@ -1203,36 +1269,8 @@ export function MobileView({ ctx }) {
           }}
         />
       </section>
-      ${(promos || []).length ? html`<section class="dash-promo-strip">
-        <div class="m-section-h"><h3 class="display">Offers</h3></div>
-        <div class="promo-scroll">
-          ${(promos || []).map((p) => html`<article class=${"promo-chip" + (p.linkUrl ? " has-link" : " is-plain")} key=${p.id}
-            role=${p.linkUrl ? "button" : undefined}
-            onClick=${p.linkUrl ? () => { try { window.open(p.linkUrl, "_blank", "noopener"); } catch (_) {} } : undefined}>
-            <div class="promo-top">
-              ${p.badge ? html`<span class="promo-badge">${p.badge}</span>` : html`<span class="promo-badge is-soft">Offer</span>`}
-              ${p.promoAmount ? html`<span class="promo-amount">${p.promoAmount}</span>` : null}
-            </div>
-            <strong>${p.title}</strong>
-            ${p.body ? html`<p>${p.body}</p>` : null}
-            <span class="promo-cta">${p.linkUrl ? (p.linkLabel || "View offer") + " →" : "Ask the office"}</span>
-          </article>`)}
-        </div>
-      </section>` : null}
-      ${(announcements || []).length ? html`<section>
-        <div class="m-section-h"><h3 class="display">Notices</h3></div>
-        <div class="m-list">
-          ${(announcements || []).slice(0, 4).map((a) => html`<article class="notice-row is-click" key=${a.id}
-            role="button" onClick=${() => setSection("notice:" + a.id)}>
-            <div class="notice-ico">${a.linkUrl ? "↗" : "●"}</div>
-            <div class="notice-mid">
-              <h4>${a.title || "Notice"}</h4>
-              <p>${(a.body || "").slice(0, 90)}${(a.body || "").length > 90 ? "…" : ""}</p>
-            </div>
-            ${a.linkUrl ? html`<button type="button" class="notice-link" onClick=${(e) => { e.stopPropagation(); try { window.open(a.linkUrl, "_blank", "noopener"); } catch (_) {} }}>${a.linkLabel || "Open link"}</button>` : html`<span class="notice-chev">›</span>`}
-          </article>`)}
-        </div>
-      </section>` : null}
+      ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
+      ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${4} />` : null}
       <section class="m-tiles">
         ${stats.map((s, idx) => html`<${Tile} key=${s.id} s=${s} idx=${idx} onClick=${() => {
           if (s.id === "courses" || s.go === "courses") setSection("courses");

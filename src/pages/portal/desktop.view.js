@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox } from "./mobile.view.js";
 
 const html = htm.bind(createElement);
 
@@ -49,7 +49,7 @@ function GradeRow({ g }) {
 export function DesktopView({ ctx }) {
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
-    paidTotal, onLogout, linked, announcements, assessments
+    paidTotal, onLogout, linked, announcements, promos, assessments
   } = ctx;
   const name = student?.name || "Student";
 
@@ -75,12 +75,8 @@ export function DesktopView({ ctx }) {
           else if (s.id === "fees") setSection("fees");
         }}><${StatCard} s=${s} /></div>`)}
       </section>
-      ${(announcements || []).length ? html`<section class="ann-card is-click" role="button"
-        onClick=${() => setSection("notice:" + (announcements[0].id || "0"))}>
-        <h4>${announcements[0].title || "Announcement"}</h4>
-        <p>${(announcements[0].body || announcements[0].message || "").slice(0, 160)}</p>
-        <div class="ann-meta">Tap for full details →</div>
-      </section>` : null}
+      ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
+      ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${6} />` : null}
       <section class="d-cols">
         <div class="panel lessons" aria-label="Courses">
           <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>Your modules</h3>
