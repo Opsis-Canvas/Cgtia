@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, slideGroups } from "./mobile.view.js";
 import { loadProgress } from "./shared.js";
 
 const html = htm.bind(createElement);
@@ -53,7 +53,7 @@ export function DesktopView({ ctx }) {
   let main = null;
   if (section === "dashboard") {
     main = html`
-      ${(slides || []).length ? html`<${SlideCarousel} slides=${slides} seconds=${slideSeconds} />` : html`
+      ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
       <section class="d-banner">
         <div class="d-banner-copy">
           <h2 class="display">${linked ? "Keep going" : "Almost there"}</h2>

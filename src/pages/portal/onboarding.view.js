@@ -18,12 +18,13 @@ function LoadingCarousel() {
 export function OnboardingView({ onStart, mode = "welcome" }) {
   const loading = mode === "loading";
   if (loading) {
+    // App launch: a solid brand field, the icon centred, a small wordmark, and a quiet status line
     return html`<div class="ob ob-loading ob-splash" style=${{ position: "fixed", inset: 0, background: "#0f126c", overflow: "hidden" }}>
-      <div class="ob-mark" aria-hidden="true">
-        <img src=${ASSETS.logo} alt="" width="52" height="52" style=${{ width: 52, height: 52, objectFit: "contain" }} />
+      <div class="ob-icon" aria-hidden="true">
+        <img src=${ASSETS.logo} alt="" width="64" height="64" style=${{ width: 64, height: 64, objectFit: "contain" }} />
       </div>
-      <${LoadingCarousel} />
-      <p class="ob-status" aria-live="polite">Getting your details ready…</p>
+      <div class="ob-wordmark"><strong>CareEd</strong><span>by CGTIA</span></div>
+      <p class="ob-status" aria-live="polite">Getting your details ready</p>
     </div>`;
   }
   return html`<div class="ob">

@@ -504,6 +504,15 @@ export function ImageFrame({ mobile, desktop, alt }) {
   </picture>`;
 }
 
+/* Cards and designs are separate carousels: card carousel above, design carousel below, each with its own rotation */
+export function slideGroups(slides, seconds) {
+  const all = slides || [];
+  const cards = all.filter((x) => x.kind === "card");
+  const designs = all.filter((x) => x.kind !== "card");
+  return html`${cards.length ? html`<${SlideCarousel} key="cards" slides=${cards} seconds=${seconds} />` : null}
+    ${designs.length ? html`<${SlideCarousel} key="designs" slides=${designs} seconds=${seconds} />` : null}`;
+}
+
 /* Dashboard carousel: admin-managed slides. A "design" slide is the designer's artwork. A "card" slide is a background
    (optional), a placeholder picture, the write-up and a button. Autoplay, pause on hover (desktop) or press-and-hold (phone),
    swipe, dots. */
@@ -1359,7 +1368,7 @@ export function MobileView({ ctx }) {
         <p class="sm">Hello</p>
         <h1 class="display">${first}</h1>
       </section>
-      ${(slides || []).length ? html`<${SlideCarousel} slides=${slides} seconds=${slideSeconds} />` : html`
+      ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
       <section class="m-banner">
         <div class="m-banner-copy">
           <h2 class="display">${linked ? "Your dashboard" : "Link your file"}</h2>
