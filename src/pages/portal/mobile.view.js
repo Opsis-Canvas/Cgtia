@@ -1006,7 +1006,15 @@ export function SettingsScreen({ student, user, onLogout, setSection }) {
     try { return localStorage.getItem("cgtia_notify") !== "0"; } catch (_) { return true; }
   });
   const [dark, setDark] = useState(() => {
-    try { return localStorage.getItem("cgtia_theme") === "dark"; } catch (_) { return false; }
+    /* Night mode ON by default; only stay light if user explicitly chose it */
+    try {
+      const v = localStorage.getItem("cgtia_theme");
+      if (v === "light") return false;
+      if (v !== "dark") {
+        try { localStorage.setItem("cgtia_theme", "dark"); } catch (_) {}
+      }
+      return true;
+    } catch (_) { return true; }
   });
 
   function toggleNotify() {
