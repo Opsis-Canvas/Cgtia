@@ -261,8 +261,12 @@ async function loadPortalData(user) {
         body: a.body || "",
         ctaLabel: a.ctaLabel || "Learn more",
         ctaUrl: a.ctaUrl || "",
+        kind: a.kind === "card" ? "card" : "design",
         imageMobile: a.imageMobile || "",
         imageDesktop: a.imageDesktop || "",
+        bgMobile: a.bgMobile || "",
+        bgDesktop: a.bgDesktop || "",
+        placeholder: a.placeholder || "",
         order: Number(a.order) || 0
       });
     });

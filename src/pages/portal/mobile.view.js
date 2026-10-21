@@ -504,7 +504,9 @@ export function ImageFrame({ mobile, desktop, alt }) {
   </picture>`;
 }
 
-/* Dashboard carousel: admin-managed slides, autoplay, pause on hover (desktop) or on press-and-hold (phone), swipe, dots, CTA */
+/* Dashboard carousel: admin-managed slides. A "design" slide is the designer's artwork. A "card" slide is a background
+   (optional), a placeholder picture, the write-up and a button. Autoplay, pause on hover (desktop) or press-and-hold (phone),
+   swipe, dots. */
 export function SlideCarousel({ slides, seconds }) {
   const list = slides || [];
   const [idx, setIdx] = useState(0);
@@ -532,10 +534,16 @@ export function SlideCarousel({ slides, seconds }) {
         if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
       }}>
     <div class="slides-stage">
-      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}>
-        ${(s.imageMobile || s.imageDesktop)
-          ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
-          : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`}
+      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}>
+        ${s.kind === "card"
+          ? html`<div class="slide-card">
+              ${(s.bgMobile || s.bgDesktop) ? html`<${ImageFrame} mobile=${s.bgMobile} desktop=${s.bgDesktop} alt="" />` : null}
+              ${s.placeholder ? html`<img class="slide-card-ph" src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
+              <div class="slide-card-text"><h3>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>
+            </div>`
+          : ((s.imageMobile || s.imageDesktop)
+            ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
+            : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`)}
         ${s.ctaUrl ? html`<a class="slide-cta" href=${s.ctaUrl} target="_blank" rel="noopener" tabindex=${k === safeIdx ? "0" : "-1"}>${s.ctaLabel || "Learn more"} →</a>` : null}
       </article>`)}
     </div>
@@ -631,6 +639,7 @@ export function NoticeInbox({ items, setSection, limit = 4 }) {
             <span class="notice-chev" aria-hidden="true">⌄</span>
           </button>
           <div class="notice-body"><div class="notice-body-in">
+            ${(a.imageMobile || a.imageDesktop) ? html`<div class="notice-pic"><${ImageFrame} mobile=${a.imageMobile} desktop=${a.imageDesktop} alt=${a.title || ""} /></div>` : null}
             ${body ? html`<p>${body}</p>` : html`<p class="muted">No further details.</p>`}
             <div class="notice-actions">
               ${a.linkUrl ? html`<a class="notice-cta" href=${a.linkUrl} target="_blank" rel="noopener">${a.linkLabel || "Open link"} →</a>` : null}
