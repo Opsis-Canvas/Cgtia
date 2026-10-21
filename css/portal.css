@@ -3624,3 +3624,22 @@ img.m-banner-img {
 .m-banner {
   margin-top: 6px !important; /* primary control for gap under the name */
 }
+
+
+/* ===== Dashboard banner: one clear spacing rule, and the placeholder rises above the card like the reference ===== */
+.m-scroll > .m-hello { margin: 0 !important; }
+.m-scroll > .m-hello h1 { margin: 0 !important; padding-bottom: 0 !important; }
+.m-scroll > section.m-banner,
+.m-app .m-scroll > section.m-banner,
+section.m-banner.m-banner {
+  margin-top: 30px !important;        /* gap between the name and the card */
+  overflow: visible !important;
+}
+.m-banner > img.m-banner-img,
+.m-banner .m-banner-img {
+  height: 119% !important;            /* the person stands about 27px above the card's top edge */
+  max-height: none !important;
+  bottom: 0 !important;
+  right: -4px !important;
+  transform: none !important;
+}

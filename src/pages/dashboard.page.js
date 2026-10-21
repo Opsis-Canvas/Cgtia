@@ -478,6 +478,17 @@ function LoginGate({ onAuthed }) {
 
 export function DashboardPage() {
   const isDesktop = useIsDesktop();
+  // Night mode is the default for the student portal. Only an explicit "light" choice (made in Settings) turns it off.
+  useEffect(() => {
+    let v = null;
+    try { v = localStorage.getItem("cgtia_theme"); } catch (_) {}
+    if (v === "light") {
+      document.documentElement.setAttribute("data-theme", "light");
+    } else {
+      try { localStorage.setItem("cgtia_theme", "dark"); } catch (_) {}
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  }, []);
   useEffect(() => {
     document.body.classList.add("is-portal");
     return () => document.body.classList.remove("is-portal");
