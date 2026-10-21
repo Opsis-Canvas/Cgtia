@@ -400,8 +400,7 @@ function LessonView({ section, courses, student, setSection }) {
 
 
 
-function Tile({ s, onClick, idx }) {
-  /* Brand navy / blue only — matches the working light-mode reference */
+function Tile({ s, onClick, idx = 0 }) {
   const brand = (idx % 2 === 0) ? "brand-navy" : "brand-blue";
   return html`<div role=${onClick ? "button" : undefined}
     class=${"m-tile " + brand + (onClick ? " is-click" : "")}
@@ -1177,18 +1176,17 @@ export function MobileView({ ctx }) {
           </button>
         </div>
         <img
-          class="m-banner-img slot-img"
+          class="m-banner-img"
           src="/assets/banner-person.webp"
-          alt="Student"
-          width="120"
-          height="168"
+          alt=""
           decoding="async"
           style=${{
             position: "absolute",
-            width: "120px",
-            height: "168px",
-            right: "12px",
+            right: "-4px",
             bottom: "0px",
+            height: "108%",
+            width: "auto",
+            maxWidth: "56%",
             objectFit: "contain",
             objectPosition: "bottom right",
             zIndex: 3,

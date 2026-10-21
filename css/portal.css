@@ -3441,3 +3441,173 @@ img.m-banner-img,
 .m-tile.mint:nth-child(even) {
   background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important;
 }
+
+/* =====================================================================
+   Round 9 — match working screenshot: person INSIDE the blue card
+   ===================================================================== */
+
+.m-banner {
+  position: relative !important;
+  height: 168px !important;
+  min-height: 168px !important;
+  margin-top: 16px !important;
+  padding: 18px 16px 18px 18px !important;
+  border-radius: 22px !important;
+  overflow: hidden !important; /* image stays inside the rounded card */
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important;
+  color: #fff !important;
+}
+.m-banner-copy {
+  width: 52% !important;
+  max-width: 200px !important;
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+}
+.m-banner h2 {
+  color: #fff !important;
+  font-size: 17px !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  font-weight: 800 !important;
+}
+.m-banner p {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+/* Courses button — soft blue on navy (like the screenshot) */
+.m-banner .pill-ink {
+  background: #3b6ef5 !important;
+  color: #fff !important;
+  height: 36px !important;
+  padding: 0 22px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  margin-top: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Person fills the right side, bottom-aligned, clipped to card radius */
+.m-banner > img.m-banner-img,
+.m-banner img.m-banner-img,
+img.m-banner-img {
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  height: 100% !important;
+  width: auto !important;
+  max-width: 50% !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+[data-theme="dark"] .m-banner {
+  background: linear-gradient(135deg, #0a0e4a 0%, #0736b8 100%) !important;
+}
+[data-theme="dark"] .m-banner .pill-ink {
+  background: #3b6ef5 !important;
+  color: #fff !important;
+}
+
+/* =====================================================================
+   Round 10 — match reference spacing + figure size (2nd screenshot)
+   ===================================================================== */
+
+/* Tighter gap: Hello name → banner card */
+.m-hello {
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+}
+.m-hello .sm { margin: 0 !important; }
+.m-hello h1 {
+  margin: 2px 0 0 !important;
+  line-height: 1.05 !important;
+}
+
+.m-banner {
+  position: relative !important;
+  height: 158px !important;
+  min-height: 158px !important;
+  margin-top: 10px !important;   /* was 16–28px — reference is tight */
+  margin-bottom: 0 !important;
+  padding: 16px 14px 16px 16px !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(135deg, #0f126c 0%, #0948e6 100%) !important;
+  color: #fff !important;
+}
+.m-banner-copy {
+  width: 50% !important;
+  max-width: 190px !important;
+  position: relative !important;
+  z-index: 2 !important;
+  gap: 6px !important;
+}
+.m-banner h2 {
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  color: #fff !important;
+}
+.m-banner p {
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.m-banner .pill-ink {
+  background: #3b6ef5 !important;
+  color: #fff !important;
+  height: 34px !important;
+  padding: 0 20px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  margin-top: 2px !important;
+}
+
+/* Larger figure — fills right side like the reference */
+.m-banner > img.m-banner-img,
+.m-banner img.m-banner-img,
+img.m-banner-img {
+  position: absolute !important;
+  right: -4px !important;
+  bottom: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  height: 108% !important;
+  width: auto !important;
+  max-width: 56% !important;
+  object-fit: contain !important;
+  object-position: bottom right !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+[data-theme="dark"] .m-banner {
+  background: linear-gradient(135deg, #0a0e4a 0%, #0736b8 100%) !important;
+}
