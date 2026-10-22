@@ -504,6 +504,17 @@ export function ImageFrame({ mobile, desktop, alt }) {
   </picture>`;
 }
 
+/* Placement and type set in the admin: the picture's size and offset, and the heading's size and weight */
+function cardPhStyle(s) {
+  const sc = (Number(s.phScale) || 100) / 100;
+  const x = Number(s.phX) || 0;
+  const y = Number(s.phY) || 0;
+  return { transform: "translate(" + x + "%," + y + "%) scale(" + sc + ")", transformOrigin: "right bottom" };
+}
+function cardTextStyle(s) {
+  return { fontSize: (Number(s.textSize) || 24) + "px", fontWeight: Number(s.textWeight) || 800 };
+}
+
 /* Cards and designs are separate carousels: card carousel above, design carousel below, each with its own rotation */
 export function slideGroups(slides, seconds) {
   const all = slides || [];
@@ -549,10 +560,10 @@ export function SlideCarousel({ slides, seconds }) {
         ${s.kind === "card"
           ? html`<div class="slide-card">
               ${(s.bgMobile || s.bgDesktop) ? html`<${ImageFrame} mobile=${s.bgMobile} desktop=${s.bgDesktop} alt="" />` : null}
-              ${(s.placeholder && s.placeholderMode !== "protrude") ? html`<img class="slide-ph is-inside" src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
-              <div class="slide-card-text"><h3>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>
+              ${(s.placeholder && s.placeholderMode !== "protrude") ? html`<img class="slide-ph is-inside" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
+              <div class="slide-card-text"><h3 style=${cardTextStyle(s)}>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>
             </div>
-            ${(s.placeholder && s.placeholderMode === "protrude") ? html`<img class="slide-ph is-protrude" src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}`
+            ${(s.placeholder && s.placeholderMode === "protrude") ? html`<div class="slide-ph-clip"><img class="slide-ph is-protrude" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" /></div>` : null}`
           : ((s.imageMobile || s.imageDesktop)
             ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
             : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`)}
@@ -664,16 +675,40 @@ export function NoticeInbox({ items, setSection, limit = 4 }) {
   </section>`;
 }
 
-/* Attendance card: a visible summary that opens the attendance page */
-export function attendanceStrip(rows, onOpen) {
+/* Attendance rule: Present and Late count as attended, Absent counts against, Excused is left out */
+export function attendancePct(rows) {
   const list = rows || [];
-  const present = list.filter((r) => /present|yes|attended/i.test(String(r.status || r.present || ""))).length;
-  const pct = list.length ? Math.round((present / list.length) * 100) : null;
+  const statusOf = (r) => String(r.status || (r.present ? "Present" : "Absent")).trim().toLowerCase();
+  const attended = list.filter((r) => statusOf(r) === "present" || statusOf(r) === "late").length;
+  const counted = list.filter((r) => ["present", "late", "absent"].includes(statusOf(r))).length;
+  return { attended, counted, pct: counted ? Math.round((attended / counted) * 100) : null };
+}
+
+/* Attendance card: percentage, a calendar of sessions, and a tap-through to the full list */
+export function attendanceCard(rows, onOpen) {
+  const list = rows || [];
+  const { attended, counted, pct } = attendancePct(list);
+  return html`<section class="att-card">
+    <button type="button" class="att-card-head" onClick=${onOpen}>
+      <span class="att-strip-ico" aria-hidden="true">${Icon({ name: "check", size: 18 })}</span>
+      <span class="att-strip-text">
+        <strong>${pct != null ? pct + "% attendance" : "Attendance"}</strong>
+        <small>${counted ? attended + " of " + counted + " sessions attended" : "Your tutor marks each session as it happens"}</small>
+      </span>
+      <span class="att-strip-go" aria-hidden="true">›</span>
+    </button>
+    <${AttendanceCalendar} rows=${list} />
+  </section>`;
+}
+
+/* Attendance summary row (used on the desktop dashboard) */
+export function attendanceStrip(rows, onOpen) {
+  const { attended, counted, pct } = attendancePct(rows);
   return html`<button type="button" class="att-strip" onClick=${onOpen}>
     <span class="att-strip-ico" aria-hidden="true">${Icon({ name: "check", size: 18 })}</span>
     <span class="att-strip-text">
       <strong>${pct != null ? pct + "% attendance" : "Attendance"}</strong>
-      <small>${pct != null ? present + " of " + list.length + " sessions present" : "Sessions appear here once your tutor marks them"}</small>
+      <small>${counted ? attended + " of " + counted + " sessions attended" : "Sessions appear here once your tutor marks them"}</small>
       ${pct != null ? html`<span class="att-strip-bar"><i style=${{ width: pct + "%" }}></i></span>` : null}
     </span>
     <span class="att-strip-go" aria-hidden="true">›</span>
@@ -1426,7 +1461,6 @@ export function MobileView({ ctx }) {
           </button>`)}
         </div>
       </section>
-      ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
       <section>
         <div class="m-section-h">
           <h3 class="display">Modules</h3>
@@ -1838,6 +1872,7 @@ export function MobileView({ ctx }) {
     <div class="m-scroll">
     ${body}
     </div>
+    ${section === "dashboard" ? attendanceCard(ctx.attendance, () => setSection("attendance")) : null}
     <footer class="careed-foot" aria-label="CareEd powered by CGTIA">
       <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="32" height="32" />
       <div class="careed-foot-text">

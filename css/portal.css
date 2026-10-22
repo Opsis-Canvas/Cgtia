@@ -3788,7 +3788,7 @@ section.m-banner.m-banner {
 [data-theme="dark"] .notice-more { background: #1e293b; color: #93c5fd; }
 
 /* Attendance card */
-.att-strip { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px; margin: 0; background: #fff; border: 1px solid #dfe6f3; border-radius: 22px; cursor: pointer; text-align: left; font: inherit; color: #0f172a; box-shadow: 0 12px 24px -20px rgba(15,18,108,0.45); }
+.att-strip { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px; margin: 22px 0 0; background: #fff; border: 1px solid #dfe6f3; border-radius: 22px; cursor: pointer; text-align: left; font: inherit; color: #0f172a; box-shadow: 0 12px 24px -20px rgba(15,18,108,0.45); }
 .att-strip:active { transform: scale(0.99); }
 .att-strip-ico { width: 44px; height: 44px; border-radius: 14px; background: #0f126c; color: #fff; display: grid; place-items: center; flex: 0 0 auto; }
 .att-strip-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
@@ -3868,3 +3868,19 @@ section.m-banner.m-banner {
 }
 @keyframes ob-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .ob-splash .ob-icon, .ob-splash .ob-wordmark, .ob-splash .ob-status { animation: none; } }
+
+/* ===== Round 17: protruding picture clipped by the card, attendance card below modules ===== */
+/* The protruding picture is clipped to the card's rounded silhouette, so its bottom never shows past the corners */
+.slide-ph-clip { position: absolute; left: 0; right: 0; top: -44px; bottom: 0; overflow: hidden; border-radius: 26px; pointer-events: none; z-index: 3; }
+.slide-ph-clip .slide-ph.is-protrude { position: absolute; right: 8px; bottom: 0; height: 100%; width: auto; max-width: 56%; object-fit: contain; object-position: right bottom; }
+@media (min-width: 860px) {
+  .slide-ph-clip { top: -64px; border-radius: 28px; }
+  .slide-ph-clip .slide-ph.is-protrude { height: 100%; max-width: 44%; }
+}
+
+/* Attendance card */
+.att-card { margin-top: 22px; background: #fff; border: 1px solid #dfe6f3; border-radius: 22px; padding: 14px; box-shadow: 0 12px 24px -20px rgba(15,18,108,0.45); display: flex; flex-direction: column; gap: 12px; }
+.att-card-head { width: 100%; display: flex; align-items: center; gap: 14px; background: none; border: 0; padding: 2px; cursor: pointer; text-align: left; font: inherit; color: #0f172a; }
+.att-card .att-cal { border: 0; box-shadow: none; padding: 0; background: transparent; }
+[data-theme="dark"] .att-card { background: #111a2e; border-color: #26324a; }
+[data-theme="dark"] .att-card-head { color: #e2e8f0; }

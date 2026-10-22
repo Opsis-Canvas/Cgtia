@@ -268,6 +268,11 @@ async function loadPortalData(user) {
         bgDesktop: a.bgDesktop || "",
         placeholder: a.placeholder || "",
         placeholderMode: a.placeholderMode === "protrude" ? "protrude" : "inside",
+        phScale: Number(a.phScale) || 100,
+        phX: Number(a.phX) || 0,
+        phY: Number(a.phY) || 0,
+        textSize: Number(a.textSize) || 24,
+        textWeight: Number(a.textWeight) || 800,
         order: Number(a.order) || 0
       });
     });
