@@ -519,9 +519,11 @@ function cardTextStyle(s) {
 export function slideGroups(slides, seconds) {
   const all = slides || [];
   const cards = all.filter((x) => x.kind === "card");
-  const designs = all.filter((x) => x.kind !== "card");
+  const designs = all.filter((x) => x.kind !== "card" && x.kind !== "story");
+  const stories = all.filter((x) => x.kind === "story");
   return html`${cards.length ? html`<${SlideCarousel} key="cards" slides=${cards} seconds=${seconds} />` : null}
-    ${designs.length ? html`<${SlideCarousel} key="designs" slides=${designs} seconds=${seconds} />` : null}`;
+    ${designs.length ? html`<${SlideCarousel} key="designs" slides=${designs} seconds=${seconds} />` : null}
+    ${stories.length ? html`<${SlideCarousel} key="stories" slides=${stories} seconds=${seconds} />` : null}`;
 }
 
 /* Dashboard carousel: admin-managed slides. A "design" slide is the designer's artwork. A "card" slide is a background
@@ -545,7 +547,8 @@ export function SlideCarousel({ slides, seconds }) {
   const resume = () => setPaused(false);
   const hasProtrude = list.some((x) => x.kind === "card" && x.placeholder && x.placeholderMode === "protrude");
   const isCardNow = !!(list[safeIdx] && list[safeIdx].kind === "card");
-  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
+  const isStoryNow = !!(list[safeIdx] && list[safeIdx].kind === "story");
+  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "") + (isStoryNow ? " is-story-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
       onMouseEnter=${pause} onMouseLeave=${resume}
       onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
       onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
@@ -556,18 +559,26 @@ export function SlideCarousel({ slides, seconds }) {
         if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
       }}>
     <div class="slides-stage">
-      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
+      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
           onClick=${() => { if (s.ctaUrl && k === safeIdx) window.open(s.ctaUrl, "_blank", "noopener"); }}>
-        ${s.kind === "card"
+        ${s.kind === "story"
+          ? html`<div class="slide-story">
+              <img class="slide-story-img" src=${s.storyImage} alt=${s.title || ""} loading="lazy" decoding="async" />
+              ${(s.title || s.body) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>` : null}
+            </div>`
+          : s.kind === "card"
           ? html`<div class="slide-card">
               ${(s.bgMobile || s.bgDesktop) ? html`<${ImageFrame} mobile=${s.bgMobile} desktop=${s.bgDesktop} alt="" />` : null}
               ${(s.placeholder && s.placeholderMode !== "protrude") ? html`<img class="slide-ph is-inside" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
               <div class="slide-card-text"><h3 style=${cardTextStyle(s)}>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>
             </div>
             ${(s.placeholder && s.placeholderMode === "protrude") ? html`<div class="slide-ph-clip"><img class="slide-ph is-protrude" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" /></div>` : null}`
-          : ((s.imageMobile || s.imageDesktop)
-            ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
-            : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`)}
+          : html`<div class="slide-design">
+              ${(s.imageMobile || s.imageDesktop)
+                ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
+                : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`}
+              ${(s.overlayText && (s.title || s.body) && (s.imageMobile || s.imageDesktop)) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>` : null}
+            </div>`}
       </article>`)}
       ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
     </div>
@@ -913,8 +924,10 @@ export function AttendanceCalendar({ rows }) {
   (rows || []).forEach((r) => {
     const k = toDayKey(r.date || r.sessionDate);
     if (!k) return;
-    marks[k] = /present|yes|attended/i.test(String(r.status || r.present || "")) ? "P" : "A";
+    const st = String(r.status || (r.present ? "Present" : "")).trim().toLowerCase();
+    if (st === "present" || st === "late" || st === "absent" || st === "excused") marks[k] = st;
   });
+  const COLORS = { present: "#0948e6", late: "#b45309", absent: "#b91c1c", excused: "#64748b" };
   const y = cursor.getFullYear();
   const m = cursor.getMonth();
   const lead = new Date(y, m, 1).getDay();
@@ -923,16 +936,16 @@ export function AttendanceCalendar({ rows }) {
   for (let i = 0; i < lead; i++) cells.push(null);
   for (let d = 1; d <= days; d++) cells.push(d);
   const keyOf = (d) => y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
-  const todayKey = y === now.getFullYear() && m === now.getMonth() ? toDayKey(now) : "";
-  // toDayKey reads Date-like values via toDate(); build a local key for "today"
-  const todayLocal = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  const todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
   const monthName = cursor.toLocaleString("en-GB", { month: "long" });
-  const monthRows = Object.keys(marks).filter((k) => k.startsWith(y + "-" + String(m + 1).padStart(2, "0")));
-  const monthPresent = monthRows.filter((k) => marks[k] === "P").length;
+  const monthPrefix = y + "-" + String(m + 1).padStart(2, "0");
+  const monthKeys = Object.keys(marks).filter((k) => k.startsWith(monthPrefix));
+  const attended = monthKeys.filter((k) => marks[k] === "present" || marks[k] === "late").length;
+  const counted = monthKeys.filter((k) => marks[k] !== "excused").length;
   return html`<div class="att-cal">
     <div class="att-head">
       <button type="button" class="att-nav" aria-label="Previous month" onClick=${() => setCursor(new Date(y, m - 1, 1))}>‹</button>
-      <div class="att-title"><strong>${monthName} ${y}</strong><span>${monthRows.length ? monthPresent + " of " + monthRows.length + " present" : "No sessions marked"}</span></div>
+      <div class="att-title"><strong>${monthName} ${y}</strong><span>${counted ? attended + " of " + counted + " attended" : "No sessions marked this month"}</span></div>
       <button type="button" class="att-nav" aria-label="Next month" onClick=${() => setCursor(new Date(y, m + 1, 1))}>›</button>
     </div>
     <div class="att-dow">${["S", "M", "T", "W", "T", "F", "S"].map((d, i) => html`<span key=${i}>${d}</span>`)}</div>
@@ -940,12 +953,22 @@ export function AttendanceCalendar({ rows }) {
       ${cells.map((d, i) => {
         if (d == null) return html`<span key=${"e" + i} class="att-cell is-empty"></span>`;
         const k = keyOf(d);
-        const st = marks[k] || "";
-        const cls = "att-cell" + (st === "P" ? " is-p" : st === "A" ? " is-a" : "") + (k === todayLocal ? " is-today" : "");
-        return html`<span key=${i} class=${cls}>${d}</span>`;
+        const st = marks[k];
+        return html`<span key=${i} class="att-cell" title=${st || ""}
+          style=${{
+            background: st ? COLORS[st] : "rgba(255,255,255,0.08)",
+            color: st ? "#ffffff" : "#e2e8f0",
+            boxShadow: k === todayKey ? "inset 0 0 0 2px #dcb56b" : "none"
+          }}>${d}</span>`;
       })}
     </div>
-    <div class="att-legend"><span><i class="dot dot-p"></i>Present</span><span><i class="dot dot-a"></i>Absent</span><span><i class="dot dot-t"></i>Today</span></div>
+    <div class="att-legend">
+      <span><i class="dot" style=${{ background: COLORS.present }}></i>Present</span>
+      <span><i class="dot" style=${{ background: COLORS.late }}></i>Late</span>
+      <span><i class="dot" style=${{ background: COLORS.absent }}></i>Absent</span>
+      <span><i class="dot" style=${{ background: COLORS.excused }}></i>Excused</span>
+      <span><i class="dot dot-t"></i>Today</span>
+    </div>
   </div>`;
 }
 

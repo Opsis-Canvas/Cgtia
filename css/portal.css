@@ -3906,3 +3906,20 @@ section.m-banner.m-banner {
 .slide-cta:hover::after { transform: translateX(4px); }
 .slide-cta:active { transform: translateY(0) scale(0.98); }
 .slides-stage > .slide-cta { left: 18px; bottom: 18px; }
+
+/* ===== Round 19: story slides, text over designs ===== */
+.slide-design { position: absolute; inset: 0; }
+.slide-design .img-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+.slide-design .img-frame img { width: 100%; height: 100%; aspect-ratio: auto; object-fit: cover; }
+.slide-overlay {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; padding: 72px 20px 70px; color: #fff;
+  background: linear-gradient(to top, rgba(8,12,40,0.88) 0%, rgba(8,12,40,0.55) 55%, rgba(8,12,40,0) 100%);
+}
+.slide-overlay h3 { margin: 0 0 6px; font-family: Montserrat, Inter, sans-serif; font-size: 22px; font-weight: 800; line-height: 1.15; }
+.slide-overlay p { margin: 0; font-size: 14px; line-height: 1.5; opacity: 0.92; }
+/* Story: 9:16, full height, like a story */
+.slide.is-story .slide-story { position: absolute; inset: 0; border-radius: 26px; overflow: hidden; background: #0a0e4a; }
+.slide-story-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.slides.is-story-now .slides-stage { aspect-ratio: 9 / 16; height: auto; max-width: 340px; margin: 0 auto; }
+@media (min-width: 860px) { .slides.is-story-now .slides-stage { max-width: 380px; } }
+.slides.is-story-now .slide-cta { display: none; }
