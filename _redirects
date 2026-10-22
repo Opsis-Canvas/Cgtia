@@ -1,0 +1,5 @@
+# API Functions
+/api/*  /api/:splat  200
+
+# SPA shell for all other routes (200 = rewrite, not browser redirect)
+/*    /index.html   200

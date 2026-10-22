@@ -1,0 +1,11 @@
+# CGTIA — Cloudflare Pages (static site + API Functions only)
+# Home/About/Tuition/etc. = static CDN (no Worker invocation)
+# /api/* only = Pages Functions (Paystack, webhooks, email, invites)
+
+name = "cgtia"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static output for Pages (do NOT set main = worker.js — that routes every page through a Worker)
+pages_build_output_dir = "."
+ 
