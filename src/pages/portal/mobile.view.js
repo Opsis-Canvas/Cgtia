@@ -515,6 +515,105 @@ function cardTextStyle(s) {
   return { fontSize: (Number(s.textSize) || 24) + "px", fontWeight: Number(s.textWeight) || 800 };
 }
 
+/* Stories: a row of round thumbnails. Tapping one opens the full-screen viewer, which plays in order like Instagram:
+   progress bars on top, images run for 6 seconds, videos run to their end (up to 60 seconds), tap the left side to go back,
+   tap the right side to skip, press and hold to pause, swipe down or press Esc to close. */
+export function StoriesSection({ stories }) {
+  const [open, setOpen] = useState(null);
+  const list = stories || [];
+  if (!list.length) return null;
+  return html`<section class="stories" aria-label="Stories">
+    <div class="stories-track">
+      ${list.map((st, i) => html`<button type="button" key=${st.id} class="story-bubble" onClick=${() => setOpen(i)} aria-label=${"Open story: " + (st.title || "Story " + (i + 1))}>
+        <span class="story-ring"><span class="story-thumb">
+          ${st.kind === "video"
+            ? html`<video src=${st.mediaUrl + "#t=0.1"} muted playsinline preload="metadata"></video>`
+            : html`<img src=${st.mediaUrl} alt="" loading="lazy" decoding="async" />`}
+        </span></span>
+        <span class="story-label">${st.title || "Story"}</span>
+      </button>`)}
+    </div>
+    ${open !== null ? html`<${StoryViewer} stories=${list} start=${open} onClose=${() => setOpen(null)} />` : null}
+  </section>`;
+}
+
+export function StoryViewer({ stories, start, onClose }) {
+  const IMAGE_MS = 6000;
+  const [i, setI] = useState(start || 0);
+  const [prog, setProg] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const progRef = useRef(0);
+  const vid = useRef(null);
+  const touchY = useRef(null);
+  const cur = stories[i];
+  const lastIdx = stories.length - 1;
+  const setP = (p) => { progRef.current = p; setProg(p); };
+  const next = () => { if (i < lastIdx) setI(i + 1); else onClose(); };
+  const prev = () => { if (i > 0) setI(i - 1); else setP(0); };
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") next();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", onKey); };
+  });
+
+  // A new story starts from zero
+  useEffect(() => { setP(0); }, [i]);
+
+  // Images: the bar fills over IMAGE_MS, then the next story starts
+  useEffect(() => {
+    if (!cur || cur.kind === "video" || paused) return undefined;
+    let raf = 0;
+    const t0 = performance.now() - progRef.current * IMAGE_MS;
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / IMAGE_MS);
+      setP(p);
+      if (p >= 1) { next(); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [i, paused]);
+
+  // Videos: play or pause with the hold gesture
+  useEffect(() => {
+    const v = vid.current;
+    if (!v) return;
+    if (paused) v.pause();
+    else v.play().catch(() => {});
+  }, [paused, i]);
+
+  if (!cur) return null;
+  return html`<div class="sv-backdrop" role="dialog" aria-modal="true" aria-label="Story viewer">
+    <div class="sv-stage"
+      onPointerDown=${() => setPaused(true)} onPointerUp=${() => setPaused(false)} onPointerCancel=${() => setPaused(false)} onPointerLeave=${() => setPaused(false)}
+      onTouchStart=${(e) => { touchY.current = e.touches[0].clientY; }}
+      onTouchEnd=${(e) => { if (touchY.current != null && e.changedTouches[0].clientY - touchY.current > 90) onClose(); touchY.current = null; }}>
+      <div class="sv-progress">
+        ${stories.map((_, k) => html`<span key=${k} class="sv-seg"><i style=${{ width: k < i ? "100%" : k === i ? (prog * 100) + "%" : "0%" }}></i></span>`)}
+      </div>
+      <div class="sv-top">
+        <div class="sv-who"><strong>CGTIA</strong><small>${cur.title || ""}</small></div>
+        <button type="button" class="sv-close" aria-label="Close stories" onClick=${(e) => { e.stopPropagation(); onClose(); }}>×</button>
+      </div>
+      ${cur.kind === "video"
+        ? html`<video ref=${vid} key=${cur.id} class="sv-media" src=${cur.mediaUrl} autoPlay playsInline
+            onTimeUpdate=${(e) => { const v = e.currentTarget; if (v.duration) setP(v.currentTime / v.duration); }}
+            onEnded=${() => next()}></video>`
+        : html`<img key=${cur.id} class="sv-media" src=${cur.mediaUrl} alt=${cur.title || ""} />`}
+      <button type="button" class="sv-zone is-prev" aria-label="Previous story" onClick=${(e) => { e.stopPropagation(); prev(); }}></button>
+      <button type="button" class="sv-zone is-next" aria-label="Next story" onClick=${(e) => { e.stopPropagation(); next(); }}></button>
+      ${cur.caption ? html`<p class="sv-caption">${cur.caption}</p>` : null}
+      ${cur.linkUrl ? html`<a class="sv-cta" href=${cur.linkUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${cur.linkLabel || "Open"}</a>` : null}
+    </div>
+  </div>`;
+}
+
 /* Cards and designs are separate carousels: card carousel above, design carousel below, each with its own rotation */
 export function slideGroups(slides, seconds) {
   const all = slides || [];
@@ -1427,6 +1526,7 @@ export function MobileView({ ctx }) {
         <p class="sm">Hello</p>
         <h1 class="display">${first}</h1>
       </section>
+      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} />` : null}
       ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
       <section class="m-banner">
         <div class="m-banner-copy">

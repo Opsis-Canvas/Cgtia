@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, attendanceCard, slideGroups } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, attendanceCard, slideGroups, StoriesSection } from "./mobile.view.js";
 import { loadProgress } from "./shared.js";
 
 const html = htm.bind(createElement);
@@ -53,6 +53,7 @@ export function DesktopView({ ctx, deepView }) {
   let main = null;
   if (section === "dashboard") {
     main = html`
+      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} />` : null}
       ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
       <section class="d-banner">
         <div class="d-banner-copy">

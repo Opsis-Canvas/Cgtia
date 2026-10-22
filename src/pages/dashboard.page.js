@@ -281,6 +281,26 @@ async function loadPortalData(user) {
     slides.sort((x, y) => x.order - y.order);
   } catch (e) { console.warn(e); }
 
+  let stories = [];
+  try {
+    const snap = await api.getDocs(api.collection(db, "stories"));
+    snap.forEach((d) => {
+      const a = { id: d.id, ...d.data() };
+      if (a.trashed === true || a.active === false || !a.mediaUrl) return;
+      stories.push({
+        id: d.id,
+        title: a.title || "",
+        caption: a.caption || "",
+        kind: a.kind === "video" ? "video" : "image",
+        mediaUrl: a.mediaUrl,
+        linkUrl: a.linkUrl || "",
+        linkLabel: a.linkLabel || "",
+        order: Number(a.order) || 0
+      });
+    });
+    stories.sort((x, y) => x.order - y.order);
+  } catch (e) { console.warn(e); }
+
   let certificates = [];
   try {
     if (row) {
@@ -410,7 +430,7 @@ async function loadPortalData(user) {
     nextOfKin: row?.nextOfKinName || (row?.nextOfKin && row.nextOfKin.name) || ""
   };
 
-  return { student, courses, grades, payments, assessments, announcements, promos, slides, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
+  return { student, courses, grades, payments, assessments, announcements, promos, slides, stories, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
 }
 
 function BrandLoading() {
@@ -580,7 +600,7 @@ export function DashboardPage() {
   useEffect(() => {
     if (!user) return undefined;
     let stopped = false;
-    const keyOf = (d) => JSON.stringify([d.courses, d.grades, d.announcements, d.promos, d.slides, d.attendance, d.schedule, d.messages, d.portalSettings, d.student, d.payments, d.assessments, d.certificates, d.linked]);
+    const keyOf = (d) => JSON.stringify([d.courses, d.grades, d.announcements, d.promos, d.slides, d.stories, d.attendance, d.schedule, d.messages, d.portalSettings, d.student, d.payments, d.assessments, d.certificates, d.linked]);
     refreshKey.current = "";
     const tick = async () => {
       try {
@@ -798,6 +818,7 @@ export function DashboardPage() {
     announcements: (data && data.announcements) || [],
     promos: (data && data.promos) || [],
     slides: (data && data.slides) || [],
+    stories: (data && data.stories) || [],
     slideSeconds: Math.max(3, Math.min(30, Number(data && data.portalSettings && data.portalSettings.slideSeconds) || 6)),
     assessments: (data && data.assessments) || [],
     certificates: (data && data.certificates) || [],
