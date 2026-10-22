@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, slideGroups } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, attendanceCard, slideGroups } from "./mobile.view.js";
 import { loadProgress } from "./shared.js";
 
 const html = htm.bind(createElement);
@@ -74,7 +74,7 @@ export function DesktopView({ ctx }) {
           else if (s.id === "fees") setSection("fees");
         }}><${StatCard} s=${s} /></div>`)}
       </section>
-      ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
+      ${attendanceCard(ctx.attendance, () => setSection("attendance"))}
       ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
       ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${6} />` : null}
       <section class="d-cols">

@@ -539,6 +539,40 @@ export function DashboardPage() {
   const [phase, setPhase] = useState("splash");
   const [user, setUser] = useState(null);
   const [data, setData] = useState(null);
+  // Live notifications: the drawer updates as soon as the office sends one, without a page refresh
+  const studentEmailKey = data && data.student ? String(data.student.email || "").toLowerCase() : "";
+  const studentProgramKey = data && data.student ? String(data.student.program || "").toLowerCase() : "";
+  useEffect(() => {
+    if (!user || !studentEmailKey) return undefined;
+    let unsubs = [];
+    let cancelled = false;
+    const cache = {};
+    const publish = () => {
+      const list = Object.values(cache)
+        .filter((n) => n.active !== false && n.trashed !== true)
+        .sort((a, b) => ((b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0)));
+      setData((prev) => (prev ? { ...prev, notifications: list } : prev));
+    };
+    (async () => {
+      try {
+        const { db, api: a } = await getFirebase();
+        if (cancelled) return;
+        const filters = [a.where("audience", "==", "all"), a.where("email", "==", studentEmailKey)];
+        if (studentProgramKey) filters.push(a.where("program", "==", studentProgramKey));
+        filters.forEach((f) => {
+          const unsub = a.onSnapshot(a.query(a.collection(db, "portalNotifications"), f), (snap) => {
+            snap.docChanges().forEach((c) => {
+              if (c.type === "removed") delete cache[c.doc.id];
+              else cache[c.doc.id] = { id: c.doc.id, ...c.doc.data() };
+            });
+            publish();
+          }, () => {});
+          unsubs.push(unsub);
+        });
+      } catch (e) { console.warn(e); }
+    })();
+    return () => { cancelled = true; unsubs.forEach((u) => { try { u(); } catch (_) {} }); };
+  }, [user, studentEmailKey, studentProgramKey]);
   const [section, setSection] = useState(() => {
     try {
       const h = (location.hash || "").replace(/^#\/?/, "");

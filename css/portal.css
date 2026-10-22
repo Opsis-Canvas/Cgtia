@@ -3884,3 +3884,25 @@ section.m-banner.m-banner {
 .att-card .att-cal { border: 0; box-shadow: none; padding: 0; background: transparent; }
 [data-theme="dark"] .att-card { background: #111a2e; border-color: #26324a; }
 [data-theme="dark"] .att-card-head { color: #e2e8f0; }
+
+/* ===== Round 18: exact card shapes, pill button with hover, whole-slide link, text above the picture ===== */
+/* Card slides: fixed shapes the designer can match. Phone 1080 x 648 (5:3). Desktop 1920 x 720 (8:3). */
+.slides.is-card-now .slides-stage { height: auto; aspect-ratio: 5 / 3; }
+@media (min-width: 860px) { .slides.is-card-now .slides-stage { aspect-ratio: 8 / 3; } }
+.slide-card-text { z-index: 4; }
+.slide-card-text { padding-bottom: 24px; }
+.slides .slide { cursor: pointer; }
+
+/* Call to action: a pill button with a hover lift and an arrow that moves */
+.slides-stage > .slide-cta, .slide-cta {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 999px;
+  background: #fff; color: #0f126c; text-decoration: none; text-shadow: none;
+  font: 800 14px/1 Inter, system-ui, sans-serif; letter-spacing: 0.01em;
+  box-shadow: 0 12px 24px -14px rgba(0,0,0,0.5);
+  transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.slide-cta::after { content: "→"; display: inline-block; transition: transform .2s ease; }
+.slide-cta:hover { background: #eaf1ff; transform: translateY(-2px); box-shadow: 0 16px 28px -14px rgba(0,0,0,0.55); }
+.slide-cta:hover::after { transform: translateX(4px); }
+.slide-cta:active { transform: translateY(0) scale(0.98); }
+.slides-stage > .slide-cta { left: 18px; bottom: 18px; }

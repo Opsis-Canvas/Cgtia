@@ -22,11 +22,11 @@ export async function getFirebase() {
   _ready = (async () => {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const {
-      getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, addDoc
+      getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, addDoc, onSnapshot
     } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const api = { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, addDoc };
+    const api = { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, addDoc, onSnapshot };
     window.__cgtiaFirestore = db;
     window.__cgtiaFirestoreApi = api;
     return { db, api };

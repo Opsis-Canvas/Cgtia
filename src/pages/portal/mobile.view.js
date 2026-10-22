@@ -556,7 +556,8 @@ export function SlideCarousel({ slides, seconds }) {
         if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
       }}>
     <div class="slides-stage">
-      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}>
+      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
+          onClick=${() => { if (s.ctaUrl && k === safeIdx) window.open(s.ctaUrl, "_blank", "noopener"); }}>
         ${s.kind === "card"
           ? html`<div class="slide-card">
               ${(s.bgMobile || s.bgDesktop) ? html`<${ImageFrame} mobile=${s.bgMobile} desktop=${s.bgDesktop} alt="" />` : null}
@@ -568,7 +569,7 @@ export function SlideCarousel({ slides, seconds }) {
             ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
             : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`)}
       </article>`)}
-      ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener">${list[safeIdx].ctaLabel || "Learn more"} →</a>` : null}
+      ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
     </div>
     ${list.length > 1 ? html`<div class="slides-dots">
       ${list.map((_, k) => html`<button type="button" key=${k} class=${"slides-dot" + (k === safeIdx ? " on" : "")} aria-label=${"Show slide " + (k + 1)} onClick=${() => go(k)}></button>`)}
