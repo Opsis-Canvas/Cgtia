@@ -575,6 +575,27 @@ export function DashboardPage() {
     })();
     return () => { cancelled = true; unsubs.forEach((u) => { try { u(); } catch (_) {} }); };
   }, [user, studentEmailKey, studentProgramKey]);
+  // Soft refresh: every 20 seconds the portal reloads its data and updates only what changed
+  const refreshKey = useRef("");
+  useEffect(() => {
+    if (!user) return undefined;
+    let stopped = false;
+    const keyOf = (d) => JSON.stringify([d.courses, d.grades, d.announcements, d.promos, d.slides, d.attendance, d.schedule, d.messages, d.portalSettings, d.student, d.payments, d.assessments, d.certificates, d.linked]);
+    refreshKey.current = "";
+    const tick = async () => {
+      try {
+        const d = await loadPortalData(user);
+        if (stopped || !d) return;
+        const key = keyOf(d);
+        if (key === refreshKey.current) return;
+        refreshKey.current = key;
+        setData((prev) => (prev ? { ...d, notifications: prev.notifications || d.notifications } : d));
+      } catch (e) { console.warn("refresh", e); }
+    };
+    const timer = setInterval(tick, 20000);
+    return () => { stopped = true; clearInterval(timer); };
+  }, [user]);
+
   const [section, setSection] = useState(() => {
     try {
       const h = (location.hash || "").replace(/^#\/?/, "");
@@ -790,9 +811,9 @@ export function DashboardPage() {
   // Desktop keeps the wide sidebar layout; deep lesson/test flows use the app view
   const deep = /^(course|lesson|test|lcheck|mquiz|fees:|receipt|grade:|notice:)/.test(String(section || ""));
   return html`
-    ${isDesktop && !deep
-      ? html`<${DesktopView} ctx=${ctx} />`
-      : html`<div class=${isDesktop ? "desk-shell" : undefined}><${MobileView} ctx=${ctx} /></div>`}
+    ${isDesktop
+      ? html`<${DesktopView} ctx=${ctx} deepView=${deep ? html`<${MobileView} ctx=${ctx} />` : null} />`
+      : html`<${MobileView} ctx=${ctx} />`}
     ${exitModal}
   `;
 }

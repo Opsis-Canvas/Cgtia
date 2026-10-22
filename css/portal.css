@@ -3923,3 +3923,53 @@ section.m-banner.m-banner {
 .slides.is-story-now .slides-stage { aspect-ratio: 9 / 16; height: auto; max-width: 340px; margin: 0 auto; }
 @media (min-width: 860px) { .slides.is-story-now .slides-stage { max-width: 380px; } }
 .slides.is-story-now .slide-cta { display: none; }
+
+/* ===== Round 20: desktop pages (sidebar kept on every page), desktop night mode ===== */
+
+/* Deep pages on desktop: the mobile content fills the main column in desktop widths */
+.d-main .m-app { max-width: 1120px; width: 100%; padding: 0; margin: 0; background: transparent; }
+.d-main .m-app > .sticky-top, .d-main .m-app > header, .d-main .m-app .m-top { display: none !important; }
+.d-main .page-head h1 { font-size: 34px; }
+.d-main .m-scroll > * + * { margin-top: 26px; }
+.d-main .m-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.d-main .m-list, .d-main .sch-list, .d-main .inbox-list, .d-main .notice-stack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.d-main .inbox-list { grid-template-columns: 1fr; }
+.d-main .lesson-body { max-width: 780px; margin: 0 auto; }
+.d-main .m-banner { min-height: 240px; padding: 36px 220px 36px 40px; }
+.d-main .m-banner h2 { font-size: 32px; }
+.d-main .offers-track .offer { flex-basis: 380px; }
+.d-main .pf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.d-main .att-cal { max-width: 720px; }
+.d-main .lesson-pill { left: calc(50% + 100px); }
+.d-main .mod-card { padding: 20px; }
+
+/* Desktop night mode: sidebar, cards, text and tables read clearly */
+[data-theme="dark"] .d-shell, [data-theme="dark"] .d-main { background: #0b1020; color: #e2e8f0; }
+[data-theme="dark"] .d-side { background: #0f172a; border-right: 1px solid #1e293b; }
+[data-theme="dark"] .d-side strong, [data-theme="dark"] .d-side .careed-brand span, [data-theme="dark"] .d-side .who { color: #f8fafc; }
+[data-theme="dark"] .d-side p, [data-theme="dark"] .d-side small { color: #cbd5e1 !important; }
+[data-theme="dark"] .d-nav a, [data-theme="dark"] .d-nav button { color: #cbd5e1 !important; background: transparent; }
+[data-theme="dark"] .d-nav a:hover, [data-theme="dark"] .d-nav button:hover { background: #1e293b; color: #ffffff !important; }
+[data-theme="dark"] .d-nav a.on, [data-theme="dark"] .d-nav button.on { background: #1d4ed8 !important; color: #ffffff !important; }
+[data-theme="dark"] .d-main h1, [data-theme="dark"] .d-main h2, [data-theme="dark"] .d-main h3, [data-theme="dark"] .d-main h4 { color: #f8fafc !important; }
+[data-theme="dark"] .d-main p, [data-theme="dark"] .d-main small, [data-theme="dark"] .d-main .muted, [data-theme="dark"] .d-main label { color: #cbd5e1 !important; }
+[data-theme="dark"] .d-main a:not(.btn-block):not(.pill-ink) { color: #93c5fd; }
+[data-theme="dark"] .panel, [data-theme="dark"] .stat, [data-theme="dark"] .ann-card, [data-theme="dark"] .card,
+[data-theme="dark"] .lesson, [data-theme="dark"] .m-card, [data-theme="dark"] .mod-card, [data-theme="dark"] .att-cal,
+[data-theme="dark"] .pf-cell, [data-theme="dark"] .pf-hero, [data-theme="dark"] .sch-row, [data-theme="dark"] .notice,
+[data-theme="dark"] .inbox-list, [data-theme="dark"] .more-tile, [data-theme="dark"] .att-card, [data-theme="dark"] .att-strip {
+  background: #111a2e !important; border-color: #26324a !important; color: #e2e8f0 !important;
+}
+[data-theme="dark"] .stat .num, [data-theme="dark"] .stat strong, [data-theme="dark"] .d-main .num { color: #f8fafc !important; }
+[data-theme="dark"] .stat .lbl, [data-theme="dark"] .stat small, [data-theme="dark"] .stat span { color: #cbd5e1 !important; }
+[data-theme="dark"] .table-plain th, [data-theme="dark"] .tx-table th { color: #e2e8f0 !important; }
+[data-theme="dark"] .table-plain td, [data-theme="dark"] .d-main td { color: #e2e8f0 !important; border-color: #1e293b !important; }
+[data-theme="dark"] .d-main input, [data-theme="dark"] .d-main select, [data-theme="dark"] .d-main textarea {
+  background: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important;
+}
+[data-theme="dark"] .d-main .see, [data-theme="dark"] .see { color: #93c5fd !important; }
+[data-theme="dark"] .mod-title h4, [data-theme="dark"] .ls-text strong { color: #f8fafc !important; }
+[data-theme="dark"] .mod-title p, [data-theme="dark"] .mod-prog small { color: #cbd5e1 !important; }
+[data-theme="dark"] .mod-chip { background: #1e293b !important; color: #bfdbfe !important; }
+[data-theme="dark"] .notice-title strong, [data-theme="dark"] .inbox-text strong { color: #f8fafc !important; }
+[data-theme="dark"] .notice-title small, [data-theme="dark"] .inbox-text small, [data-theme="dark"] .inbox-time { color: #94a3b8 !important; }

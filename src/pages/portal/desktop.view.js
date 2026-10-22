@@ -43,7 +43,7 @@ function GradeRow({ g }) {
   </div>`;
 }
 
-export function DesktopView({ ctx }) {
+export function DesktopView({ ctx, deepView }) {
   const {
     student, nav, section, setSection, stats, courses, grades, payments,
     paidTotal, onLogout, linked, announcements, promos, slides, slideSeconds, assessments
@@ -332,6 +332,6 @@ export function DesktopView({ ctx }) {
         </button>
       </nav>
     </aside>
-    <main class="d-main">${main}</main>
+    <main class="d-main">${deepView || main}</main>
   </div>`;
 }
