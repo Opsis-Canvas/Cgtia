@@ -1,0 +1,58 @@
+# CGTIA image file paths — put each file at the exact path below
+# Prefer .webp; .jpg / .png also work if you change the extension in the HTML.
+
+# ── Gallery (client /gallery page) ──────────────────────────
+/assets/images/gallery/lecture-sessions.webp
+/assets/images/gallery/clinical-lab-practice.webp
+/assets/images/gallery/patient-care-skills-lab.webp
+/assets/images/gallery/group-study-session.webp
+/assets/images/gallery/on-site-placement.webp
+/assets/images/gallery/moving-handling-practice.webp
+/assets/images/gallery/diploma-day.webp
+/assets/images/gallery/food-hygiene-module.webp
+/assets/images/gallery/vital-signs-training.webp
+/assets/images/gallery/2025-cohort-orientation.webp
+/assets/images/gallery/elderly-care-rotation.webp
+/assets/images/gallery/nanny-training-track.webp
+/assets/images/gallery/partner-care-home-visit.webp
+/assets/images/gallery/placement-day-walkthrough.webp   # video poster (optional)
+/assets/images/gallery/campus-tour.webp                 # video poster (optional)
+
+# ── Videos ──────────────────────────────────────────────────
+/assets/videos/gallery-1.mp4
+/assets/videos/gallery-2.mp4
+
+# ── Programs page cards ─────────────────────────────────────
+/assets/images/programs/caregiving-diploma-students-in-a-training-classr.webp
+/assets/images/programs/caregiving-students-practicing-patient-handling-.webp
+/assets/images/programs/cgtia-classroom-during-a-caregiving-lecture.webp
+/assets/images/programs/graduation-ceremony-for-cgtia-caregiving-student.webp
+/assets/images/programs/students-practicing-patient-care-skills-in-a-lab.webp
+
+# ── Partners ────────────────────────────────────────────────
+/assets/images/partners/interns-at-a-partner-care-facility.webp
+
+# ── Graduates (admin CMS photoUrl OR static) ────────────────
+# Example for a graduate photo you add via admin:
+#   /assets/images/graduates/ada-okonkwo-2025.webp
+# Or full URL: https://...
+
+# ── Wall of Fame ────────────────────────────────────────────
+# Example:
+#   /assets/images/wall-of-fame/john-doe-2024.webp
+
+# ── About ───────────────────────────────────────────────────
+# Example:
+#   /assets/images/about/campus-building.webp
+
+# ── Hero ────────────────────────────────────────────────────
+# Example:
+#   /assets/images/hero/hero-banner.webp
+
+# ── Misc (logo & favicon) ───────────────────────────────────
+/assets/images/misc/logo.webp
+/assets/images/misc/favicon.webp
+
+# IMPORTANT
+# Paths in HTML must start with / so they work on every page route
+# (e.g. /gallery, /about). Example: src="/assets/images/gallery/lecture-sessions.webp"
