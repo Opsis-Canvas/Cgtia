@@ -72,7 +72,8 @@ export function DesktopView({ ctx, deepView }) {
         ${stats.map((s) => html`<div key=${s.id} class="is-click" role="button" onClick=${() => {
           if (s.id === "courses") setSection("courses");
           else if (s.id === "grades" || s.id === "score") setSection("grades");
-          else if (s.id === "fees") setSection("fees");
+          else if (s.id === "fees" || s.go === "fees") setSection("fees");
+          else if (s.go) setSection(s.go);
         }}><${StatCard} s=${s} /></div>`)}
       </section>
       ${attendanceCard(ctx.attendance, () => setSection("attendance"))}
@@ -89,7 +90,7 @@ export function DesktopView({ ctx, deepView }) {
             : null}
         </div>
         <div class="stack">
-          <div class="panel">
+          <div class="panel is-click" role="button" tabindex="0" onClick=${() => setSection("fees")} onKeyDown=${(e) => { if (e.key === "Enter") setSection("fees"); }}>
             <h3 class="display" style=${{ fontSize: 16, marginBottom: 10 }}>Fees snapshot</h3>
             <div class="num" style=${{ fontSize: 28 }}>₦${paidTotal.toLocaleString()}</div>
             <p style=${{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>Total recorded against your email</p>
@@ -320,7 +321,7 @@ export function DesktopView({ ctx, deepView }) {
 
   return html`<div class="d-shell">
     <aside class="d-side">
-      <div class="logo careed-brand"><img src="/assets/brand/cgtia-logo.webp" alt="" width="28" height="28" style=${{ width: 28, height: 28, objectFit: "contain" }} /><span>CGTIA</span></div>
+      <div class="logo careed-brand" tabindex="0" aria-label="Open menu"><img src="/assets/brand/cgtia-logo.webp" alt="" width="28" height="28" style=${{ width: 28, height: 28, objectFit: "contain" }} /><span>CGTIA</span></div>
       <div class="profile">
         <${Avatar} src=${student?.avatar} name=${name} size=${58} />
         <h2>${name}</h2>
