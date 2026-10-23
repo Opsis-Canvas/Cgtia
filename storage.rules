@@ -41,7 +41,7 @@ service firebase.storage {
     /* dashboard and promotion artwork: admins upload, anyone with the link can view */
     match /dashboard-media/{file} {
       allow read: if true;
-      allow write: if isAdmin() && request.resource.size < 50 * 1024 * 1024
+      allow write: if isAdmin() && request.resource.size < 200 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
     }
 

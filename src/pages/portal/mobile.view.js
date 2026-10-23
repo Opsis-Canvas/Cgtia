@@ -1152,6 +1152,12 @@ function markPopupSeen(id) {
 export function PopupDesign({ slides }) {
   const pool = (slides || []).filter((x) => x.popup && x.kind !== "card" && x.kind !== "story" && (x.imageMobile || x.imageDesktop));
   const [current, setCurrent] = useState(null);
+  // While the pop-up is open the page behind it cannot scroll
+  useEffect(() => {
+    if (!current) return undefined;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [current]);
   useEffect(() => {
     setCurrent(pool.find((x) => !popupSeenToday(x.id)) || null);
   }, [pool.length]);
