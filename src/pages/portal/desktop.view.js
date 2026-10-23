@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, attendanceCard, slideGroups, StoriesSection } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, attendanceCard, slideGroups, StoriesSection, AttendancePage } from "./mobile.view.js";
 import { loadProgress } from "./shared.js";
 
 const html = htm.bind(createElement);
@@ -53,7 +53,7 @@ export function DesktopView({ ctx, deepView }) {
   let main = null;
   if (section === "dashboard") {
     main = html`
-      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} />` : null}
+      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
       ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
       <section class="d-banner">
         <div class="d-banner-copy">
@@ -246,29 +246,9 @@ export function DesktopView({ ctx, deepView }) {
       <${ScheduleList} schedule=${ctx.schedule || []} />
     `;
   } else if (section === "attendance") {
-    const rows = ctx.attendance || [];
-    const present = rows.filter((r) => /present|yes|1|attended/i.test(String(r.status || r.present || ""))).length;
-    const pct = rows.length ? Math.round((present / rows.length) * 100) : null;
     main = html`
       <div class="page-head"><h1 class="display">Attendance</h1><p>Sessions marked by your instructors</p></div>
-      <${AttendanceCalendar} rows=${rows} />
-      ${rows.length ? html`<div class="panel" style=${{ marginTop: 12 }}>
-        <div class="prog-label">${present} present of ${rows.length} recorded · ${pct}%</div>
-        <div class="prog-bar"><i style=${{ width: (pct || 0) + "%" }}></i></div>
-      </div>` : null}
-      <div class="panel lessons" style=${{ marginTop: 12 }}>
-        ${rows.length
-          ? rows.map((r) => {
-              const st = String(r.status || (r.present ? "Present" : "Absent") || "—");
-              const ok = /present|yes|attended/i.test(st);
-              return html`<div class="lesson" key=${r.id}>
-                <span class=${"badge tone-" + (ok ? "lime" : "coral")}>${ok ? "P" : "A"}</span>
-                <span class="lesson-text"><h4>${r.sessionTitle || r.topic || r.module || "Session"}</h4>
-                  <p>${[r.date || r.sessionDate || "", st].filter(Boolean).join(" · ")}</p></span>
-              </div>`;
-            })
-          : html`<${Empty} title="No attendance yet" body="After classes are marked, your presence record will appear here." />`}
-      </div>
+      <${AttendancePage} rows=${ctx.attendance || []} />
     `;
   } else if (section === "certificates") {
     const certs = ctx.certificates || [];

@@ -4,6 +4,7 @@
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import htm from "htm";
 import { getFirebase } from "../services/firebase.service.js";
+import { PopupDesign } from "./portal/mobile.view.js";
 import { OnboardingView } from "./portal/onboarding.view.js";
 import { OnboardingDesktop } from "./portal/onboarding-desktop.view.js";
 import { DesktopView } from "./portal/desktop.view.js";
@@ -264,6 +265,7 @@ async function loadPortalData(user) {
         kind: a.kind === "card" ? "card" : a.kind === "story" ? "story" : "design",
         storyImage: a.storyImage || "",
         overlayText: a.overlayText === true,
+        popup: a.popup === true,
         imageMobile: a.imageMobile || "",
         imageDesktop: a.imageDesktop || "",
         bgMobile: a.bgMobile || "",
@@ -292,6 +294,8 @@ async function loadPortalData(user) {
         title: a.title || "",
         caption: a.caption || "",
         kind: a.kind === "video" ? "video" : "image",
+        linkType: a.linkType === "page" ? "page" : "external",
+        linkPage: a.linkPage || "",
         mediaUrl: a.mediaUrl,
         linkUrl: a.linkUrl || "",
         linkLabel: a.linkLabel || "",
@@ -832,6 +836,7 @@ export function DashboardPage() {
   // Desktop keeps the wide sidebar layout; deep lesson/test flows use the app view
   const deep = /^(course|lesson|test|lcheck|mquiz|fees:|receipt|grade:|notice:)/.test(String(section || ""));
   return html`
+    <${PopupDesign} slides=${data.slides || []} />
     ${isDesktop
       ? html`<${DesktopView} ctx=${ctx} deepView=${deep ? html`<${MobileView} ctx=${ctx} />` : null} />`
       : html`<${MobileView} ctx=${ctx} />`}

@@ -518,7 +518,7 @@ function cardTextStyle(s) {
 /* Stories: a row of round thumbnails. Tapping one opens the full-screen viewer, which plays in order like Instagram:
    progress bars on top, images run for 6 seconds, videos run to their end (up to 60 seconds), tap the left side to go back,
    tap the right side to skip, press and hold to pause, swipe down or press Esc to close. */
-export function StoriesSection({ stories }) {
+export function StoriesSection({ stories, setSection }) {
   const [open, setOpen] = useState(null);
   const list = stories || [];
   if (!list.length) return null;
@@ -533,11 +533,11 @@ export function StoriesSection({ stories }) {
         <span class="story-label">${st.title || "Story"}</span>
       </button>`)}
     </div>
-    ${open !== null ? html`<${StoryViewer} stories=${list} start=${open} onClose=${() => setOpen(null)} />` : null}
+    ${open !== null ? html`<${StoryViewer} stories=${list} start=${open} onClose=${() => setOpen(null)} onOpenPage=${(p) => { if (setSection) setSection(p); }} />` : null}
   </section>`;
 }
 
-export function StoryViewer({ stories, start, onClose }) {
+export function StoryViewer({ stories, start, onClose, onOpenPage }) {
   const IMAGE_MS = 6000;
   const [i, setI] = useState(start || 0);
   const [prog, setProg] = useState(0);
@@ -609,7 +609,7 @@ export function StoryViewer({ stories, start, onClose }) {
       <button type="button" class="sv-zone is-prev" aria-label="Previous story" onClick=${(e) => { e.stopPropagation(); prev(); }}></button>
       <button type="button" class="sv-zone is-next" aria-label="Next story" onClick=${(e) => { e.stopPropagation(); next(); }}></button>
       ${cur.caption ? html`<p class="sv-caption">${cur.caption}</p>` : null}
-      ${cur.linkUrl ? html`<a class="sv-cta" href=${cur.linkUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${cur.linkLabel || "Open"}</a>` : null}
+      ${cur.linkPage ? html`<button type="button" class="sv-cta" onClick=${(e) => { e.stopPropagation(); if (onOpenPage) onOpenPage(cur.linkPage); onClose(); }}>${cur.linkLabel || "Open"}</button>` : (cur.linkUrl ? html`<a class="sv-cta" href=${cur.linkUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${cur.linkLabel || "Open"}</a>` : null)}
     </div>
   </div>`;
 }
@@ -1016,15 +1016,15 @@ function ReviewAnswers({ questions, answers, assessment, student }) {
 }
 
 /* Branded month calendar: green dot = present, plum = absent, gold ring = today */
-export function AttendanceCalendar({ rows }) {
+export function AttendanceCalendar({ rows, onPick, selected }) {
   const now = new Date();
   const [cursor, setCursor] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const marks = {};
   (rows || []).forEach((r) => {
     const k = toDayKey(r.date || r.sessionDate);
     if (!k) return;
-    const st = String(r.status || (r.present ? "Present" : "")).trim().toLowerCase();
-    if (st === "present" || st === "late" || st === "absent" || st === "excused") marks[k] = st;
+    const st = attStatusKey(r);
+    if (st !== "none") marks[k] = st;
   });
   const COLORS = { present: "#0948e6", late: "#b45309", absent: "#b91c1c", excused: "#64748b" };
   const y = cursor.getFullYear();
@@ -1053,12 +1053,17 @@ export function AttendanceCalendar({ rows }) {
         if (d == null) return html`<span key=${"e" + i} class="att-cell is-empty"></span>`;
         const k = keyOf(d);
         const st = marks[k];
-        return html`<span key=${i} class="att-cell" title=${st || ""}
+        const isSel = selected && selected === k;
+        const tappable = !!(onPick && st);
+        return html`<button type="button" key=${i} class=${"att-cell" + (isSel ? " is-selected" : "")} title=${st || ""}
+          disabled=${!tappable}
+          onClick=${() => tappable && onPick(k)}
           style=${{
             background: st ? COLORS[st] : "rgba(255,255,255,0.08)",
             color: st ? "#ffffff" : "#e2e8f0",
-            boxShadow: k === todayKey ? "inset 0 0 0 2px #dcb56b" : "none"
-          }}>${d}</span>`;
+            boxShadow: isSel ? "0 0 0 3px #ffffff, 0 0 0 5px #0948e6" : (k === todayKey ? "inset 0 0 0 2px #dcb56b" : "none"),
+            cursor: tappable ? "pointer" : "default"
+          }}>${d}</button>`;
       })}
     </div>
     <div class="att-legend">
@@ -1068,6 +1073,99 @@ export function AttendanceCalendar({ rows }) {
       <span><i class="dot" style=${{ background: COLORS.excused }}></i>Excused</span>
       <span><i class="dot dot-t"></i>Today</span>
     </div>
+  </div>`;
+}
+
+/* Attendance helpers: one status vocabulary for the calendar, the list and the search */
+function attStatusKey(r) {
+  const st = String(r.status || (r.present ? "Present" : "")).trim().toLowerCase();
+  return ["present", "late", "absent", "excused"].includes(st) ? st : "none";
+}
+function attStatusLabel(r) {
+  const k = attStatusKey(r);
+  return k === "none" ? "Not marked" : k.charAt(0).toUpperCase() + k.slice(1);
+}
+function attTimeRange(r) {
+  if (!r.startTime) return "";
+  return String(r.startTime).slice(0, 5) + (r.endTime ? " – " + String(r.endTime).slice(0, 5) : "");
+}
+
+/* Session details: the class a student tapped on the calendar */
+function SessionDetails({ day, rows, onClose }) {
+  const list = rows || [];
+  return html`<section class="sess-details" aria-label=${"Sessions on " + day}>
+    <div class="sess-head"><strong>${day}</strong><button type="button" class="ls-x" aria-label="Close details" onClick=${onClose}>×</button></div>
+    ${list.length === 0 ? html`<p class="muted">No sessions recorded on this day.</p>` : null}
+    ${list.map((r) => html`<article class="sess-item" key=${r.id}>
+      <div class="sess-top"><strong>${r.sessionTitle || r.courseCode || "Session"}</strong><span class=${"sess-chip s-" + attStatusKey(r)}>${attStatusLabel(r)}</span></div>
+      <dl class="sess-grid">
+        <div><dt>Time</dt><dd>${attTimeRange(r) || "Not set"}</dd></div>
+        <div><dt>Venue</dt><dd>${r.room || "Not set"}</dd></div>
+        <div><dt>Tutor</dt><dd>${r.tutor || "Not set"}</dd></div>
+        <div><dt>Type</dt><dd>${r.sectionType || "Class"}</dd></div>
+        ${r.courseCode ? html`<div><dt>Module</dt><dd>${r.courseCode}</dd></div>` : null}
+      </dl>
+    </article>`)}
+  </section>`;
+}
+
+/* The attendance page: calendar, tap a day for its sessions, and search every session */
+export function AttendancePage({ rows, onBack }) {
+  const [pick, setPick] = useState(null);
+  const [q, setQ] = useState("");
+  const list = (rows || []).slice().sort((a, b) => String(b.date || b.sessionDate || "").localeCompare(String(a.date || a.sessionDate || "")));
+  const dayRows = pick ? list.filter((r) => toDayKey(r.date || r.sessionDate) === pick) : [];
+  const qq = q.trim().toLowerCase();
+  const filtered = list.filter((r) => !qq || [toDayKey(r.date || r.sessionDate), r.sessionTitle, r.courseCode, r.sectionType, r.room, r.tutor, attStatusLabel(r)].filter(Boolean).join(" ").toLowerCase().includes(qq));
+  const { attended, counted, pct } = attendancePct(list);
+  return html`<div class="att-page">
+    <section class="att-summary">
+      <strong>${pct != null ? pct + "%" : "—"}</strong>
+      <span>${counted ? attended + " of " + counted + " sessions attended (late counts as attended, excused is not counted)" : "No sessions marked yet"}</span>
+    </section>
+    <${AttendanceCalendar} rows=${list} selected=${pick} onPick=${(k) => setPick(pick === k ? null : k)} />
+    ${pick ? html`<${SessionDetails} day=${pick} rows=${dayRows} onClose=${() => setPick(null)} />` : null}
+    <div class="att-search">
+      <input type="search" placeholder="Search by date (2026-10-22), session, module, tutor or status" value=${q} onInput=${(e) => setQ(e.target.value)} />
+    </div>
+    <div class="att-list">
+      ${filtered.length
+        ? filtered.map((r) => html`<button type="button" key=${r.id} class="att-row" onClick=${() => setPick(toDayKey(r.date || r.sessionDate))}>
+            <span class=${"att-row-dot s-" + attStatusKey(r)}></span>
+            <span class="att-row-text"><strong>${r.sessionTitle || r.courseCode || "Session"}</strong><small>${toDayKey(r.date || r.sessionDate)} · ${attStatusLabel(r)}${attTimeRange(r) ? " · " + attTimeRange(r) : ""}</small></span>
+          </button>`)
+        : html`<${Empty} title="No sessions match" body="Try a date such as 2026-10-22, a session name, or Present, Absent, Late or Excused." />`}
+    </div>
+  </div>`;
+}
+
+/* Pop-up announcement: a design-system slide marked "show as pop-up". Shows once a day per device. */
+const POPUP_KEY = "cgtia_popup_seen";
+function popupSeenToday(id) {
+  try { const m = JSON.parse(localStorage.getItem(POPUP_KEY) || "{}"); return m[id] === new Date().toDateString(); }
+  catch (_) { return false; }
+}
+function markPopupSeen(id) {
+  try { const m = JSON.parse(localStorage.getItem(POPUP_KEY) || "{}"); m[id] = new Date().toDateString(); localStorage.setItem(POPUP_KEY, JSON.stringify(m)); }
+  catch (_) {}
+}
+export function PopupDesign({ slides }) {
+  const pool = (slides || []).filter((x) => x.popup && x.kind !== "card" && x.kind !== "story" && (x.imageMobile || x.imageDesktop));
+  const [current, setCurrent] = useState(null);
+  useEffect(() => {
+    setCurrent(pool.find((x) => !popupSeenToday(x.id)) || null);
+  }, [pool.length]);
+  if (!current) return null;
+  const close = () => { markPopupSeen(current.id); setCurrent(null); };
+  const activate = () => { if (current.ctaUrl) window.open(current.ctaUrl, "_blank", "noopener"); close(); };
+  return html`<div class="popup-layer" role="dialog" aria-modal="true" aria-label="Announcement">
+    <div class=${"popup-art" + (current.ctaUrl ? " has-link" : "")} onClick=${activate}>
+      <picture>
+        ${current.imageDesktop ? html`<source media="(min-width: 860px)" srcset=${current.imageDesktop} />` : null}
+        <img src=${current.imageMobile || current.imageDesktop} alt=${current.title || ""} />
+      </picture>
+    </div>
+    <button type="button" class="popup-close" aria-label="Close" onClick=${(e) => { e.stopPropagation(); close(); }}>×</button>
   </div>`;
 }
 
@@ -1526,7 +1624,7 @@ export function MobileView({ ctx }) {
         <p class="sm">Hello</p>
         <h1 class="display">${first}</h1>
       </section>
-      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} />` : null}
+      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
       ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
       <section class="m-banner">
         <div class="m-banner-copy">
@@ -1915,29 +2013,9 @@ export function MobileView({ ctx }) {
       <${ScheduleList} schedule=${schedule || []} />
     `;
   } else if (section === "attendance") {
-    const rows = attendance || [];
-    const present = rows.filter((r) => /present|yes|1|attended/i.test(String(r.status || r.present || ""))).length;
-    const pct = rows.length ? Math.round((present / rows.length) * 100) : null;
     body = html`
       <${PageHead} title="Attendance" sub="Sessions marked by your instructors" onBack=${() => setSection("dashboard")} backLabel="Home" />
-      <${AttendanceCalendar} rows=${rows} />
-      ${rows.length ? html`<div class="panel" style=${{ marginTop: 12 }}>
-        <div class="prog-label">${present} present of ${rows.length} recorded · ${pct}%</div>
-        <div class="prog-bar"><i style=${{ width: (pct || 0) + "%" }}></i></div>
-      </div>` : null}
-      <div class="m-list" style=${{ marginTop: 12 }}>
-        ${rows.length
-          ? rows.map((r) => {
-              const st = String(r.status || (r.present ? "Present" : "Absent") || "—");
-              const ok = /present|yes|attended/i.test(st);
-              return html`<${ListCard} key=${r.id}
-                badge=${ok ? "P" : "A"}
-                title=${r.sessionTitle || r.topic || r.module || "Session"}
-                note=${[r.date || r.sessionDate || "", st].filter(Boolean).join(" · ")}
-                tone=${ok ? "lime" : "coral"} />`;
-            })
-          : html`<${Empty} title="No attendance yet" body="After classes are marked, your presence record will appear here." />`}
-      </div>
+      <${AttendancePage} rows=${ctx.attendance || []} />
     `;
   } else if (section === "certificates") {
     const certs = certificates || [];
