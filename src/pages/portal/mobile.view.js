@@ -2063,7 +2063,7 @@ export function MobileView({ ctx }) {
       <div class="m-top-r">
         <button type="button" class="notif-btn" aria-label="Notifications" onClick=${() => setNotifOpen(true)}>
           ${Icon({ name: "bell", size: 18 })}
-          ${unreadNotifs ? html`<span class="dot"></span>` : null}
+          ${unreadNotifs ? html`<span class="notif-count" aria-label=${unreadNotifs + " unread"}>${unreadNotifs > 9 ? "9+" : unreadNotifs}</span>` : null}
         </button>
         <button type="button" class="avatar-btn" aria-label="Profile" onClick=${() => setSection("profile")}>
           <${Avatar} src=${student?.avatar} name=${name} />

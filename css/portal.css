@@ -4081,3 +4081,25 @@ button.sv-cta { border: 0; cursor: pointer; font: inherit; }
 .att-cal .att-cell.is-selected { box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px #0948e6; }
 .att-cal .att-cell:not(:disabled) { cursor: pointer; }
 .att-cal .att-cell:disabled { cursor: default; }
+
+/* ===== Round 26: notifications: slide in from the right, numbered badge, readable night mode ===== */
+.notif-drawer.open .notif-panel { transform: none; animation: notif-slide-in .36s cubic-bezier(.22,1,.36,1) both; }
+.notif-drawer.open .notif-scrim { opacity: 1; animation: notif-fade .25s ease both; }
+@keyframes notif-slide-in { from { transform: translateX(105%); } to { transform: translateX(0); } }
+@keyframes notif-fade { from { opacity: 0; } to { opacity: 1; } }
+.notif-count {
+  position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+  background: #dc2626; color: #fff; font-size: 11px; font-weight: 800; line-height: 20px; text-align: center;
+  box-shadow: 0 0 0 2px #ffffff; pointer-events: none;
+}
+[data-theme="dark"] .notif-count { box-shadow: 0 0 0 2px #0b1020; }
+[data-theme="dark"] .notif-panel { background: #0f172a; color: #f8fafc; box-shadow: -8px 0 30px rgba(0,0,0,0.45); }
+[data-theme="dark"] .notif-head { background: #0f172a; border-bottom-color: #1e293b; }
+[data-theme="dark"] .notif-head strong { color: #f8fafc; }
+[data-theme="dark"] .notif-head .icon-btn { background: #1e293b; color: #f8fafc; }
+[data-theme="dark"] .notif-list { background: #0f172a; }
+[data-theme="dark"] .notif-item { background: #111a2e; border-color: #26324a; }
+[data-theme="dark"] .notif-item.unread { background: #16233f; border-color: #1d4ed8; }
+[data-theme="dark"] .notif-item h4 { color: #f8fafc; }
+[data-theme="dark"] .notif-item p { color: #cbd5e1; }
+[data-theme="dark"] .notif-item time { color: #94a3b8; }
