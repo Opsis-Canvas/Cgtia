@@ -1055,15 +1055,8 @@ export function AttendanceCalendar({ rows, onPick, selected }) {
         const st = marks[k];
         const isSel = selected && selected === k;
         const tappable = !!(onPick && st);
-        return html`<button type="button" key=${i} class=${"att-cell" + (isSel ? " is-selected" : "")} title=${st || ""}
-          disabled=${!tappable}
-          onClick=${() => tappable && onPick(k)}
-          style=${{
-            background: st ? COLORS[st] : "rgba(255,255,255,0.08)",
-            color: st ? "#ffffff" : "#e2e8f0",
-            boxShadow: isSel ? "0 0 0 3px #ffffff, 0 0 0 5px #0948e6" : (k === todayKey ? "inset 0 0 0 2px #dcb56b" : "none"),
-            cursor: tappable ? "pointer" : "default"
-          }}>${d}</button>`;
+        const cls = "att-cell" + (st ? " is-" + st : " is-free") + (isSel ? " is-selected" : "") + (k === todayKey ? " is-today" : "");
+        return html`<button type="button" key=${i} class=${cls} title=${st || ""} disabled=${!(onPick && st)} onClick=${() => onPick && st && onPick(k)}>${d}</button>`;
       })}
     </div>
     <div class="att-legend">
@@ -1128,7 +1121,7 @@ export function AttendancePage({ rows, onBack }) {
     <div class="att-search">
       <input type="search" placeholder="Search by date (2026-10-22), session, module, tutor or status" value=${q} onInput=${(e) => setQ(e.target.value)} />
     </div>
-    <div class="att-list">
+    <div class="att-list" style=${{ display: qq ? "flex" : "none" }}>
       ${filtered.length
         ? filtered.map((r) => html`<button type="button" key=${r.id} class="att-row" onClick=${() => setPick(toDayKey(r.date || r.sessionDate))}>
             <span class=${"att-row-dot s-" + attStatusKey(r)}></span>
