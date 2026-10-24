@@ -4103,3 +4103,13 @@ button.sv-cta { border: 0; cursor: pointer; font: inherit; }
 [data-theme="dark"] .notif-item h4 { color: #f8fafc; }
 [data-theme="dark"] .notif-item p { color: #cbd5e1; }
 [data-theme="dark"] .notif-item time { color: #94a3b8; }
+
+/* ===== Round 29: the admin's text style wins over the portal's own sizes ===== */
+body [data-ts][data-ts] {
+  font-size: var(--ts-size) !important;
+  font-weight: var(--ts-weight) !important;
+  line-height: var(--ts-lh) !important;
+  letter-spacing: var(--ts-ws, 0) !important;
+  letter-spacing: var(--ts-ls) !important;
+  word-spacing: var(--ts-ws) !important;
+}

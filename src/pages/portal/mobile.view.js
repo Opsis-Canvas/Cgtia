@@ -506,10 +506,12 @@ export function ImageFrame({ mobile, desktop, alt }) {
 
 /* Text style set in the admin (size, weight, line height, letter and word spacing) */
 export function textStyleInline(st) {
+  // Set as CSS variables, then applied with a rule that outranks the portal's own !important text sizes
   if (!st) return undefined;
   const v = { size: 16, weight: 400, lineHeight: 1.5, letterSpacing: 0, wordSpacing: 0, ...st };
-  return { fontSize: v.size + "px", fontWeight: v.weight, lineHeight: v.lineHeight, letterSpacing: v.letterSpacing + "px", wordSpacing: v.wordSpacing + "px" };
+  return { "--ts-size": v.size + "px", "--ts-weight": v.weight, "--ts-lh": v.lineHeight, "--ts-ls": v.letterSpacing + "px", "--ts-ws": v.wordSpacing + "px" };
 }
+export function tsAttr(st) { return st ? "1" : undefined; }
 
 /* Placement and type set in the admin: the picture's size and offset, and the heading's size and weight */
 function cardPhStyle(s) {
@@ -615,7 +617,7 @@ export function StoryViewer({ stories, start, onClose, onOpenPage }) {
         : html`<img key=${cur.id} class="sv-media" src=${cur.mediaUrl} alt=${cur.title || ""} />`}
       <button type="button" class="sv-zone is-prev" aria-label="Previous story" onClick=${(e) => { e.stopPropagation(); prev(); }}></button>
       <button type="button" class="sv-zone is-next" aria-label="Next story" onClick=${(e) => { e.stopPropagation(); next(); }}></button>
-      ${cur.caption ? html`<p class="sv-caption" style=${textStyleInline(cur.captionStyle)}>${cur.caption}</p>` : null}
+      ${cur.caption ? html`<p class="sv-caption" data-ts=${tsAttr(cur.captionStyle)} style=${textStyleInline(cur.captionStyle)}>${cur.caption}</p>` : null}
       ${cur.linkPage ? html`<button type="button" class="sv-cta" onClick=${(e) => { e.stopPropagation(); if (onOpenPage) onOpenPage(cur.linkPage); onClose(); }}>${cur.linkLabel || "Open"}</button>` : (cur.linkUrl ? html`<a class="sv-cta" href=${cur.linkUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${cur.linkLabel || "Open"}</a>` : null)}
     </div>
   </div>`;
@@ -670,20 +672,20 @@ export function SlideCarousel({ slides, seconds }) {
         ${s.kind === "story"
           ? html`<div class="slide-story">
               <img class="slide-story-img" src=${s.storyImage} alt=${s.title || ""} loading="lazy" decoding="async" />
-              ${(s.title || s.body) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
+              ${(s.title || s.body) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
             </div>`
           : s.kind === "card"
           ? html`<div class="slide-card">
               ${(s.bgMobile || s.bgDesktop) ? html`<${ImageFrame} mobile=${s.bgMobile} desktop=${s.bgDesktop} alt="" />` : null}
               ${(s.placeholder && s.placeholderMode !== "protrude") ? html`<img class="slide-ph is-inside" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
-              <div class="slide-card-text"><h3 style=${cardTextStyle(s)}>${s.title || ""}</h3>${s.body ? html`<p style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>
+              <div class="slide-card-text"><h3 style=${cardTextStyle(s)}>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>
             </div>
             ${(s.placeholder && s.placeholderMode === "protrude") ? html`<div class="slide-ph-clip"><img class="slide-ph is-protrude" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" /></div>` : null}`
           : html`<div class="slide-design">
               ${(s.imageMobile || s.imageDesktop)
                 ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
-                : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>`}
-              ${(s.overlayText && (s.title || s.body) && (s.imageMobile || s.imageDesktop)) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
+                : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>`}
+              ${(s.overlayText && (s.title || s.body) && (s.imageMobile || s.imageDesktop)) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
             </div>`}
       </article>`)}
       ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
@@ -1587,7 +1589,7 @@ function NotifDrawer({ open, onClose, items, onOpen }) {
               role=${n.linkUrl || n.section ? "button" : undefined}
               onClick=${() => onOpen && onOpen(n)}>
               <h4>${n.title || "Notice"}</h4>
-              <p style=${textStyleInline(n.bodyStyle)}>${n.body || n.message || ""}</p>
+              <p data-ts=${tsAttr(n.bodyStyle)} style=${textStyleInline(n.bodyStyle)}>${n.body || n.message || ""}</p>
               <time>${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString() : ""}</time>
             </article>`)
           : html`<${Empty} title="You're all caught up" body="When the academy posts a notice for you, it will show here." />`}
