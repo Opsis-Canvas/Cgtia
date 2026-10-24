@@ -148,32 +148,47 @@ function ruleFor(key) {
   return activeRules[String(key || "NG").toUpperCase()] || activeRules.DEFAULT || PHONE_RULE_DEFAULTS.DEFAULT;
 }
 
-/* Turns what the person typed into a number we can store. Returns { ok, e164 } or { ok: false, error }. */
-export function normalisePhone(raw, countryKey) {
-  const rule = ruleFor(countryKey);
+/* The rule for the country the person picked: the new country list, or the dial-code dropdown on the current pages */
+function phoneRuleFromPage() {
+  const direct = (document.getElementById("phoneCountry") || {}).value;
+  if (direct) return ruleFor(direct);
+  const dial = ((document.getElementById("countryCodeSelect") || {}).value || "").trim();
+  const hit = Object.keys(activeRules).find((k) => activeRules[k].dial && activeRules[k].dial === dial);
+  if (hit) return activeRules[hit];
+  if (dial) return { name: "your country", dial, minTyped: 6, maxTyped: 12, trunkZero: true, anyLength: true };
+  return activeRules.NG || PHONE_RULE_DEFAULTS.NG;
+}
+
+export function normalisePhoneWithRule(raw, rule) {
   let digits = String(raw || "").replace(/\D/g, "");
   if (!digits) return { ok: false, error: "Enter your phone number." };
   if (!rule.dial) {
     if (digits.length < rule.minTyped || digits.length > rule.maxTyped) return { ok: false, error: "Enter a valid phone number." };
     return { ok: true, e164: "+" + digits };
   }
-  // The person may have typed the country code: 234..., +234...
   const code = rule.dial.replace(/\D/g, "");
   if (digits.startsWith(code) && digits.length > rule.maxTyped) digits = digits.slice(code.length);
-  const trunk = rule.trunkZero ? 1 : 0;
   let national = digits;
   if (rule.trunkZero && national.startsWith("0")) national = national.slice(1);
-  // Accepts the full number with its leading 0, or the same number without it
-  const need = rule.maxTyped - trunk;
-  if (national.length !== need) {
-    return { ok: false, error: "Enter your " + rule.name + " phone number: " + rule.maxTyped + " digits, or " + (rule.maxTyped - 1) + " without the 0." };
+  if (rule.anyLength) {
+    if (national.length < 6 || national.length > 12) return { ok: false, error: "Enter a valid phone number." };
+  } else {
+    const trunk = rule.trunkZero ? 1 : 0;
+    const need = rule.maxTyped - trunk;
+    if (national.length !== need) {
+      return { ok: false, error: "Enter your " + rule.name + " phone number: " + rule.maxTyped + " digits, or " + (rule.maxTyped - 1) + " without the 0." };
+    }
   }
   return { ok: true, e164: rule.dial + national };
 }
 
+export function normalisePhone(raw, countryKey) {
+  return normalisePhoneWithRule(raw, ruleFor(countryKey));
+}
+
 /* Stops the phone box at the number of digits the chosen country allows. */
 function enforcePhoneInput(el) {
-  const rule = ruleFor((document.getElementById("phoneCountry") || {}).value || "NG");
+  const rule = phoneRuleFromPage();
   let digits = String(el.value || "").replace(/\D/g, "");
   const code = rule.dial.replace(/\D/g, "");
   if (code && digits.startsWith(code) && digits.length > rule.maxTyped) digits = digits.slice(code.length);
@@ -209,8 +224,7 @@ export async function handleApplySubmitFlow(event) {
   const fullName = ((document.getElementById("fullNameInput") || {}).value || "").trim();
   await loadPhoneRules();
   const phoneRaw = ((document.getElementById("phoneInput") || {}).value || "").trim();
-  const phoneCountry = (document.getElementById("phoneCountry") || {}).value || "NG";
-  const phoneCheck = normalisePhone(phoneRaw, phoneCountry);
+  const phoneCheck = normalisePhoneWithRule(phoneRaw, phoneRuleFromPage());
   if (phoneRaw && !phoneCheck.ok) {
     const pi = document.getElementById("phoneInput");
     if (pi) { pi.setCustomValidity(phoneCheck.error); pi.reportValidity(); pi.setCustomValidity(""); }
