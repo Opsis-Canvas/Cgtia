@@ -302,6 +302,10 @@ service cloud.firestore {
     }
 
     /* partners list and other site content blobs */
+    /* Draft and history of the main application. Staff only. The public site reads only the live version. */
+    match /siteContent/applyFormDraft { allow read, write: if isAdmin() || isStaff(); }
+    match /applyFormHistory/{id} { allow read, write: if isAdmin() || isStaff(); }
+
     match /siteContent/{docId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();

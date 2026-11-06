@@ -52,7 +52,11 @@ export function ExamTakePage() {
   useEffect(() => {
     let alive = true;
     fetch("/api/exam-link?token=" + encodeURIComponent(token))
-      .then((r) => r.json())
+      .then(async (r) => {
+        const text = await r.text();
+        try { return JSON.parse(text); }
+        catch (e) { throw new Error("The server answered with HTTP " + r.status + " but not with exam data (" + text.slice(0, 60).replace(/\s+/g, " ") + ")."); }
+      })
       .then((d) => {
         if (!alive) return;
         if (!d.valid) { setError(d.error || "This link is not valid."); setPhase("invalid"); return; }
@@ -60,7 +64,7 @@ export function ExamTakePage() {
         setName(d.email ? "" : "");
         setPhase("intro");
       })
-      .catch(() => { if (alive) { setError("Could not check this link. Try again later."); setPhase("invalid"); } });
+      .catch((e) => { if (alive) { setError("Could not check this link. " + (e && e.message ? e.message : "Try again later.")); setPhase("invalid"); } });
     return () => { alive = false; };
   }, []);
 
