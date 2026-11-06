@@ -5,6 +5,7 @@
  * --------------------------------------------------------
  */
 
+import { SITE_HEADER, SITE_FOOTER, markActiveLinks } from "./site-shell.js";
 import { createElement, useEffect, useLayoutEffect, useRef } from "react";
 import htm from "htm";
 import { hydrateWallOfFameUI } from "../../services/wall-of-fame.service.js";
@@ -13,6 +14,15 @@ const html = htm.bind(createElement);
 
 export const OriginalPage = ({ markup }) => {
   const ref = useRef(null);
+
+  useEffect(() => { markActiveLinks(window.location.pathname); }, [markup]);
+
+  useEffect(() => {
+    // Forms the admin placed on this page appear as buttons (set up in the admin's Forms tab)
+    import("../../services/form-launchers.service.js")
+      .then((m) => m.mountFormLaunchers(window.location.pathname))
+      .catch(() => {});
+  }, [markup]);
 
   useLayoutEffect(() => {
     // Saved wording and cards go in before the browser paints, so no hard-coded text flashes
@@ -133,7 +143,7 @@ export const OriginalPage = ({ markup }) => {
   return html`
     <div
       ref=${ref}
-      dangerouslySetInnerHTML=${{ __html: markup }}
+      dangerouslySetInnerHTML=${{ __html: SITE_HEADER + markup + SITE_FOOTER }}
     ></div>
   `;
 };

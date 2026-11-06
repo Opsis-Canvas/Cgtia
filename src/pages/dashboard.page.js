@@ -201,6 +201,7 @@ async function loadPortalData(user) {
     snap.forEach((d) => {
       const a = { id: d.id, ...d.data() };
       if (a.active === false) return;
+      if (a.type === "exam") return;
       if (row && row.program && a.program && String(a.program).toLowerCase() !== String(row.program).toLowerCase()) return;
       assessments.push(a);
     });

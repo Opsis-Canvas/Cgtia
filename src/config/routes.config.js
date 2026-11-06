@@ -21,5 +21,8 @@ export const ROUTES = {
   FIELD_CHECK: "/field-check/confirm",
   FAQ: "/faq",
   LICENSING_COMPLETE: "/licensing/complete",
-  PAY_FEE: "/pay-fee"
+  PAY_FEE: "/pay-fee",
+  FORM_LINK: "/apply-form/confirm",
+  FORM_OPEN: "/apply-form",
+  EXAM_TAKE: "/exam/take"
 };

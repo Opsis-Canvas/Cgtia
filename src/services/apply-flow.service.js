@@ -144,7 +144,7 @@ export async function loadPhoneRules() {
   return activeRules;
 }
 
-function ruleFor(key) {
+export function ruleFor(key) {
   return activeRules[String(key || "NG").toUpperCase()] || activeRules.DEFAULT || PHONE_RULE_DEFAULTS.DEFAULT;
 }
 

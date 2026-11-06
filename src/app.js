@@ -58,6 +58,9 @@ const routeTable = {
   [ROUTES.DASHBOARD]: lazy(() => import("./pages/dashboard.page.js"), "DashboardPage"),
   [ROUTES.WALL_OF_FAME]: lazy(() => import("./pages/wall-of-fame.page.js"), "WallOfFamePage"),
   [ROUTES.PAY_FEE]: async () => function PayFeePage() { return null; },
+  [ROUTES.FORM_LINK]: lazy(() => import("./pages/apply-form.page.js"), "ApplyFormPage"),
+  [ROUTES.FORM_OPEN]: lazy(() => import("./pages/apply-form.page.js"), "ApplyFormPage"),
+  [ROUTES.EXAM_TAKE]: lazy(() => import("./pages/exam-take.page.js"), "ExamTakePage"),
   "/index": lazy(() => import("./pages/home.page.js"), "HomePage"),
   __notfound__: () => NotFoundPage
 };

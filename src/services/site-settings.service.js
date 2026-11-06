@@ -1,4 +1,5 @@
 import { renderProgramCards } from "./tuition-cards.service.js";
+import { renderWebsiteHighlights } from "./website-highlights.service.js";
 /**
  * Load admin-controlled site settings: cohort label, year, program start dates & modality
  */
@@ -275,7 +276,7 @@ export function applyLegalPages(lp) {
 const CF_CLASS = "w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition";
 export function applyCustomFields(cfg) {
   const mount = document.getElementById("applyCustomFields");
-  const fields = cfg && Array.isArray(cfg.customFields) ? cfg.customFields.filter((f) => f && f.label) : [];
+  const fields = cfg && cfg.useEdited !== false && Array.isArray(cfg.customFields) ? cfg.customFields.filter((f) => f && f.label) : [];
   window.__cgtiaApplyFields = fields;
   if (!mount) return;
   const anyHalf = fields.some((f) => f.width === "half");
@@ -416,10 +417,24 @@ function applyProgramsPage(pp) {
 }
 
 /** Applies admin-edited tuition wording to any element marked data-cms / data-cms-list */
+function afStyle(el, st) {
+  if (!st || typeof st !== "object") return;
+  const set = (prop, v) => el.style.setProperty(prop, String(v), "important");
+  if (st.size) set("font-size", st.size + "px");
+  if (st.weight) set("font-weight", st.weight);
+  if (st.lineHeight) set("line-height", st.lineHeight);
+  if (st.letterSpacing !== undefined && st.letterSpacing !== null) set("letter-spacing", st.letterSpacing + "px");
+  if (st.wordSpacing !== undefined && st.wordSpacing !== null) set("word-spacing", st.wordSpacing + "px");
+}
+
 export function applyTuitionPage(tp) {
-  if (!tp) return;
+  // Standby: when the admin has the edited version switched off, the page keeps its default wording
+  if (!tp || tp.useEdited === false) return;
   document.querySelectorAll("[data-cms]").forEach((el) => {
-    const v = tp[el.getAttribute("data-cms")];
+    const key = el.getAttribute("data-cms");
+    const v = tp[key];
+    // An earlier admin saved this label without "(Optional)": keep the page's own wording until it is edited
+    if (key === "labelMessage" && typeof v === "string" && v.trim() === "Tell us a little about you") return;
     if (typeof v === "string" && v.trim()) el.textContent = v;
   });
   document.querySelectorAll("[data-cms-list]").forEach((el) => {
@@ -428,13 +443,31 @@ export function applyTuitionPage(tp) {
       : [];
     if (items.length) el.innerHTML = items.map((t) => "<p>" + escapeText(t) + "</p>").join("");
   });
+  // Apply form: hints inside boxes, bold text, box height, hide or show, and text style
+  document.querySelectorAll("[data-cms-ph]").forEach((el) => {
+    const v = tp[el.getAttribute("data-cms-ph")];
+    if (typeof v === "string" && v.trim()) el.setAttribute("placeholder", v);
+  });
+  document.querySelectorAll("[data-cms-rich]").forEach((el) => {
+    const v = tp[el.getAttribute("data-cms-rich")];
+    if (typeof v === "string" && v.trim()) el.innerHTML = escapeText(v).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  });
+  document.querySelectorAll("[data-cms-rows]").forEach((el) => {
+    const n = Number(tp[el.getAttribute("data-cms-rows")]);
+    if (n >= 2 && n <= 12) el.setAttribute("rows", String(Math.round(n)));
+  });
+  document.querySelectorAll("[data-cms-show]").forEach((el) => {
+    el.style.display = tp[el.getAttribute("data-cms-show")] === false ? "none" : "";
+  });
+  const afStyles = { title: tp.afTitleStyle, label: tp.afLabelStyle, help: tp.afHelpStyle };
+  document.querySelectorAll("[data-af]").forEach((el) => afStyle(el, afStyles[el.getAttribute("data-af")]));
 }
 
 /**
  * Pages are rendered after startup (lazy routes), so saved wording, programme
  * cards, terms and the apply form must be applied again each time a page appears.
  */
-const WATCH_SELECTOR = "[data-cms],[data-cms-list],[data-cms-sections],#applyCustomFields,#cgtiaTuitionProgramCards,#cgtiaHomeProgramCards";
+const WATCH_SELECTOR = "[data-cms],[data-cms-list],[data-cms-sections],[data-cms-ph],[data-cms-rich],[data-cms-rows],[data-cms-show],#applyCustomFields,#siteHighlights,#cgtiaTuitionProgramCards,#cgtiaHomeProgramCards";
 
 export function reapplyDynamicContent() {
   try { applyProgramsPage((window.__cgtiaSiteSettings || {}).programsPage); } catch (e) {}
@@ -448,6 +481,7 @@ export function reapplyDynamicContent() {
   applyLegalPages(s.legalPages);
   applyCustomFields(s.applyForm);
   try { renderProgramCards(s); } catch (e) { /* ignore */ }
+  try { renderWebsiteHighlights(); } catch (e) { /* ignore */ }
 }
 
 /** Generic: string fields → [data-cms="key"]; string[] → [data-cms-list="key"] as <p>s; object[] for known section hosts */
