@@ -504,6 +504,15 @@ export function ImageFrame({ mobile, desktop, alt }) {
   </picture>`;
 }
 
+/* Text style set in the admin (size, weight, line height, letter and word spacing) */
+export function textStyleInline(st) {
+  // Set as CSS variables, then applied with a rule that outranks the portal's own !important text sizes
+  if (!st) return undefined;
+  const v = { size: 16, weight: 400, lineHeight: 1.5, letterSpacing: 0, wordSpacing: 0, ...st };
+  return { "--ts-size": v.size + "px", "--ts-weight": v.weight, "--ts-lh": v.lineHeight, "--ts-ls": v.letterSpacing + "px", "--ts-ws": v.wordSpacing + "px" };
+}
+export function tsAttr(st) { return st ? "1" : undefined; }
+
 /* Placement and type set in the admin: the picture's size and offset, and the heading's size and weight */
 function cardPhStyle(s) {
   const sc = (Number(s.phScale) || 100) / 100;
@@ -515,13 +524,114 @@ function cardTextStyle(s) {
   return { fontSize: (Number(s.textSize) || 24) + "px", fontWeight: Number(s.textWeight) || 800 };
 }
 
+/* Stories: a row of round thumbnails. Tapping one opens the full-screen viewer, which plays in order like Instagram:
+   progress bars on top, images run for 6 seconds, videos run to their end (up to 60 seconds), tap the left side to go back,
+   tap the right side to skip, press and hold to pause, swipe down or press Esc to close. */
+export function StoriesSection({ stories, setSection }) {
+  const [open, setOpen] = useState(null);
+  const list = stories || [];
+  if (!list.length) return null;
+  return html`<section class="stories" aria-label="Stories">
+    <div class="stories-track">
+      ${list.map((st, i) => html`<button type="button" key=${st.id} class="story-bubble" onClick=${() => setOpen(i)} aria-label=${"Open story: " + (st.title || "Story " + (i + 1))}>
+        <span class="story-ring"><span class="story-thumb">
+          ${st.kind === "video"
+            ? html`<video src=${st.mediaUrl + "#t=0.1"} muted playsinline preload="metadata"></video>`
+            : html`<img src=${st.mediaUrl} alt="" loading="lazy" decoding="async" />`}
+        </span></span>
+        <span class="story-label">${st.title || "Story"}</span>
+      </button>`)}
+    </div>
+    ${open !== null ? html`<${StoryViewer} stories=${list} start=${open} onClose=${() => setOpen(null)} onOpenPage=${(p) => { if (setSection) setSection(p); }} />` : null}
+  </section>`;
+}
+
+export function StoryViewer({ stories, start, onClose, onOpenPage }) {
+  const IMAGE_MS = 6000;
+  const [i, setI] = useState(start || 0);
+  const [prog, setProg] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const progRef = useRef(0);
+  const vid = useRef(null);
+  const touchY = useRef(null);
+  const cur = stories[i];
+  const lastIdx = stories.length - 1;
+  const setP = (p) => { progRef.current = p; setProg(p); };
+  const next = () => { if (i < lastIdx) setI(i + 1); else onClose(); };
+  const prev = () => { if (i > 0) setI(i - 1); else setP(0); };
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") next();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", onKey); };
+  });
+
+  // A new story starts from zero
+  useEffect(() => { setP(0); }, [i]);
+
+  // Images: the bar fills over IMAGE_MS, then the next story starts
+  useEffect(() => {
+    if (!cur || cur.kind === "video" || paused) return undefined;
+    let raf = 0;
+    const t0 = performance.now() - progRef.current * IMAGE_MS;
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / IMAGE_MS);
+      setP(p);
+      if (p >= 1) { next(); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [i, paused]);
+
+  // Videos: play or pause with the hold gesture
+  useEffect(() => {
+    const v = vid.current;
+    if (!v) return;
+    if (paused) v.pause();
+    else v.play().catch(() => {});
+  }, [paused, i]);
+
+  if (!cur) return null;
+  return html`<div class="sv-backdrop" role="dialog" aria-modal="true" aria-label="Story viewer">
+    <div class="sv-stage"
+      onPointerDown=${() => setPaused(true)} onPointerUp=${() => setPaused(false)} onPointerCancel=${() => setPaused(false)} onPointerLeave=${() => setPaused(false)}
+      onTouchStart=${(e) => { touchY.current = e.touches[0].clientY; }}
+      onTouchEnd=${(e) => { if (touchY.current != null && e.changedTouches[0].clientY - touchY.current > 90) onClose(); touchY.current = null; }}>
+      <div class="sv-progress">
+        ${stories.map((_, k) => html`<span key=${k} class="sv-seg"><i style=${{ width: k < i ? "100%" : k === i ? (prog * 100) + "%" : "0%" }}></i></span>`)}
+      </div>
+      <div class="sv-top">
+        <div class="sv-who"><strong>CGTIA</strong><small>${cur.title || ""}</small></div>
+        <button type="button" class="sv-close" aria-label="Close stories" onClick=${(e) => { e.stopPropagation(); onClose(); }}>×</button>
+      </div>
+      ${cur.kind === "video"
+        ? html`<video ref=${vid} key=${cur.id} class="sv-media" src=${cur.mediaUrl} autoPlay playsInline
+            onTimeUpdate=${(e) => { const v = e.currentTarget; if (v.duration) setP(v.currentTime / v.duration); }}
+            onEnded=${() => next()}></video>`
+        : html`<img key=${cur.id} class="sv-media" src=${cur.mediaUrl} alt=${cur.title || ""} />`}
+      <button type="button" class="sv-zone is-prev" aria-label="Previous story" onClick=${(e) => { e.stopPropagation(); prev(); }}></button>
+      <button type="button" class="sv-zone is-next" aria-label="Next story" onClick=${(e) => { e.stopPropagation(); next(); }}></button>
+      ${cur.caption ? html`<p class="sv-caption" data-ts=${tsAttr(cur.captionStyle)} style=${textStyleInline(cur.captionStyle)}>${cur.caption}</p>` : null}
+      ${cur.linkPage ? html`<button type="button" class="sv-cta" onClick=${(e) => { e.stopPropagation(); if (onOpenPage) onOpenPage(cur.linkPage); onClose(); }}>${cur.linkLabel || "Open"}</button>` : (cur.linkUrl ? html`<a class="sv-cta" href=${cur.linkUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${cur.linkLabel || "Open"}</a>` : null)}
+    </div>
+  </div>`;
+}
+
 /* Cards and designs are separate carousels: card carousel above, design carousel below, each with its own rotation */
 export function slideGroups(slides, seconds) {
   const all = slides || [];
   const cards = all.filter((x) => x.kind === "card");
-  const designs = all.filter((x) => x.kind !== "card");
+  const designs = all.filter((x) => x.kind !== "card" && x.kind !== "story");
+  const stories = all.filter((x) => x.kind === "story");
   return html`${cards.length ? html`<${SlideCarousel} key="cards" slides=${cards} seconds=${seconds} />` : null}
-    ${designs.length ? html`<${SlideCarousel} key="designs" slides=${designs} seconds=${seconds} />` : null}`;
+    ${designs.length ? html`<${SlideCarousel} key="designs" slides=${designs} seconds=${seconds} />` : null}
+    ${stories.length ? html`<${SlideCarousel} key="stories" slides=${stories} seconds=${seconds} />` : null}`;
 }
 
 /* Dashboard carousel: admin-managed slides. A "design" slide is the designer's artwork. A "card" slide is a background
@@ -545,7 +655,8 @@ export function SlideCarousel({ slides, seconds }) {
   const resume = () => setPaused(false);
   const hasProtrude = list.some((x) => x.kind === "card" && x.placeholder && x.placeholderMode === "protrude");
   const isCardNow = !!(list[safeIdx] && list[safeIdx].kind === "card");
-  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
+  const isStoryNow = !!(list[safeIdx] && list[safeIdx].kind === "story");
+  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "") + (isStoryNow ? " is-story-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
       onMouseEnter=${pause} onMouseLeave=${resume}
       onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
       onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
@@ -556,19 +667,28 @@ export function SlideCarousel({ slides, seconds }) {
         if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
       }}>
     <div class="slides-stage">
-      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}>
-        ${s.kind === "card"
+      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
+          onClick=${() => { if (s.ctaUrl && k === safeIdx) window.open(s.ctaUrl, "_blank", "noopener"); }}>
+        ${s.kind === "story"
+          ? html`<div class="slide-story">
+              <img class="slide-story-img" src=${s.storyImage} alt=${s.title || ""} loading="lazy" decoding="async" />
+              ${(s.title || s.body) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
+            </div>`
+          : s.kind === "card"
           ? html`<div class="slide-card">
               ${(s.bgMobile || s.bgDesktop) ? html`<${ImageFrame} mobile=${s.bgMobile} desktop=${s.bgDesktop} alt="" />` : null}
               ${(s.placeholder && s.placeholderMode !== "protrude") ? html`<img class="slide-ph is-inside" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" />` : null}
-              <div class="slide-card-text"><h3 style=${cardTextStyle(s)}>${s.title || ""}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>
+              <div class="slide-card-text"><h3 style=${cardTextStyle(s)}>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>
             </div>
             ${(s.placeholder && s.placeholderMode === "protrude") ? html`<div class="slide-ph-clip"><img class="slide-ph is-protrude" style=${cardPhStyle(s)} src=${s.placeholder} alt="" loading="lazy" decoding="async" /></div>` : null}`
-          : ((s.imageMobile || s.imageDesktop)
-            ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
-            : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p>${s.body}</p>` : null}</div>`)}
+          : html`<div class="slide-design">
+              ${(s.imageMobile || s.imageDesktop)
+                ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
+                : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>`}
+              ${(s.overlayText && (s.title || s.body) && (s.imageMobile || s.imageDesktop)) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
+            </div>`}
       </article>`)}
-      ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener">${list[safeIdx].ctaLabel || "Learn more"} →</a>` : null}
+      ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
     </div>
     ${list.length > 1 ? html`<div class="slides-dots">
       ${list.map((_, k) => html`<button type="button" key=${k} class=${"slides-dot" + (k === safeIdx ? " on" : "")} aria-label=${"Show slide " + (k + 1)} onClick=${() => go(k)}></button>`)}
@@ -905,15 +1025,17 @@ function ReviewAnswers({ questions, answers, assessment, student }) {
 }
 
 /* Branded month calendar: green dot = present, plum = absent, gold ring = today */
-export function AttendanceCalendar({ rows }) {
+export function AttendanceCalendar({ rows, onPick, selected }) {
   const now = new Date();
   const [cursor, setCursor] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const marks = {};
   (rows || []).forEach((r) => {
     const k = toDayKey(r.date || r.sessionDate);
     if (!k) return;
-    marks[k] = /present|yes|attended/i.test(String(r.status || r.present || "")) ? "P" : "A";
+    const st = attStatusKey(r);
+    if (st !== "none") marks[k] = st;
   });
+  const COLORS = { present: "#0948e6", late: "#b45309", absent: "#b91c1c", excused: "#64748b" };
   const y = cursor.getFullYear();
   const m = cursor.getMonth();
   const lead = new Date(y, m, 1).getDay();
@@ -922,16 +1044,16 @@ export function AttendanceCalendar({ rows }) {
   for (let i = 0; i < lead; i++) cells.push(null);
   for (let d = 1; d <= days; d++) cells.push(d);
   const keyOf = (d) => y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
-  const todayKey = y === now.getFullYear() && m === now.getMonth() ? toDayKey(now) : "";
-  // toDayKey reads Date-like values via toDate(); build a local key for "today"
-  const todayLocal = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  const todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
   const monthName = cursor.toLocaleString("en-GB", { month: "long" });
-  const monthRows = Object.keys(marks).filter((k) => k.startsWith(y + "-" + String(m + 1).padStart(2, "0")));
-  const monthPresent = monthRows.filter((k) => marks[k] === "P").length;
+  const monthPrefix = y + "-" + String(m + 1).padStart(2, "0");
+  const monthKeys = Object.keys(marks).filter((k) => k.startsWith(monthPrefix));
+  const attended = monthKeys.filter((k) => marks[k] === "present" || marks[k] === "late").length;
+  const counted = monthKeys.filter((k) => marks[k] !== "excused").length;
   return html`<div class="att-cal">
     <div class="att-head">
       <button type="button" class="att-nav" aria-label="Previous month" onClick=${() => setCursor(new Date(y, m - 1, 1))}>‹</button>
-      <div class="att-title"><strong>${monthName} ${y}</strong><span>${monthRows.length ? monthPresent + " of " + monthRows.length + " present" : "No sessions marked"}</span></div>
+      <div class="att-title"><strong>${monthName} ${y}</strong><span>${counted ? attended + " of " + counted + " attended" : "No sessions marked this month"}</span></div>
       <button type="button" class="att-nav" aria-label="Next month" onClick=${() => setCursor(new Date(y, m + 1, 1))}>›</button>
     </div>
     <div class="att-dow">${["S", "M", "T", "W", "T", "F", "S"].map((d, i) => html`<span key=${i}>${d}</span>`)}</div>
@@ -939,12 +1061,119 @@ export function AttendanceCalendar({ rows }) {
       ${cells.map((d, i) => {
         if (d == null) return html`<span key=${"e" + i} class="att-cell is-empty"></span>`;
         const k = keyOf(d);
-        const st = marks[k] || "";
-        const cls = "att-cell" + (st === "P" ? " is-p" : st === "A" ? " is-a" : "") + (k === todayLocal ? " is-today" : "");
-        return html`<span key=${i} class=${cls}>${d}</span>`;
+        const st = marks[k];
+        const isSel = selected && selected === k;
+        const tappable = !!(onPick && st);
+        const cls = "att-cell" + (st ? " is-" + st : " is-free") + (isSel ? " is-selected" : "") + (k === todayKey ? " is-today" : "");
+        return html`<button type="button" key=${i} class=${cls} title=${st || ""} disabled=${!(onPick && st)} onClick=${() => onPick && st && onPick(k)}>${d}</button>`;
       })}
     </div>
-    <div class="att-legend"><span><i class="dot dot-p"></i>Present</span><span><i class="dot dot-a"></i>Absent</span><span><i class="dot dot-t"></i>Today</span></div>
+    <div class="att-legend">
+      <span><i class="dot" style=${{ background: COLORS.present }}></i>Present</span>
+      <span><i class="dot" style=${{ background: COLORS.late }}></i>Late</span>
+      <span><i class="dot" style=${{ background: COLORS.absent }}></i>Absent</span>
+      <span><i class="dot" style=${{ background: COLORS.excused }}></i>Excused</span>
+      <span><i class="dot dot-t"></i>Today</span>
+    </div>
+  </div>`;
+}
+
+/* Attendance helpers: one status vocabulary for the calendar, the list and the search */
+function attStatusKey(r) {
+  const st = String(r.status || (r.present ? "Present" : "")).trim().toLowerCase();
+  return ["present", "late", "absent", "excused"].includes(st) ? st : "none";
+}
+function attStatusLabel(r) {
+  const k = attStatusKey(r);
+  return k === "none" ? "Not marked" : k.charAt(0).toUpperCase() + k.slice(1);
+}
+function attTimeRange(r) {
+  if (!r.startTime) return "";
+  return String(r.startTime).slice(0, 5) + (r.endTime ? " – " + String(r.endTime).slice(0, 5) : "");
+}
+
+/* Session details: the class a student tapped on the calendar */
+function SessionDetails({ day, rows, onClose }) {
+  const list = rows || [];
+  return html`<section class="sess-details" aria-label=${"Sessions on " + day}>
+    <div class="sess-head"><strong>${day}</strong><button type="button" class="ls-x" aria-label="Close details" onClick=${onClose}>×</button></div>
+    ${list.length === 0 ? html`<p class="muted">No sessions recorded on this day.</p>` : null}
+    ${list.map((r) => html`<article class="sess-item" key=${r.id}>
+      <div class="sess-top"><strong>${r.sessionTitle || r.courseCode || "Session"}</strong><span class=${"sess-chip s-" + attStatusKey(r)}>${attStatusLabel(r)}</span></div>
+      <dl class="sess-grid">
+        <div><dt>Time</dt><dd>${attTimeRange(r) || "Not set"}</dd></div>
+        <div><dt>Venue</dt><dd>${r.room || "Not set"}</dd></div>
+        <div><dt>Tutor</dt><dd>${r.tutor || "Not set"}</dd></div>
+        <div><dt>Type</dt><dd>${r.sectionType || "Class"}</dd></div>
+        ${r.courseCode ? html`<div><dt>Module</dt><dd>${r.courseCode}</dd></div>` : null}
+      </dl>
+    </article>`)}
+  </section>`;
+}
+
+/* The attendance page: calendar, tap a day for its sessions, and search every session */
+export function AttendancePage({ rows, onBack }) {
+  const [pick, setPick] = useState(null);
+  const [q, setQ] = useState("");
+  const list = (rows || []).slice().sort((a, b) => String(b.date || b.sessionDate || "").localeCompare(String(a.date || a.sessionDate || "")));
+  const dayRows = pick ? list.filter((r) => toDayKey(r.date || r.sessionDate) === pick) : [];
+  const qq = q.trim().toLowerCase();
+  const filtered = list.filter((r) => !qq || [toDayKey(r.date || r.sessionDate), r.sessionTitle, r.courseCode, r.sectionType, r.room, r.tutor, attStatusLabel(r)].filter(Boolean).join(" ").toLowerCase().includes(qq));
+  const { attended, counted, pct } = attendancePct(list);
+  return html`<div class="att-page">
+    <section class="att-summary">
+      <strong>${pct != null ? pct + "%" : "—"}</strong>
+      <span>${counted ? attended + " of " + counted + " sessions attended (late counts as attended, excused is not counted)" : "No sessions marked yet"}</span>
+    </section>
+    <${AttendanceCalendar} rows=${list} selected=${pick} onPick=${(k) => setPick(pick === k ? null : k)} />
+    ${pick ? html`<${SessionDetails} day=${pick} rows=${dayRows} onClose=${() => setPick(null)} />` : null}
+    <div class="att-search">
+      <input type="search" placeholder="Search by date (2026-10-22), session, module, tutor or status" value=${q} onInput=${(e) => setQ(e.target.value)} />
+    </div>
+    <div class="att-list" style=${{ display: qq ? "flex" : "none" }}>
+      ${filtered.length
+        ? filtered.map((r) => html`<button type="button" key=${r.id} class="att-row" onClick=${() => setPick(toDayKey(r.date || r.sessionDate))}>
+            <span class=${"att-row-dot s-" + attStatusKey(r)}></span>
+            <span class="att-row-text"><strong>${r.sessionTitle || r.courseCode || "Session"}</strong><small>${toDayKey(r.date || r.sessionDate)} · ${attStatusLabel(r)}${attTimeRange(r) ? " · " + attTimeRange(r) : ""}</small></span>
+          </button>`)
+        : html`<${Empty} title="No sessions match" body="Try a date such as 2026-10-22, a session name, or Present, Absent, Late or Excused." />`}
+    </div>
+  </div>`;
+}
+
+/* Pop-up announcement: a design-system slide marked "show as pop-up". Shows once a day per device. */
+const POPUP_KEY = "cgtia_popup_seen";
+function popupSeenToday(id) {
+  try { const m = JSON.parse(localStorage.getItem(POPUP_KEY) || "{}"); return m[id] === new Date().toDateString(); }
+  catch (_) { return false; }
+}
+function markPopupSeen(id) {
+  try { const m = JSON.parse(localStorage.getItem(POPUP_KEY) || "{}"); m[id] = new Date().toDateString(); localStorage.setItem(POPUP_KEY, JSON.stringify(m)); }
+  catch (_) {}
+}
+export function PopupDesign({ slides }) {
+  const pool = (slides || []).filter((x) => x.popup && x.kind !== "card" && x.kind !== "story" && (x.imageMobile || x.imageDesktop));
+  const [current, setCurrent] = useState(null);
+  // While the pop-up is open the page behind it cannot scroll
+  useEffect(() => {
+    if (!current) return undefined;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [current]);
+  useEffect(() => {
+    setCurrent(pool.find((x) => !popupSeenToday(x.id)) || null);
+  }, [pool.length]);
+  if (!current) return null;
+  const close = () => { markPopupSeen(current.id); setCurrent(null); };
+  const activate = () => { if (current.ctaUrl) window.open(current.ctaUrl, "_blank", "noopener"); close(); };
+  return html`<div class="popup-layer" role="dialog" aria-modal="true" aria-label="Announcement">
+    <div class=${"popup-art" + (current.ctaUrl ? " has-link" : "")} onClick=${activate}>
+      <picture>
+        ${current.imageDesktop ? html`<source media="(min-width: 860px)" srcset=${current.imageDesktop} />` : null}
+        <img src=${current.imageMobile || current.imageDesktop} alt=${current.title || ""} />
+      </picture>
+    </div>
+    <button type="button" class="popup-close" aria-label="Close" onClick=${(e) => { e.stopPropagation(); close(); }}>×</button>
   </div>`;
 }
 
@@ -1360,7 +1589,7 @@ function NotifDrawer({ open, onClose, items, onOpen }) {
               role=${n.linkUrl || n.section ? "button" : undefined}
               onClick=${() => onOpen && onOpen(n)}>
               <h4>${n.title || "Notice"}</h4>
-              <p>${n.body || n.message || ""}</p>
+              <p data-ts=${tsAttr(n.bodyStyle)} style=${textStyleInline(n.bodyStyle)}>${n.body || n.message || ""}</p>
               <time>${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString() : ""}</time>
             </article>`)
           : html`<${Empty} title="You're all caught up" body="When the academy posts a notice for you, it will show here." />`}
@@ -1403,6 +1632,7 @@ export function MobileView({ ctx }) {
         <p class="sm">Hello</p>
         <h1 class="display">${first}</h1>
       </section>
+      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
       ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
       <section class="m-banner">
         <div class="m-banner-copy">
@@ -1791,29 +2021,9 @@ export function MobileView({ ctx }) {
       <${ScheduleList} schedule=${schedule || []} />
     `;
   } else if (section === "attendance") {
-    const rows = attendance || [];
-    const present = rows.filter((r) => /present|yes|1|attended/i.test(String(r.status || r.present || ""))).length;
-    const pct = rows.length ? Math.round((present / rows.length) * 100) : null;
     body = html`
       <${PageHead} title="Attendance" sub="Sessions marked by your instructors" onBack=${() => setSection("dashboard")} backLabel="Home" />
-      <${AttendanceCalendar} rows=${rows} />
-      ${rows.length ? html`<div class="panel" style=${{ marginTop: 12 }}>
-        <div class="prog-label">${present} present of ${rows.length} recorded · ${pct}%</div>
-        <div class="prog-bar"><i style=${{ width: (pct || 0) + "%" }}></i></div>
-      </div>` : null}
-      <div class="m-list" style=${{ marginTop: 12 }}>
-        ${rows.length
-          ? rows.map((r) => {
-              const st = String(r.status || (r.present ? "Present" : "Absent") || "—");
-              const ok = /present|yes|attended/i.test(st);
-              return html`<${ListCard} key=${r.id}
-                badge=${ok ? "P" : "A"}
-                title=${r.sessionTitle || r.topic || r.module || "Session"}
-                note=${[r.date || r.sessionDate || "", st].filter(Boolean).join(" · ")}
-                tone=${ok ? "lime" : "coral"} />`;
-            })
-          : html`<${Empty} title="No attendance yet" body="After classes are marked, your presence record will appear here." />`}
-      </div>
+      <${AttendancePage} rows=${ctx.attendance || []} />
     `;
   } else if (section === "certificates") {
     const certs = certificates || [];
@@ -1862,7 +2072,7 @@ export function MobileView({ ctx }) {
       <div class="m-top-r">
         <button type="button" class="notif-btn" aria-label="Notifications" onClick=${() => setNotifOpen(true)}>
           ${Icon({ name: "bell", size: 18 })}
-          ${unreadNotifs ? html`<span class="dot"></span>` : null}
+          ${unreadNotifs ? html`<span class="notif-count" aria-label=${unreadNotifs + " unread"}>${unreadNotifs > 9 ? "9+" : unreadNotifs}</span>` : null}
         </button>
         <button type="button" class="avatar-btn" aria-label="Profile" onClick=${() => setSection("profile")}>
           <${Avatar} src=${student?.avatar} name=${name} />

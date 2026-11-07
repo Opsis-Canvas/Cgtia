@@ -274,7 +274,13 @@ service cloud.firestore {
     /* promotions — e.g. 100k offer; public read for payment UI */
     /* dashboard carousel slides: signed-in students read, staff manage */
     match /dashboardSlides/{slideId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() || (resource.data.showOnWebsite == true && resource.data.active == true);
+      allow create, update, delete: if isAdmin() || isStaff();
+    }
+
+    /* stories: students read active stories, staff manage */
+    match /stories/{storyId} {
+      allow read: if isSignedIn() || (resource.data.showOnWebsite == true && resource.data.active == true);
       allow create, update, delete: if isAdmin() || isStaff();
     }
 
@@ -296,6 +302,10 @@ service cloud.firestore {
     }
 
     /* partners list and other site content blobs */
+    /* Draft and history of the main application. Staff only. The public site reads only the live version. */
+    match /siteContent/applyFormDraft { allow read, write: if isAdmin() || isStaff(); }
+    match /applyFormHistory/{id} { allow read, write: if isAdmin() || isStaff(); }
+
     match /siteContent/{docId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
@@ -460,6 +470,33 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update, delete: if hasRole(['instructor']) || isAdmin();
     }
+
+    /* Named application forms. Staff manage them. */
+    /* Forms built in the admin. Staff only. The website reads open forms and links through the server. */
+    match /applyForms/{formId} {
+      allow read, write: if isAdmin() || isStaff();
+    }
+
+    /* Form links. Staff only. The server checks and uses them. */
+    match /formLinks/{token} {
+      allow read, write: if isAdmin() || isStaff();
+    }
+
+    /* Answers from forms. Staff read them. The server saves them. */
+    match /formSubmissions/{subId} {
+      allow read, update, delete: if isAdmin() || isStaff();
+    }
+
+    /* Drafts saved on link forms. Staff only. The server saves and loads them. */
+    match /formDrafts/{token} {
+      allow read, write: if isAdmin() || isStaff();
+    }
+
+    /* Examination links, sessions, results and admin alerts. Staff only. The server does the public work. */
+    match /examLinks/{token} { allow read, write: if isAdmin() || isStaff(); }
+    match /examSessions/{id} { allow read, write: if isAdmin() || isStaff(); }
+    match /examSubmissions/{id} { allow read, write: if isAdmin() || isStaff(); }
+    match /adminAlerts/{id} { allow read, update, delete: if isAdmin() || isStaff(); }
 
     // =======================================================
     // 6. GLOBAL SECURITY BACKSTOP

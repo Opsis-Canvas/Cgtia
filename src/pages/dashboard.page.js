@@ -4,6 +4,7 @@
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import htm from "htm";
 import { getFirebase } from "../services/firebase.service.js";
+import { PopupDesign } from "./portal/mobile.view.js";
 import { OnboardingView } from "./portal/onboarding.view.js";
 import { OnboardingDesktop } from "./portal/onboarding-desktop.view.js";
 import { DesktopView } from "./portal/desktop.view.js";
@@ -200,6 +201,7 @@ async function loadPortalData(user) {
     snap.forEach((d) => {
       const a = { id: d.id, ...d.data() };
       if (a.active === false) return;
+      if (a.type === "exam") return;
       if (row && row.program && a.program && String(a.program).toLowerCase() !== String(row.program).toLowerCase()) return;
       assessments.push(a);
     });
@@ -261,7 +263,11 @@ async function loadPortalData(user) {
         body: a.body || "",
         ctaLabel: a.ctaLabel || "Learn more",
         ctaUrl: a.ctaUrl || "",
-        kind: a.kind === "card" ? "card" : "design",
+        kind: a.kind === "card" ? "card" : a.kind === "story" ? "story" : "design",
+        storyImage: a.storyImage || "",
+        overlayText: a.overlayText === true,
+        popup: a.popup === true,
+        bodyStyle: a.bodyStyle || null,
         imageMobile: a.imageMobile || "",
         imageDesktop: a.imageDesktop || "",
         bgMobile: a.bgMobile || "",
@@ -277,6 +283,29 @@ async function loadPortalData(user) {
       });
     });
     slides.sort((x, y) => x.order - y.order);
+  } catch (e) { console.warn(e); }
+
+  let stories = [];
+  try {
+    const snap = await api.getDocs(api.collection(db, "stories"));
+    snap.forEach((d) => {
+      const a = { id: d.id, ...d.data() };
+      if (a.trashed === true || a.active === false || !a.mediaUrl) return;
+      stories.push({
+        id: d.id,
+        title: a.title || "",
+        caption: a.caption || "",
+        kind: a.kind === "video" ? "video" : "image",
+        captionStyle: a.captionStyle || null,
+        linkType: a.linkType === "page" ? "page" : "external",
+        linkPage: a.linkPage || "",
+        mediaUrl: a.mediaUrl,
+        linkUrl: a.linkUrl || "",
+        linkLabel: a.linkLabel || "",
+        order: Number(a.order) || 0
+      });
+    });
+    stories.sort((x, y) => x.order - y.order);
   } catch (e) { console.warn(e); }
 
   let certificates = [];
@@ -408,7 +437,7 @@ async function loadPortalData(user) {
     nextOfKin: row?.nextOfKinName || (row?.nextOfKin && row.nextOfKin.name) || ""
   };
 
-  return { student, courses, grades, payments, assessments, announcements, promos, slides, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
+  return { student, courses, grades, payments, assessments, announcements, promos, slides, stories, certificates, attendance, schedule, messages, notifications, portalSettings, linked: !!row };
 }
 
 function BrandLoading() {
@@ -539,6 +568,61 @@ export function DashboardPage() {
   const [phase, setPhase] = useState("splash");
   const [user, setUser] = useState(null);
   const [data, setData] = useState(null);
+  // Live notifications: the drawer updates as soon as the office sends one, without a page refresh
+  const studentEmailKey = data && data.student ? String(data.student.email || "").toLowerCase() : "";
+  const studentProgramKey = data && data.student ? String(data.student.program || "").toLowerCase() : "";
+  useEffect(() => {
+    if (!user || !studentEmailKey) return undefined;
+    let unsubs = [];
+    let cancelled = false;
+    const cache = {};
+    const publish = () => {
+      const list = Object.values(cache)
+        .filter((n) => n.active !== false && n.trashed !== true)
+        .sort((a, b) => ((b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0) - (a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0)));
+      setData((prev) => (prev ? { ...prev, notifications: list } : prev));
+    };
+    (async () => {
+      try {
+        const { db, api: a } = await getFirebase();
+        if (cancelled) return;
+        const filters = [a.where("audience", "==", "all"), a.where("email", "==", studentEmailKey)];
+        if (studentProgramKey) filters.push(a.where("program", "==", studentProgramKey));
+        filters.forEach((f) => {
+          const unsub = a.onSnapshot(a.query(a.collection(db, "portalNotifications"), f), (snap) => {
+            snap.docChanges().forEach((c) => {
+              if (c.type === "removed") delete cache[c.doc.id];
+              else cache[c.doc.id] = { id: c.doc.id, ...c.doc.data() };
+            });
+            publish();
+          }, () => {});
+          unsubs.push(unsub);
+        });
+      } catch (e) { console.warn(e); }
+    })();
+    return () => { cancelled = true; unsubs.forEach((u) => { try { u(); } catch (_) {} }); };
+  }, [user, studentEmailKey, studentProgramKey]);
+  // Soft refresh: every 20 seconds the portal reloads its data and updates only what changed
+  const refreshKey = useRef("");
+  useEffect(() => {
+    if (!user) return undefined;
+    let stopped = false;
+    const keyOf = (d) => JSON.stringify([d.courses, d.grades, d.announcements, d.promos, d.slides, d.stories, d.attendance, d.schedule, d.messages, d.portalSettings, d.student, d.payments, d.assessments, d.certificates, d.linked]);
+    refreshKey.current = "";
+    const tick = async () => {
+      try {
+        const d = await loadPortalData(user);
+        if (stopped || !d) return;
+        const key = keyOf(d);
+        if (key === refreshKey.current) return;
+        refreshKey.current = key;
+        setData((prev) => (prev ? { ...d, notifications: prev.notifications || d.notifications } : d));
+      } catch (e) { console.warn("refresh", e); }
+    };
+    const timer = setInterval(tick, 20000);
+    return () => { stopped = true; clearInterval(timer); };
+  }, [user]);
+
   const [section, setSection] = useState(() => {
     try {
       const h = (location.hash || "").replace(/^#\/?/, "");
@@ -741,6 +825,7 @@ export function DashboardPage() {
     announcements: (data && data.announcements) || [],
     promos: (data && data.promos) || [],
     slides: (data && data.slides) || [],
+    stories: (data && data.stories) || [],
     slideSeconds: Math.max(3, Math.min(30, Number(data && data.portalSettings && data.portalSettings.slideSeconds) || 6)),
     assessments: (data && data.assessments) || [],
     certificates: (data && data.certificates) || [],
@@ -754,9 +839,10 @@ export function DashboardPage() {
   // Desktop keeps the wide sidebar layout; deep lesson/test flows use the app view
   const deep = /^(course|lesson|test|lcheck|mquiz|fees:|receipt|grade:|notice:)/.test(String(section || ""));
   return html`
-    ${isDesktop && !deep
-      ? html`<${DesktopView} ctx=${ctx} />`
-      : html`<div class=${isDesktop ? "desk-shell" : undefined}><${MobileView} ctx=${ctx} /></div>`}
+    <${PopupDesign} slides=${data.slides || []} />
+    ${isDesktop
+      ? html`<${DesktopView} ctx=${ctx} deepView=${deep ? html`<${MobileView} ctx=${ctx} />` : null} />`
+      : html`<${MobileView} ctx=${ctx} />`}
     ${exitModal}
   `;
 }

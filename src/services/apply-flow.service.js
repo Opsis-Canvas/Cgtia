@@ -111,6 +111,96 @@ function closeApply() {
   else if (typeof window.toggleApplyScreen === "function") window.toggleApplyScreen();
 }
 
+/* Phone rules by country. "maxTyped" is how many digits a person types, including the leading 0 where the
+   country uses one (Nigeria: 08136548888 is 11 digits). The leading 0 is dropped when the number is sent in
+   international form (+2348136548888). The admin edits these in Apply form > Phone numbers by country. */
+const PHONE_RULE_DEFAULTS = {
+  NG: { name: "Nigeria", dial: "+234", minTyped: 10, maxTyped: 11, trunkZero: true },
+  GH: { name: "Ghana", dial: "+233", minTyped: 9, maxTyped: 10, trunkZero: true },
+  KE: { name: "Kenya", dial: "+254", minTyped: 9, maxTyped: 10, trunkZero: true },
+  ZA: { name: "South Africa", dial: "+27", minTyped: 9, maxTyped: 10, trunkZero: true },
+  GB: { name: "United Kingdom", dial: "+44", minTyped: 10, maxTyped: 11, trunkZero: true },
+  US: { name: "United States or Canada", dial: "+1", minTyped: 10, maxTyped: 10, trunkZero: false },
+  DEFAULT: { name: "your country", dial: "", minTyped: 6, maxTyped: 15, trunkZero: false }
+};
+export const PHONE_RULES = PHONE_RULE_DEFAULTS;
+let activeRules = { ...PHONE_RULE_DEFAULTS };
+
+export async function loadPhoneRules() {
+  try {
+    const { db, api } = await getFirebase();
+    const snap = await api.getDoc(api.doc(db, "siteContent", "applyForm"));
+    const list = snap.exists() && Array.isArray(snap.data().phoneRules) ? snap.data().phoneRules : [];
+    if (list.length) {
+      const map = { DEFAULT: PHONE_RULE_DEFAULTS.DEFAULT };
+      list.forEach((r) => {
+        if (r && r.code) {
+          map[String(r.code).toUpperCase()] = { name: r.name || r.code, dial: r.dial || "", minTyped: Number(r.minTyped) || 1, maxTyped: Number(r.maxTyped) || 15, trunkZero: !!r.trunkZero };
+        }
+      });
+      activeRules = map;
+    }
+  } catch (_) { /* keep the built-in rules */ }
+  return activeRules;
+}
+
+export function ruleFor(key) {
+  return activeRules[String(key || "NG").toUpperCase()] || activeRules.DEFAULT || PHONE_RULE_DEFAULTS.DEFAULT;
+}
+
+/* The rule for the country the person picked: the new country list, or the dial-code dropdown on the current pages */
+function phoneRuleFromPage() {
+  const direct = (document.getElementById("phoneCountry") || {}).value;
+  if (direct) return ruleFor(direct);
+  const dial = ((document.getElementById("countryCodeSelect") || {}).value || "").trim();
+  const hit = Object.keys(activeRules).find((k) => activeRules[k].dial && activeRules[k].dial === dial);
+  if (hit) return activeRules[hit];
+  if (dial) return { name: "your country", dial, minTyped: 6, maxTyped: 12, trunkZero: true, anyLength: true };
+  return activeRules.NG || PHONE_RULE_DEFAULTS.NG;
+}
+
+export function normalisePhoneWithRule(raw, rule) {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return { ok: false, error: "Enter your phone number." };
+  if (!rule.dial) {
+    if (digits.length < rule.minTyped || digits.length > rule.maxTyped) return { ok: false, error: "Enter a valid phone number." };
+    return { ok: true, e164: "+" + digits };
+  }
+  const code = rule.dial.replace(/\D/g, "");
+  if (digits.startsWith(code) && digits.length > rule.maxTyped) digits = digits.slice(code.length);
+  let national = digits;
+  if (rule.trunkZero && national.startsWith("0")) national = national.slice(1);
+  if (rule.anyLength) {
+    if (national.length < 6 || national.length > 12) return { ok: false, error: "Enter a valid phone number." };
+  } else {
+    const trunk = rule.trunkZero ? 1 : 0;
+    const need = rule.maxTyped - trunk;
+    if (national.length !== need) {
+      return { ok: false, error: "Enter your " + rule.name + " phone number: " + rule.maxTyped + " digits, or " + (rule.maxTyped - 1) + " without the 0." };
+    }
+  }
+  return { ok: true, e164: rule.dial + national };
+}
+
+export function normalisePhone(raw, countryKey) {
+  return normalisePhoneWithRule(raw, ruleFor(countryKey));
+}
+
+/* Stops the phone box at the number of digits the chosen country allows. */
+function enforcePhoneInput(el) {
+  const rule = phoneRuleFromPage();
+  let digits = String(el.value || "").replace(/\D/g, "");
+  const code = rule.dial.replace(/\D/g, "");
+  if (code && digits.startsWith(code) && digits.length > rule.maxTyped) digits = digits.slice(code.length);
+  el.value = digits.slice(0, rule.maxTyped);
+}
+if (typeof document !== "undefined") {
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.id === "phoneInput") enforcePhoneInput(e.target);
+  }, true);
+  loadPhoneRules();
+}
+
 /**
  * Main apply submit — email lookup + save + WhatsApp (no payment; fee links later)
  */
@@ -132,7 +222,15 @@ export async function handleApplySubmitFlow(event) {
   }
 
   const fullName = ((document.getElementById("fullNameInput") || {}).value || "").trim();
-  const phone = ((document.getElementById("phoneInput") || {}).value || "").trim();
+  await loadPhoneRules();
+  const phoneRaw = ((document.getElementById("phoneInput") || {}).value || "").trim();
+  const phoneCheck = normalisePhoneWithRule(phoneRaw, phoneRuleFromPage());
+  if (phoneRaw && !phoneCheck.ok) {
+    const pi = document.getElementById("phoneInput");
+    if (pi) { pi.setCustomValidity(phoneCheck.error); pi.reportValidity(); pi.setCustomValidity(""); }
+    return false;
+  }
+  const phone = phoneCheck.ok ? phoneCheck.e164 : "";
   const email = ((document.getElementById("emailInput") || {}).value || "").trim().toLowerCase();
   if (!fullName || !phone || !email) {
     if (form && form.reportValidity) form.reportValidity();

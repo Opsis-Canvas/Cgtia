@@ -4,13 +4,6 @@
  */
 export const field_check_html = `
 
-  <header class="w-full border-b border-slate-100 bg-white/80 backdrop-blur-sm">
-    <div class="w-full max-w-2xl mx-auto px-6 py-6 flex items-center justify-between">
-      <span class="font-editorial text-xl font-bold tracking-tight text-blue-950"><span class="inline-flex items-center gap-2"><img src="/assets/brand/cgtia-logo.webp" alt="" width="32" height="32" class="w-8 h-8 object-contain" /><span>CGTIA</span></span></span>
-      <span class="text-[10px] font-semibold tracking-widest uppercase text-slate-400">Student profile</span>
-    </div>
-  </header>
-
   <main class="w-full max-w-2xl mx-auto px-6 py-12 md:py-16">
     <div id="fieldCheckGate" class="hidden">
       <div class="soft-component-card rounded-[2rem] p-8 border border-amber-200 bg-amber-50 text-sm text-amber-900">

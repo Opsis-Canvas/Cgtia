@@ -4,37 +4,6 @@
 export const index_html = `
 
   <!-- Faded Sticky Header -->
-  <header class="faded-sticky-header w-full smooth-transition">
-    <div class="w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
-      <a href="/" class="flex items-center gap-2.5 group">
-        <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="36" height="36" class="w-9 h-9 object-contain" />
-        <span class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950">CGTIA</span>
-      </a>
-      <nav class="hidden md:flex space-x-7 text-xs font-semibold tracking-widest uppercase text-slate-500">
-        <a href="/" class="text-blue-950 hover:text-blue-950 smooth-transition">Home</a>
-        <a href="/about" class="hover:text-blue-950 smooth-transition">About</a>
-        <a href="/programs" class="hover:text-blue-950 smooth-transition">Programs</a>
-        <a href="/gallery" class="hover:text-blue-950 smooth-transition">Gallery</a>
-        <a href="/tuition" class="hover:text-blue-950 smooth-transition">Tuition</a>
-        <a href="/licensing" class="hover:text-blue-950 smooth-transition">Licensing</a>
-        <a href="/contact" class="hover:text-blue-950 smooth-transition">Contact</a>
-      </nav>
-      
-      <!-- Desktop Interface Control Matrix -->
-      <div class="hidden md:flex items-center space-x-8">
-        <a href="#" onclick="toggleAuthScreen('signin'); return false;" class="text-xs font-semibold tracking-widest uppercase text-slate-500 hover:text-blue-950 smooth-transition">Portal</a>
-        <button onclick="toggleApplyScreen()" class="soft-component-card px-7 py-3 rounded-full text-xs font-semibold tracking-wider uppercase text-blue-950 border border-transparent hover:border-slate-200/50 smooth-transition">
-          Apply Now
-        </button>
-      </div>
-
-      <!-- Mobile Structural Adaption (Immediate Action Visibility Stack) -->
-      <button onclick="toggleApplyScreen()" class="block md:hidden bg-blue-950 text-white px-5 py-2 rounded-full text-[11px] font-medium tracking-wider uppercase shadow-md active:scale-95 transition-transform">
-        Apply
-      </button>
-    </div>
-  </header>
-
   <!-- Hero Workspace -->
   <section class="w-full max-w-5xl mx-auto px-6 pt-16 md:pt-24 pb-28 md:pb-36 text-center">
     <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-6 opacity-0 animate-[fadeIn_1s_ease-out_0.2s_forwards]"><span data-site-setting="cohortLabel">Enrolling Now / 2026 Cohort</span></span>
@@ -50,6 +19,9 @@ export const index_html = `
       </button>
     </div>
   </section>
+
+  <div id="siteHighlights" data-site-highlights></div>
+
 
   <!-- Philosophy Narrative -->
   <section class="w-full max-w-7xl mx-auto px-6 pb-28 md:pb-40">
@@ -664,55 +636,6 @@ export const index_html = `
   </section>
 
   <!-- Grounded Layout Footer Container -->
-  <footer class="w-full relative bg-slate-50 border-t border-slate-200/50 pt-28 md:pt-48 pb-24 md:pb-16 overflow-hidden">
-    <div class="absolute inset-x-0 bottom-0 w-full text-center z-0 select-none overflow-hidden translate-y-[15%] md:translate-y-[22%]">
-      <h2 class="font-editorial text-[24vw] font-bold watermark-text-depth uppercase tracking-tighter">CGTIA</h2>
-    </div>
-
-    <div class="w-full max-w-7xl mx-auto px-6 relative z-10">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 md:gap-12 pb-24 md:pb-32">
-        <div class="space-y-4">
-          <h4 class="text-xs font-bold tracking-widest text-blue-950 uppercase">Academy</h4>
-          <ul class="space-y-2.5 text-sm text-slate-500 font-light">
-            <li><a href="/about" class="hover:text-blue-950 smooth-transition">About CGTIA</a></li>
-            <li><a href="/programs" class="hover:text-blue-950 smooth-transition">Programs</a></li>
-            <li><a href="/gallery" class="hover:text-blue-950 smooth-transition">Gallery</a></li>
-          </ul>
-        </div>
-        <div class="space-y-4">
-          <h4 class="text-xs font-bold tracking-widest text-blue-950 uppercase">Admissions</h4>
-          <ul class="space-y-2.5 text-sm text-slate-500 font-light">
-            <li><a href="/tuition" class="hover:text-blue-950 smooth-transition">Tuition & Fees</a></li>
-            <li><a href="#" onclick="toggleApplyScreen(); return false;" class="hover:text-blue-950 smooth-transition">Apply Now</a></li>
-            <li><a href="/licensing" class="hover:text-blue-950 smooth-transition">Licensing Application</a></li>
-            <li><a href="/custom" class="hover:text-blue-950 smooth-transition">Institutional Partnerships</a></li>
-            <li><a href="/verify" class="hover:text-blue-950 smooth-transition">Verify</a></li>
-          </ul>
-        </div>
-        <div class="space-y-4">
-          <h4 class="text-xs font-bold tracking-widest text-blue-950 uppercase">Access</h4>
-          <ul class="space-y-2.5 text-sm text-slate-500 font-light">
-            <li><a href="#" onclick="toggleAuthScreen('signin'); return false;" class="hover:text-blue-950 smooth-transition">Portal</a></li>
-            <li><a href="/contact" class="hover:text-blue-950 smooth-transition">Contact</a></li>
-            <li><a href="/contact" class="hover:text-blue-950 smooth-transition">Press Room</a></li>
-          </ul>
-        </div>
-        <div class="space-y-4">
-          <h4 class="text-xs font-bold tracking-widest text-blue-950 uppercase">Location</h4>
-          <p class="text-sm text-slate-500 font-light leading-relaxed">CGTIA training center<br>Imo State, Nigeria</p>
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-slate-200/60 text-[10px] md:text-xs font-medium text-slate-400 tracking-wider uppercase gap-4">
-        <div class="flex space-x-8">
-          <a href="/terms" class="hover:text-blue-950 smooth-transition">Terms of Use</a>
-          <a href="/privacy" class="hover:text-blue-950 smooth-transition">Privacy Standards</a>
-        </div>
-        <p>&copy; <span data-site-setting="footerYear">2026</span> Caregivers Training & Internship Academy Limited.</p>
-      </div>
-    </div>
-  </footer>
-
   <!-- Fixed Bottom-Right Action Core (Replaced Swipe Shell Entirely) -->
   <div class="block md:hidden fixed bottom-6 right-6 z-50 flex items-center justify-end gap-3 pointer-events-none">
     
@@ -795,10 +718,10 @@ export const index_html = `
 
       <div class="flex justify-between items-start mb-6 shrink-0">
         <div>
-          <span class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-2">Admissions</span>
-          <h3 class="font-editorial text-2xl md:text-3xl font-bold text-blue-950">Apply to CGTIA</h3>
+          <span data-cms="applyEyebrow" class="text-xs font-bold tracking-widest text-blue-800 uppercase block mb-2">Admissions</span>
+          <h3 data-af="title" data-cms="applyTitle" class="font-editorial text-2xl md:text-3xl font-bold text-blue-950">Apply to CGTIA</h3>
         </div>
-        <button onclick="toggleApplyScreen()" class="text-xs font-bold tracking-widest text-slate-400 uppercase mt-2">Close</button>
+        <button onclick="toggleApplyScreen()" data-cms="applyClose" class="text-xs font-bold tracking-widest text-slate-400 uppercase mt-2">Close</button>
       </div>
 
       <form id="applyForm" class="space-y-5" onsubmit="handleApplySubmit(event)">
@@ -807,12 +730,12 @@ export const index_html = `
           <input type="text" id="applyWebsiteField" name="website" tabindex="-1" autocomplete="off">
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Full Name</label>
-          <input required type="text" id="fullNameInput" placeholder="e.g. Ada Okonkwo" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+          <label data-af="label" data-cms="labelFullName" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Full Name</label>
+          <input required type="text" id="fullNameInput" data-cms-ph="phName" placeholder="e.g. Ada Okonkwo" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Phone Number</label>
+            <label data-af="label" data-cms="labelPhone" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Phone Number</label>
             <div class="flex gap-2">
             <select id="countryCodeSelect" class="w-[7.5rem] shrink-0 px-2 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-sm text-slate-800 outline-none focus:border-blue-900/40">
               <option value="+234" selected>NG +234</option>
@@ -826,54 +749,54 @@ export const index_html = `
               <option value="+91">IN +91</option>
               <option value="+971">AE +971</option>
             </select>
-            <input required type="tel" id="phoneInput" placeholder="801 234 5678" class="flex-1 px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition" />
+            <input required type="tel" id="phoneInput" data-cms-ph="phPhone" placeholder="801 234 5678" class="flex-1 px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition" />
           </div>
           </div>
           <div>
-            <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Email Address</label>
-            <input required type="email" id="emailInput" placeholder="you@email.com" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
+            <label data-af="label" data-cms="labelEmail" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Email Address</label>
+            <input required type="email" id="emailInput" data-cms-ph="phEmail" placeholder="you@email.com" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
           </div>
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program of Interest</label>
+          <label data-af="label" data-cms="labelProgram" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program of Interest</label>
           <select id="programSelect" required onchange="handleProgramChange()" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition">
-            <option value="">Select a program</option>
-            <option value="certificate">CGTIA Certificate</option>
-            <option value="diploma">CGTIA Diploma</option>
-            <option value="higher-diploma">CGTIA Higher Diploma</option>
-            <option value="licensing">Licensing</option>
+            <option value="" data-cms="progPlaceholder">Select a program</option>
+            <option value="certificate" data-cms="progCertificate">CGTIA Certificate</option>
+            <option value="diploma" data-cms="progDiploma">CGTIA Diploma</option>
+            <option value="higher-diploma" data-cms="progHigherDiploma">CGTIA Higher Diploma</option>
+            <option value="licensing" data-cms="progLicensing">Licensing</option>
           </select>
         </div>
         <div id="studyModeWrap" class="hidden">
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">How do you want to study?</label>
+          <label data-af="label" data-cms="labelStudyMode" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">How do you want to study?</label>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="studyModeOptions">
             <label class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer has-[:checked]:border-blue-900 has-[:checked]:bg-blue-50">
               <input type="radio" name="studyMode" id="studyModeOnline" value="online" class="accent-blue-900" />
-              <span class="text-sm font-medium text-blue-950">Online</span>
+              <span data-cms="studyOnline" class="text-sm font-medium text-blue-950">Online</span>
             </label>
             <label class="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-50 cursor-pointer has-[:checked]:border-blue-900 has-[:checked]:bg-blue-50">
               <input type="radio" name="studyMode" id="studyModeInPerson" value="in-person" class="accent-blue-900" />
-              <span class="text-sm font-medium text-blue-950">In person</span>
+              <span data-cms="studyInPerson" class="text-sm font-medium text-blue-950">In person</span>
             </label>
           </div>
-          <p class="text-[11px] text-slate-400 mt-2">Certificate, Diploma, and Higher Diploma can be taken online or in person.</p>
+          <p data-af="help" data-cms="helpStudyMode" class="text-[11px] text-slate-400 mt-2">Certificate, Diploma, and Higher Diploma can be taken online or in person.</p>
         </div>
         <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program Start Date</label>
+          <label data-af="label" data-cms="labelStartDate" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">Program Start Date</label>
           <div id="programModalityDisplay" class="text-xs text-slate-500 mb-2"></div>
           <div id="startDateDisplay" class="w-full px-5 py-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-sm text-slate-400">Select a programme to see the next start date</div>
-          <p class="text-[11px] text-slate-400 mt-2">Each cohort has one fixed start date set by the academy.</p>
+          <p data-af="help" data-cms="helpStartDate" class="text-[11px] text-slate-400 mt-2">Each cohort has one fixed start date set by the academy.</p>
         </div>
-        <div>
-          <label class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2"> (Optional) Tell us a little about you</label>
-          <textarea rows="3" placeholder="Why are you interested in caregiving training?" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition resize-none"></textarea>
+        <div data-cms-show="showMessage">
+          <label data-af="label" data-cms="labelMessage" class="text-xs font-semibold tracking-wide text-slate-500 uppercase block mb-2">(Optional) Tell us a little about you</label>
+          <textarea rows="3" data-cms-rows="messageRows" data-cms-ph="phMessage" placeholder="Why are you interested in caregiving training?" class="w-full px-5 py-3.5 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800 smooth-transition resize-none"></textarea>
         </div>
 
         <label class="flex items-start gap-3 text-xs text-slate-600 leading-relaxed cursor-pointer">
           <input required type="checkbox" id="ageConfirm18" class="mt-1 rounded border-slate-300 accent-blue-900" />
-          <span>I confirm that I am <strong>18 years of age or older</strong> and eligible to enrol.</span>
+          <span data-cms-rich="confirm18">I confirm that I am <strong>18 years of age or older</strong> and eligible to enrol.</span>
         </label>
-        <button type="submit" class="w-full mt-4 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
+        <button type="submit" data-cms="labelSubmit" class="w-full mt-4 py-4 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase shadow-lg shadow-blue-950/20 hover:bg-blue-900 smooth-transition">
           Submit Application
         </button>
       </form>

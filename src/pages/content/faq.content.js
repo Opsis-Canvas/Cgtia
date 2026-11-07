@@ -1,16 +1,4 @@
 export const faq_html = `
-  <header class="faded-sticky-header w-full">
-    <div class="w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center">
-      <a href="/" class="font-editorial text-xl md:text-2xl font-bold tracking-tight text-blue-950"><span class="inline-flex items-center gap-2"><img src="/assets/brand/cgtia-logo.webp" alt="" width="32" height="32" class="w-8 h-8 object-contain" /><span>CGTIA</span></span></a>
-      <nav class="hidden md:flex space-x-7 text-xs font-semibold tracking-widest uppercase text-slate-500">
-        <a href="/about" class="hover:text-blue-950">About</a>
-        <a href="/programs" class="hover:text-blue-950">Programmes</a>
-        <a href="/licensing" class="hover:text-blue-950">Licensing</a>
-        <a href="/faq" class="text-blue-950">FAQ</a>
-        <a href="/contact" class="hover:text-blue-950">Contact</a>
-      </nav>
-    </div>
-  </header>
   <main class="max-w-3xl mx-auto px-6 py-16 md:py-24">
     <p class="text-xs font-semibold tracking-widest uppercase text-blue-900/70 mb-3">Help</p>
     <h1 class="font-editorial text-4xl font-bold text-blue-950 mb-4">Frequently asked questions</h1>
@@ -46,7 +34,6 @@ export const faq_html = `
       </div>
     </div>
   </main>
-  <footer class="border-t border-slate-100 py-10 text-center text-xs text-slate-400">© Caregivers Training & Internship Academy Limited</footer>
   <script>
     (function(){
       function bind(){
