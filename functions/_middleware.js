@@ -7,6 +7,8 @@ const PORTAL_DESCRIPTION = "Courses, results, attendance and notices, in one pla
 
 export async function onRequest(context) {
   const url = new URL(context.request.url);
+  // Server functions (/api/...) pass straight through, exactly as before this middleware existed
+  if (url.pathname.startsWith("/api/")) return context.next();
   const onStudentHost = url.hostname.startsWith("student.");
   if (onStudentHost && (url.pathname === "/" || url.pathname === "")) {
     url.pathname = "/dashboard";
