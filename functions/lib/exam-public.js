@@ -67,3 +67,15 @@ export function publicExam(exam) {
     }))
   };
 }
+
+// Has this device already taken (or started) this exam link? Returns null, or { state, pct, score, total }
+export async function deviceState(token, deviceId) {
+  if (!deviceId || deviceId.length < 8) return null;
+  const subs = await db.collection('examSubmissions').where('deviceId', '==', deviceId).limit(100).get();
+  let hit = null;
+  subs.forEach((d) => { const x = d.data() || {}; if (x.token === token) hit = { state: 'completed', pct: x.pct, score: x.score, total: x.total, resultMode: x.resultMode || 'instant' }; });
+  if (hit) return hit;
+  const live = await db.collection('examSessions').where('deviceId', '==', deviceId).limit(100).get();
+  live.forEach((d) => { const x = d.data() || {}; if (x.token === token && x.status === 'in_progress') hit = { state: 'started' }; });
+  return hit;
+}

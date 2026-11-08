@@ -1,6 +1,6 @@
 /** Starts one attempt: records the start time, sets the deadline, and shuffles the questions if the exam says so. */
 import { db } from './firebaseAdmin.js';
-import { json, CORS, examFromLink, publicExam, settingsOf } from './exam-public.js';
+import { json, CORS, examFromLink, publicExam, settingsOf, deviceState } from './exam-public.js';
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
@@ -8,10 +8,15 @@ export const handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid request.' }); }
   const name = String(body.name || '').trim().slice(0, 120);
+  const deviceId = String(body.deviceId || '').slice(0, 80);
+  if (deviceId.length < 8) return json(400, { error: 'This device could not be recognised. Reload the page and try again.' });
   if (name.length < 2) return json(400, { error: 'Enter your full name to begin.' });
   try {
     const r = await examFromLink(String(body.token || '').trim());
     if (r.error) return json(403, { error: r.error });
+    const prior = await deviceState(r.token, deviceId);
+    if (prior && prior.state === 'completed') return json(403, { error: 'You have already completed this exam. Thank you.', device: prior });
+    if (prior && prior.state === 'started') return json(403, { error: 'You already started this exam on this device. Contact the academy if you need help.', device: prior });
     const pub = publicExam(r.exam);
     const n = pub.questions.length;
     if (!n) return json(400, { error: 'This exam has no questions yet.' });
@@ -25,7 +30,7 @@ export const handler = async (event) => {
     await db.collection('examSessions').doc(id).set({
       token: r.token, examId: r.examId, examTitle: pub.title, name,
       startedAt: startedAt.toISOString(), deadline, order,
-      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0,
+      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, deviceId,
       allowed: pub.settings.tabSwitchAllowed, timerMinutes: pub.timerMinutes
     });
     await db.collection('examLinks').doc(r.token).update({ uses: (r.link.uses || 0) + 1 });
