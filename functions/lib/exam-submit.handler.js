@@ -26,10 +26,21 @@ export const handler = async (event) => {
     const chosen = body.answers && typeof body.answers === 'object' ? body.answers : {};
     let score = 0;
     let answered = 0;
-    questions.forEach((q, i) => {
+    const details = questions.map((q, i) => {
       const a = chosen[i];
-      if (a !== undefined && a !== null && a !== '') answered += 1;
-      if (q.correct != null && String(a) === String(q.correct)) score += 1;
+      const has = a !== undefined && a !== null && a !== '';
+      const pick = has ? Number(a) : null;
+      const correct = Number(q.correct) || 0;
+      const isCorrect = has && pick === correct;
+      if (has) answered += 1;
+      if (isCorrect) score += 1;
+      return {
+        prompt: String(q.prompt || '').slice(0, 1000),
+        options: (Array.isArray(q.options) ? q.options : []).slice(0, 8).map((o) => String(o).slice(0, 300)),
+        chosen: pick,
+        correct,
+        isCorrect
+      };
     });
     const total = questions.length || 1;
     const pct = Math.round((score / total) * 100);
@@ -38,7 +49,8 @@ export const handler = async (event) => {
     await db.collection('examSubmissions').doc(id).set({
       sessionId: id, examId: s.examId, examTitle: s.examTitle || exam.title || '', name: s.name || '',
       score, total, pct, answered, reason, tabSwitches: s.tabSwitches || 0, fullscreenExits: s.fullscreenExits || 0,
-      allowed: s.allowed || 0, submittedAt, resultMode: settings.resultMode
+      allowed: s.allowed || 0, submittedAt, resultMode: settings.resultMode,
+      token: s.token || '', deviceId: s.deviceId || '', details
     });
     await ref.update({ status: 'submitted', submittedAt, reason });
     await db.collection('adminAlerts').add({
@@ -47,7 +59,7 @@ export const handler = async (event) => {
       body: (s.name || 'Visitor') + ' · ' + pct + '% · left the tab ' + (s.tabSwitches || 0) + ' time(s) · ' + reason
     });
     await emailAdmin('Exam submitted: ' + (s.examTitle || 'Exam'), ['Name: ' + (s.name || ''), 'Score: ' + pct + '% (' + score + ' of ' + total + ')', 'Left the screen: ' + (s.tabSwitches || 0) + ' time(s), allowed ' + (s.allowed || 0), 'Ended by: ' + reason, 'Submitted: ' + submittedAt]);
-    if (settings.resultMode === 'instant') return json(200, { ok: true, score, total, pct });
+    if (settings.resultMode === 'instant') return json(200, { ok: true, score, total, pct, details });
     return json(200, { ok: true, received: true });
   } catch (err) {
     console.error('exam-submit', err);
