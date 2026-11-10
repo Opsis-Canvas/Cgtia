@@ -30,6 +30,12 @@ const CSS = `
 .ex-spin{animation:exSpin .9s linear infinite}
 .ex-draw{stroke-dasharray:60;animation:exDraw .6s ease-out .15s both}
 @media (prefers-reduced-motion: reduce){ .ex-shake,.ex-pulse,.ex-rise,.ex-fade,.ex-spin,.ex-draw{animation:none} }
+@media print { html, body { display: none !important; } }
+.ex-cover{position:fixed;inset:0;z-index:999;background:#0b1020;color:#fff;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center}
+.ex-cam{position:absolute;top:calc(74px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:128px;height:96px;border-radius:18px;overflow:hidden;border:2px solid #fff;box-shadow:0 14px 26px -14px rgba(8,12,40,.7);background:#0b1020;z-index:3}
+.ex-cam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.ex-meter{height:6px;border-radius:999px;background:#dfe6f3;overflow:hidden}
+.ex-meter>span{display:block;height:100%;background:linear-gradient(90deg,#0948e6,#15803d);transition:width .12s linear}
 `;
 
 async function post(path, body) {
@@ -83,7 +89,16 @@ function Ring({ pct, color }) {
 export function ExamTakePage() {
   const token = (new URLSearchParams(window.location.search).get("token") || "").trim();
   const dev = useRef(deviceId()).current;
-  const [phase, setPhase] = useState("loading"); // loading | invalid | completed | started | intro | preparing | splash | running | sending | done
+  const [phase, setPhase] = useState("loading");
+  const [consent, setConsent] = useState(false);
+  const [camState, setCamState] = useState("idle"); // idle | asking | on | denied
+  const [level, setLevel] = useState(0);
+  const [hidden, setHidden] = useState(false);
+  const [photo, setPhoto] = useState("");
+  const streamRef = useRef(null);
+  const videoRef = useRef(null);
+  const audioRef = useRef(null);
+  const lastCap = useRef(0); // loading | invalid | completed | started | intro | preparing | splash | running | sending | done
   const [exam, setExam] = useState(null);
   const [error, setError] = useState("");
   const [name, setName] = useState("");
@@ -153,25 +168,38 @@ export function ExamTakePage() {
     if (phase === "running" && left !== null && left <= 0 && exam && exam.settings.autoSubmit) submit("timer");
   }, [left, phase]);
 
-  // Anti-cheat while the exam runs
+  // Anti-cheat while the exam runs. The screen is covered the moment focus is lost, so app-switcher previews and
+  // screenshots taken then show a blank panel. Each attempt is recorded and counts toward the leave-the-screen limit.
   useEffect(() => {
     if (phase !== "running") return undefined;
     const block = (e) => { e.preventDefault(); setWarn("Copying and pasting are turned off for this exam."); };
-    const onVis = async () => {
-      if (!document.hidden || !sessionRef.current) return;
-      setWarn("You left the exam screen. This is recorded.");
-      const r = await post("/api/exam-event", { sessionId: sessionRef.current.sessionId, type: "tab" });
+    const capture = async (why) => {
+      setHidden(true);
+      const now = Date.now();
+      if (now - lastCap.current < 1500) return;
+      lastCap.current = now;
+      if (!sessionRef.current) return;
+      const r = await post("/api/exam-event", { sessionId: sessionRef.current.sessionId, type: why === "leave" ? "tab" : "capture" });
       if (r.ok && r.data.locked) submit("tab-limit");
     };
+    const onVis = () => { if (document.hidden) capture("leave"); };
+    const onBlur = () => capture("leave");
+    const onPrint = () => capture("capture");
     const onFs = () => {
       if (!exam || !exam.settings.requireFullscreen || document.fullscreenElement || !sessionRef.current) return;
       setWarn("Please stay in full screen. This is recorded.");
       post("/api/exam-event", { sessionId: sessionRef.current.sessionId, type: "fullscreen" });
     };
-    const kill = (e) => { if (e.key === "PrintScreen" || ((e.ctrlKey || e.metaKey) && ["c", "x", "v", "a", "p", "s"].indexOf(e.key.toLowerCase()) >= 0)) e.preventDefault(); };
-    const evs = [["copy", block], ["cut", block], ["paste", block], ["contextmenu", block], ["keydown", kill], ["visibilitychange", onVis], ["fullscreenchange", onFs]];
-    evs.forEach(([n, f]) => document.addEventListener(n, f));
-    return () => evs.forEach(([n, f]) => document.removeEventListener(n, f));
+    const kill = (e) => {
+      const k = e.key.toLowerCase();
+      const shot = k === "printscreen" || ((e.metaKey || e.ctrlKey) && e.shiftKey && (k === "s" || k === "3" || k === "4" || k === "5"));
+      if (shot) { e.preventDefault(); capture("capture"); return; }
+      if ((e.ctrlKey || e.metaKey) && ["c", "x", "v", "a", "p", "s"].indexOf(k) >= 0) e.preventDefault();
+    };
+    const hideNow = () => { if (!document.hidden && document.hasFocus()) setHidden(false); };
+    const evs = [["copy", block], ["cut", block], ["paste", block], ["contextmenu", block], ["keydown", kill], ["visibilitychange", onVis], ["fullscreenchange", onFs], ["beforeprint", onPrint], ["blur", onBlur], ["focus", hideNow]];
+    evs.forEach(([n, f]) => window.addEventListener(n, f));
+    return () => evs.forEach(([n, f]) => window.removeEventListener(n, f));
   }, [phase, exam]);
 
   async function begin(e) {
@@ -179,16 +207,68 @@ export function ExamTakePage() {
     setError("");
     if (name.trim().length < 2) { setError("Enter your full name to begin."); return; }
     if (info.restricted && info.needsEmail && !/^\S+@\S+\.\S+$/.test(email.trim())) { setError("Enter the email address this exam was sent to."); return; }
+    setPhase("consent");
+  }
+
+  // Camera and microphone: asked for here, shown in the middle of the exam screen, never recorded in this version
+  async function askCamera() {
+    setCamState("asking");
+    try {
+      const st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: true });
+      streamRef.current = st;
+      setCamState("on");
+      const track = st.getVideoTracks()[0];
+      if (track) track.onended = () => {
+        setWarn("Your camera stopped. Turn it back on to continue. This is recorded.");
+        if (sessionRef.current) post("/api/exam-event", { sessionId: sessionRef.current.sessionId, type: "camera" });
+      };
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new Ctx();
+        const src = ctx.createMediaStreamSource(new MediaStream(st.getAudioTracks()));
+        const an = ctx.createAnalyser(); an.fftSize = 256; src.connect(an);
+        const buf = new Uint8Array(an.fftSize);
+        audioRef.current = setInterval(() => {
+          an.getByteTimeDomainData(buf);
+          let sum = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+          setLevel(Math.min(100, Math.round(Math.sqrt(sum / buf.length) * 320)));
+        }, 120);
+      } catch (x) { /* the meter is optional */ }
+    } catch (err) {
+      setCamState("denied");
+    }
+  }
+
+  function takePhoto() {
+    const v = videoRef.current;
+    if (!v || !v.videoWidth) return "";
+    const c = document.createElement("canvas");
+    c.width = 320; c.height = 240;
+    const g = c.getContext("2d");
+    g.translate(320, 0); g.scale(-1, 1);
+    g.drawImage(v, 0, 0, 320, 240);
+    return c.toDataURL("image/jpeg", 0.6);
+  }
+
+  function stopMedia() {
+    if (audioRef.current) clearInterval(audioRef.current);
+    if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  }
+
+  // Starts the exam once the consent is ticked and the camera has been checked
+  async function startExam(cameraOn) {
+    const snap = cameraOn ? takePhoto() : "";
+    setPhoto(snap);
     if (exam.settings.requireFullscreen && document.documentElement.requestFullscreen) {
       try { await document.documentElement.requestFullscreen(); } catch (x) { /* the exam still runs */ }
     }
-    // The splash shows while the server prepares the exam, not the sending screen
     setPhase("preparing");
-    const r = await post("/api/exam-start", { token, name: name.trim(), email: email.trim(), deviceId: dev });
+    const r = await post("/api/exam-start", { token, name: name.trim(), email: email.trim(), deviceId: dev, consent: true, cameraOn, photo: snap });
     if (!r.ok || r.data.error) {
       if (r.data.device && r.data.device.state === "completed") { setResult(r.data.device); setPhase("completed"); return; }
       if (r.data.device && r.data.device.state === "started") { setPhase("started"); return; }
-      setError(r.data.error || "Could not start the exam."); setPhase("intro"); return;
+      setError(r.data.error || "Could not start the exam."); setPhase(cameraOn ? "consent" : "intro"); return;
     }
     setSession({ sessionId: r.data.sessionId, deadline: r.data.deadline, questions: r.data.questions });
     setIdx(0); setAnswers({});
@@ -211,6 +291,7 @@ export function ExamTakePage() {
       if (pollRef.current) clearInterval(pollRef.current);
       setSendStep(3);
       setResult({ reason, ...data });
+      stopMedia();
       setTimeout(() => setPhase("done"), 650);
     };
     const started = Date.now();
@@ -299,6 +380,57 @@ export function ExamTakePage() {
     </div>`;
   }
 
+  if (phase === "consent") {
+    const cameraRequired = exam.settings.requireCamera;
+    const items = [
+      ["Camera", "Your front camera is on during the exam and shows in a small frame in the middle of your screen."],
+      ["Microphone", "Your microphone is on so the academy can confirm it is you. Nothing is recorded in this version."],
+      ["Identity", "One photo is taken when you begin. Staff can compare it with the name you typed."],
+      ["Screen", "Leaving the exam, switching apps, printing or taking a screenshot is recorded, and the screen is covered."],
+      ["Who sees it", "Only academy staff running this exam. The academy keeps it only as long as needed for the result, and deletes it on request."]
+    ];
+    return html`<div style=${{ position: "fixed", inset: 0, overflowY: "auto", background: "linear-gradient(180deg,#eef4ff 0%,#f8fafc 65%)", fontFamily: "Inter, system-ui, sans-serif", color: INK }}>
+      <style>${CSS}</style>
+      <div class="ex-rise" style=${{ maxWidth: "560px", margin: "0 auto", padding: "26px 20px 40px" }}>
+        <p style=${{ fontSize: "11px", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: BLUE, margin: "0 0 10px" }}>Before you begin</p>
+        <h1 style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "26px", fontWeight: 800, color: NAVY, margin: "0 0 14px", lineHeight: 1.15 }}>Camera, microphone and privacy</h1>
+        <div style=${{ background: "#fff", border: "1px solid " + LINE, borderRadius: "22px", overflow: "hidden", marginBottom: "18px" }}>
+          ${items.map(([k, v], i) => html`<div key=${k} style=${{ display: "grid", gridTemplateColumns: "100px 1fr", gap: "12px", padding: "13px 16px", borderTop: i ? "1px solid " + LINE : "none" }}>
+            <span style=${{ fontSize: "11px", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: NAVY, paddingTop: "3px" }}>${k}</span>
+            <span style=${{ fontSize: "14px", lineHeight: 1.5 }}>${v}</span>
+          </div>`)}
+        </div>
+        <div style=${{ background: "#fff", border: "1px solid " + LINE, borderRadius: "22px", padding: "18px", marginBottom: "18px", textAlign: "center" }}>
+          ${camState === "on" ? html`<div>
+            <div style=${{ margin: "0 auto", width: "100%", maxWidth: "300px", aspectRatio: "4 / 3", borderRadius: "20px", overflow: "hidden", background: "#0b1020", position: "relative" }}>
+              <video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline style=${{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}></video>
+            </div>
+            <p style=${{ margin: "14px 0 8px", fontSize: "13px", color: MUTED }}>Check your face is clear and well lit. Say something to test the microphone.</p>
+            <div class="ex-meter" style=${{ maxWidth: "300px", margin: "0 auto" }}><span style=${{ width: level + "%" }}></span></div>
+          </div>` : null}
+          ${camState === "denied" ? html`<div class="ex-fade">
+            <p style=${{ color: RED, fontWeight: 700, margin: "0 0 6px" }}>Camera or microphone not allowed</p>
+            <p style=${{ color: MUTED, fontSize: "14px", lineHeight: 1.55, margin: "0 0 14px" }}>Allow both in your browser settings for this site, then try again.${cameraRequired ? "" : " This exam can also run without them."}</p>
+            <div style=${{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+              <button type="button" onClick=${askCamera} style=${{ height: "46px", padding: "0 20px", borderRadius: "999px", border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Try again</button>
+              ${cameraRequired ? null : html`<button type="button" onClick=${() => { setCamState("off"); }} style=${{ height: "46px", padding: "0 20px", borderRadius: "999px", border: "1px solid " + LINE, background: "#fff", color: NAVY, fontWeight: 800, cursor: "pointer" }}>Continue without camera</button>`}
+            </div>
+          </div>` : null}
+          ${camState === "idle" || camState === "asking" ? html`<div>
+            <p style=${{ color: MUTED, fontSize: "14px", margin: "0 0 14px" }}>Allow your camera and microphone to continue.</p>
+            <button type="button" disabled=${camState === "asking"} onClick=${askCamera} style=${{ height: "50px", padding: "0 24px", borderRadius: "999px", border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer", opacity: camState === "asking" ? .6 : 1 }}>${camState === "asking" ? "Waiting for permission…" : "Allow camera and microphone"}</button>
+          </div>` : null}
+        </div>
+        <label style=${{ display: "flex", gap: "12px", alignItems: "flex-start", background: "#fff", border: "1px solid " + LINE, borderRadius: "18px", padding: "14px 16px", cursor: "pointer", marginBottom: "18px" }}>
+          <input type="checkbox" checked=${consent} onChange=${(e) => setConsent(e.target.checked)} style=${{ marginTop: "3px", width: "18px", height: "18px", accentColor: BLUE }} />
+          <span style=${{ fontSize: "14px", lineHeight: 1.5 }}>I have read this notice. I agree to my camera, microphone, photo and screen activity being used by the academy for this exam only.</span>
+        </label>
+        ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "0 0 14px", fontSize: "14px" }}>${error}</p>` : null}
+        <button type="button" disabled=${!consent || (camState !== "on" && cameraRequired && camState !== "off")} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: (!consent || (camState !== "on" && cameraRequired && camState !== "off")) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
+      </div>
+    </div>`;
+  }
+
   if (phase === "preparing" || phase === "splash") return html`<${Screen} bg="linear-gradient(160deg,#0f126c 0%,#0948e6 100%)"><div class="ex-fade" style=${{ margin: "auto", textAlign: "center", color: "#fff" }}>
     <div class="ex-pulse" style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "38px", fontWeight: 900, letterSpacing: ".06em" }}>CGTIA</div>
     <div style=${{ marginTop: "12px", fontSize: "12px", opacity: .85, letterSpacing: ".16em", textTransform: "uppercase" }}>${phase === "preparing" ? "Preparing your exam" : "Good luck"}</div>
@@ -355,6 +487,8 @@ export function ExamTakePage() {
         <div style=${{ height: "100%", width: ((idx + 1) / Math.max(1, qs.length)) * 100 + "%", background: "linear-gradient(90deg," + BLUE + "," + NAVY + ")", borderRadius: "999px", transition: "width .4s ease" }}></div>
       </div>
     </div>
+    ${camState === "on" ? html`<div class="ex-cam" aria-label="Your camera"><video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline></video></div>` : null}
+    ${hidden ? html`<div class="ex-cover" role="alert"><div style=${{ maxWidth: "320px" }}><div style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "10px" }}>Screen hidden</div><p style=${{ opacity: .8, lineHeight: 1.6, margin: "0 0 18px" }}>This was recorded. Return to the exam to continue.</p><button type="button" onClick=${() => setHidden(false)} style=${{ height: "48px", padding: "0 22px", borderRadius: "999px", border: 0, background: "#fff", color: NAVY, fontWeight: 800, cursor: "pointer" }}>Return to the exam</button></div></div>` : null}
     ${warn ? html`<div class="ex-fade" role="alert" style=${{ maxWidth: "640px", width: "calc(100% - 36px)", margin: "10px auto 0", color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "14px", padding: "9px 12px", fontSize: "13px", boxSizing: "border-box" }}>${warn}</div>` : null}
     <div style=${{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "640px", width: "100%", margin: "0 auto", padding: "16px 18px", boxSizing: "border-box" }}>
       <div style=${{ maxHeight: "100%", overflow: "hidden" }}>

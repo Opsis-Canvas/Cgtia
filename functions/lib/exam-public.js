@@ -20,7 +20,8 @@ export const DEFAULT_SETTINGS = {
   requireFullscreen: true,
   tabSwitchAllowed: 1,
   resultMode: 'instant',
-  autoSubmit: true
+  autoSubmit: true,
+  requireCamera: true
 };
 
 export function settingsOf(exam) {
@@ -31,7 +32,8 @@ export function settingsOf(exam) {
     requireFullscreen: s.requireFullscreen !== false,
     tabSwitchAllowed: Math.max(0, Math.min(10, Number(s.tabSwitchAllowed == null ? 1 : s.tabSwitchAllowed) || 0)),
     resultMode: s.resultMode === 'admin' ? 'admin' : 'instant',
-    autoSubmit: s.autoSubmit !== false
+    autoSubmit: s.autoSubmit !== false,
+    requireCamera: s.requireCamera !== false
   };
 }
 
@@ -78,4 +80,16 @@ export async function deviceState(token, deviceId) {
   const live = await db.collection('examSessions').where('deviceId', '==', deviceId).limit(100).get();
   live.forEach((d) => { const x = d.data() || {}; if (x.token === token && x.status === 'in_progress') hit = { state: 'started' }; });
   return hit;
+}
+
+const norm = (x) => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+// Finds the place on a restricted link for this person. Returns the index, or -1.
+export function findAllowed(list, name, email) {
+  const n = norm(name), e = norm(email);
+  return (Array.isArray(list) ? list : []).findIndex((p) => {
+    // A place with an email needs both the name and the email to match
+    if (p.email) return norm(p.email) === e && e !== '' && norm(p.name) === n && n !== '';
+    return norm(p.name) === n && n !== '';
+  });
 }

@@ -8,7 +8,7 @@ export const handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid request.' }); }
   const id = String(body.sessionId || '').trim();
-  const type = body.type === 'fullscreen' ? 'fullscreen' : 'tab';
+  const type = ['fullscreen', 'capture', 'camera'].indexOf(body.type) >= 0 ? body.type : 'tab';
   if (!id) return json(400, { error: 'Missing session.' });
   try {
     const ref = db.collection('examSessions').doc(id);
@@ -16,9 +16,12 @@ export const handler = async (event) => {
     if (!snap.exists) return json(404, { error: 'Session not found.' });
     const s = snap.data() || {};
     if (s.status !== 'in_progress') return json(200, { locked: true, tabSwitches: s.tabSwitches || 0 });
-    const tabSwitches = type === 'tab' ? (s.tabSwitches || 0) + 1 : (s.tabSwitches || 0);
+    // A screenshot attempt is treated like leaving the screen: it counts toward the limit
+    const tabSwitches = (type === 'tab' || type === 'capture') ? (s.tabSwitches || 0) + 1 : (s.tabSwitches || 0);
+    const captureAttempts = type === 'capture' ? (s.captureAttempts || 0) + 1 : (s.captureAttempts || 0);
+    const cameraOffs = type === 'camera' ? (s.cameraOffs || 0) + 1 : (s.cameraOffs || 0);
     const fullscreenExits = type === 'fullscreen' ? (s.fullscreenExits || 0) + 1 : (s.fullscreenExits || 0);
-    await ref.update({ tabSwitches, fullscreenExits });
+    await ref.update({ tabSwitches, fullscreenExits, captureAttempts, cameraOffs });
     const allowed = Number(s.allowed) || 0;
     return json(200, { tabSwitches, allowed, locked: tabSwitches > allowed });
   } catch (err) {
