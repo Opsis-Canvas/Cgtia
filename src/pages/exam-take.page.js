@@ -92,6 +92,8 @@ export function ExamTakePage() {
   const [phase, setPhase] = useState("loading");
   const [consent, setConsent] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [bright, setBright] = useState(0);
+  const BRIGHT_MIN = 38;
   const [camState, setCamState] = useState("idle"); // idle | asking | on | denied
   const [level, setLevel] = useState(0);
   const [hidden, setHidden] = useState(false);
@@ -131,7 +133,7 @@ export function ExamTakePage() {
         if (!alive) return;
         if (!d.valid) { setError(d.error || "This link is not valid."); setPhase("invalid"); return; }
         setExam(d);
-        setInfo({ restricted: !!d.restricted, needsEmail: !!d.needsEmail });
+        setInfo({ restricted: !!d.restricted, needsEmail: !!d.needsEmail, needsReg: !!d.needsReg });
         if (d.device && d.device.state === "completed") { setResult(d.device); setPhase("completed"); return; }
         if (d.device && d.device.state === "started") { setPhase("started"); return; }
         setPhase("intro");
@@ -146,6 +148,23 @@ export function ExamTakePage() {
     const t = setTimeout(() => setPhase("running"), 2000);
     return () => clearTimeout(t);
   }, [phase]);
+
+  // Brightness of the live picture, 0-100. Measured on a tiny copy of each frame, so it is cheap.
+  useEffect(() => {
+    if (camState !== "on") return undefined;
+    const c = document.createElement("canvas"); c.width = 48; c.height = 36;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    const t = setInterval(() => {
+      const v = videoRef.current;
+      if (!v || !v.videoWidth) return;
+      g.drawImage(v, 0, 0, 48, 36);
+      const d = g.getImageData(0, 0, 48, 36).data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      setBright(Math.round((sum / (d.length / 4)) / 255 * 100));
+    }, 400);
+    return () => clearInterval(t);
+  }, [camState]);
 
   useEffect(() => {
     if (phase !== "running") return undefined;
@@ -209,8 +228,9 @@ export function ExamTakePage() {
     setError("");
     if (name.trim().length < 2) { setError("Enter your full name to begin."); return; }
     if (!agreed) { setError("Tick the box to say you have read the rules and the policy."); return; }
-    if (info.restricted && !email.trim()) { setError("Enter the email this exam was sent to."); return; }
-    if (info.restricted && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) { setError("That email does not look right."); return; }
+    if (info.needsEmail && !email.trim()) { setError("Enter the email this exam was sent to."); return; }
+    if (info.needsReg && !regNo.trim()) { setError("Enter your registration number."); return; }
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) { setError("That email does not look right."); return; }
     setPhase("consent");
   }
 
@@ -369,11 +389,11 @@ export function ExamTakePage() {
         </div>
         <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your full name</label>
         <input value=${name} onInput=${(e) => setName(e.target.value)} placeholder="As you want it recorded" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
-        ${info.restricted ? html`<div style=${{ marginTop: "16px" }}>
-          <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your email</label>
-          <input type="email" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="Your email" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
-          <input value=${regNo} onInput=${(e) => setRegNo(e.target.value)} placeholder="Registration number (students only)" style=${{ width: "100%", marginTop: "10px", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
-          <p style=${{ color: MUTED, fontSize: "12px", margin: "8px 4px 0", lineHeight: 1.5 }}>Use the email the academy sent this exam to. Students also enter their registration number.</p>
+        ${info.needsEmail || info.needsReg ? html`<div style=${{ marginTop: "16px", display: "grid", gap: "10px" }}>
+          ${info.needsEmail ? html`<div><label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your email</label>
+            <input type="email" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="Your email" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} /></div>` : null}
+          ${info.needsReg ? html`<div><label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Registration number</label>
+            <input value=${regNo} onInput=${(e) => setRegNo(e.target.value)} placeholder="Your registration number" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} /></div>` : null}
         </div>` : null}
         ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "14px 0 0", fontSize: "14px" }}>${error}</p>` : null}
         <details class="ex-rise" style=${{ marginTop: "18px", background: "#fff", border: "1px solid " + LINE, borderRadius: "20px", padding: "14px 18px" }}>
@@ -423,10 +443,14 @@ export function ExamTakePage() {
         </div>
         <div style=${{ background: "#fff", border: "1px solid " + LINE, borderRadius: "22px", padding: "18px", marginBottom: "18px", textAlign: "center" }}>
           ${camState === "on" ? html`<div>
-            <div style=${{ margin: "0 auto", width: "100%", maxWidth: "300px", aspectRatio: "4 / 3", borderRadius: "20px", overflow: "hidden", background: "#0b1020", position: "relative" }}>
+            <div style=${{ margin: "0 auto", width: "100%", maxWidth: "300px", display: "flex", gap: "10px", alignItems: "stretch" }}>
+            <div style=${{ flex: "1", aspectRatio: "1 / 1", borderRadius: "20px", overflow: "hidden", background: "#0b1020", position: "relative", border: "3px solid " + (bright >= BRIGHT_MIN ? GREEN : RED) }}>
               <video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline style=${{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}></video>
             </div>
-            <p style=${{ margin: "14px 0 8px", fontSize: "13px", color: MUTED }}>Check your face is clear and well lit. Say something to test the microphone.</p>
+            <div style=${{ width: "10px", borderRadius: "999px", background: LINE, position: "relative", overflow: "hidden" }}><span style=${{ position: "absolute", bottom: 0, left: 0, right: 0, height: bright + "%", background: bright >= BRIGHT_MIN ? GREEN : RED, transition: "height .3s" }}></span></div>
+            </div>
+            <p style=${{ margin: "14px 0 6px", fontSize: "13px", color: bright >= BRIGHT_MIN ? GREEN : RED, fontWeight: 700 }}>${bright >= BRIGHT_MIN ? "Brightness is good. You can take your photo." : "Too dark. Move to a brighter area, face the light, then try again."}</p>
+            <p style=${{ margin: "0 0 8px", fontSize: "13px", color: MUTED }}>Keep your face in the square. Say something to test the microphone.</p>
             <div class="ex-meter" style=${{ maxWidth: "300px", margin: "0 auto" }}><span style=${{ width: level + "%" }}></span></div>
           </div>` : null}
           ${camState === "denied" ? html`<div class="ex-fade">
@@ -444,7 +468,7 @@ export function ExamTakePage() {
         </div>
           <p style=${{ color: MUTED, fontSize: "13px", margin: "0 0 18px", lineHeight: 1.5 }}>You agreed to the rules and policy on the first screen. Next, allow the camera so the academy can confirm it is you.</p>
         ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "0 0 14px", fontSize: "14px" }}>${error}</p>` : null}
-        <button type="button" disabled=${camState !== "on" && cameraRequired && camState !== "off"} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: (camState !== "on" && cameraRequired && camState !== "off") ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
+        <button type="button" disabled=${(camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && bright < BRIGHT_MIN)} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: ((camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && bright < BRIGHT_MIN)) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
       </div>
     </div>`;
   }
@@ -505,6 +529,7 @@ export function ExamTakePage() {
         <div style=${{ height: "100%", width: ((idx + 1) / Math.max(1, qs.length)) * 100 + "%", background: "linear-gradient(90deg," + BLUE + "," + NAVY + ")", borderRadius: "999px", transition: "width .4s ease" }}></div>
       </div>
     </div>
+    ${camState === "on" && bright < BRIGHT_MIN ? html`<div class="ex-fade" style=${{ position: "absolute", top: "calc(186px + env(safe-area-inset-top,0px))", left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "#fef3c7", color: "#92400e", borderRadius: "999px", padding: "5px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>Too dark. Move somewhere brighter.</div>` : null}
     ${camState === "on" ? html`<div class="ex-cam" aria-label="Your camera"><video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline></video></div>` : null}
     ${hidden ? html`<div class="ex-cover" role="alert"><div style=${{ maxWidth: "320px" }}><div style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "10px" }}>Screen hidden</div><p style=${{ opacity: .8, lineHeight: 1.6, margin: "0 0 18px" }}>This was recorded. Return to the exam to continue.</p><button type="button" onClick=${() => setHidden(false)} style=${{ height: "48px", padding: "0 22px", borderRadius: "999px", border: 0, background: "#fff", color: NAVY, fontWeight: 800, cursor: "pointer" }}>Return to the exam</button></div></div>` : null}
     ${warn ? html`<div class="ex-fade" role="alert" style=${{ maxWidth: "640px", width: "calc(100% - 36px)", margin: "10px auto 0", color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "14px", padding: "9px 12px", fontSize: "13px", boxSizing: "border-box" }}>${warn}</div>` : null}

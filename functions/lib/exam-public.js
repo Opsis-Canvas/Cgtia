@@ -84,17 +84,32 @@ export async function deviceState(token, deviceId) {
 
 const norm = (x) => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
-// Finds the place for this person on a restricted link. Returns the index, or -1.
-// A student's place needs name, email AND registration number. A visitor's place needs name AND email.
-export function findAllowed(list, name, email, reg) {
-  const n = norm(name), e = norm(email), r = norm(reg).replace(/\s+/g, '');
+// Which details the link asks for. Name is always asked.
+export function reqOf(link) {
+  const r = (link && link.required) || {};
+  return { email: !!r.email, reg: !!r.reg };
+}
+
+const clean = (x) => norm(x).replace(/\s+/g, '');
+
+// For a link with a lock (one person, or several): each detail asked for must match the lock, if one is set
+export function lockMatch(lock, req, name, email, reg) {
+  const L = lock || {};
+  if (L.name && clean(L.name) !== clean(name)) return false;
+  if (req.email && (!email || (L.email && clean(L.email) !== clean(email)))) return false;
+  if (req.reg && (!reg || (L.reg && clean(L.reg) !== clean(reg)))) return false;
+  return !!clean(name);
+}
+
+// Finds the place for this person on a link with a list. Returns the index, or -1.
+// A place with an email needs the email; a place with a reg number needs the reg number; the link's own choices can add more.
+export function findAllowed(list, name, email, reg, req) {
   return (Array.isArray(list) ? list : []).findIndex((p) => {
-    if (n === '' || norm(p.name) !== n) return false;
-    if (p.source === 'student' || p.regNumber) {
-      const preg = norm(p.regNumber || '').replace(/\s+/g, '');
-      return e !== '' && norm(p.email) === e && r !== '' && preg === r;
-    }
-    if (p.email) return e !== '' && norm(p.email) === e;
+    if (clean(name) === '' || clean(p.name) !== clean(name)) return false;
+    const needEmail = !!p.email || !!(req && req.email);
+    const needReg = !!p.regNumber || !!(req && req.reg);
+    if (needEmail && (!email || clean(p.email || email) !== clean(email))) return false;
+    if (needReg && (!reg || clean(p.regNumber || reg) !== clean(reg))) return false;
     return true;
   });
 }

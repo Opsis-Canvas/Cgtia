@@ -1,6 +1,6 @@
 /** Starts one attempt: records the start time, sets the deadline, and shuffles the questions if the exam says so. */
 import { db, admin } from './firebaseAdmin.js';
-import { json, CORS, examFromLink, publicExam, settingsOf, deviceState, findAllowed } from './exam-public.js';
+import { json, CORS, examFromLink, publicExam, settingsOf, deviceState, findAllowed, reqOf, lockMatch } from './exam-public.js';
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
@@ -25,13 +25,14 @@ export const handler = async (event) => {
     const list = Array.isArray(r.link.allowed) ? r.link.allowed : [];
     let placeIndex = -1;
     if (list.length) {
-      if (!email) return json(400, { error: 'Enter the email this exam was sent to.' });
-      placeIndex = findAllowed(list, name, email, regNumber);
-      if (placeIndex >= 0 && list[placeIndex].source === 'student' && !regNumber) return json(400, { error: 'Students also enter their registration number.' });
-      if (placeIndex < 0) return json(403, { error: 'Your name or email is not on the list for this exam. Check it matches exactly, or contact the academy.' });
+      placeIndex = findAllowed(list, name, email, regNumber, reqOf(r.link));
+      if (placeIndex < 0) return json(403, { error: 'Your details do not match this exam. Check them, or contact the academy.' });
+
       if (list[placeIndex].used) return json(403, { error: 'This place has already been used.' });
     }
     if (settingsOf(r.exam).requireCamera && !cameraOn) return json(400, { error: 'This exam needs your camera and microphone. Allow them and try again.' });
+    const req = reqOf(r.link);
+    if (!list.length && !lockMatch(r.link.lock, req, name, email, regNumber) && (r.link.lock || req.email || req.reg)) return json(403, { error: 'Your details do not match this exam. Check them, or contact the academy.' });
     const pub = publicExam(r.exam);
     const n = pub.questions.length;
     if (!n) return json(400, { error: 'This exam has no questions yet.' });
