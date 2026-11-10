@@ -9,6 +9,9 @@ export const handler = async (event) => {
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid request.' }); }
   const name = String(body.name || '').trim().slice(0, 120);
   const email = String(body.email || '').trim().slice(0, 160);
+  if (body.consent !== true) return json(400, { error: 'Please read and agree to the notice before you begin.' });
+  const photo = typeof body.photo === 'string' && body.photo.indexOf('data:image/jpeg;base64,') === 0 && body.photo.length < 90000 ? body.photo : '';
+  const cameraOn = body.cameraOn === true;
   const deviceId = String(body.deviceId || '').slice(0, 80);
   if (deviceId.length < 8) return json(400, { error: 'This device could not be recognised. Reload the page and try again.' });
   if (name.length < 2) return json(400, { error: 'Enter your full name to begin.' });
@@ -25,6 +28,7 @@ export const handler = async (event) => {
       if (placeIndex < 0) return json(403, { error: 'Your name or email is not on the list for this exam. Check it matches exactly, or contact the academy.' });
       if (list[placeIndex].used) return json(403, { error: 'This place has already been used.' });
     }
+    if (settingsOf(r.exam).requireCamera && !cameraOn) return json(400, { error: 'This exam needs your camera and microphone. Allow them and try again.' });
     const pub = publicExam(r.exam);
     const n = pub.questions.length;
     if (!n) return json(400, { error: 'This exam has no questions yet.' });
@@ -38,7 +42,8 @@ export const handler = async (event) => {
     await db.collection('examSessions').doc(id).set({
       token: r.token, examId: r.examId, examTitle: pub.title, name,
       startedAt: startedAt.toISOString(), deadline, order,
-      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, deviceId, email,
+      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, captureAttempts: 0, cameraOffs: 0, deviceId, email,
+      photo, cameraOn, consentAt: new Date().toISOString(),
       allowed: pub.settings.tabSwitchAllowed, timerMinutes: pub.timerMinutes
     });
     await db.collection('adminAlerts').add({

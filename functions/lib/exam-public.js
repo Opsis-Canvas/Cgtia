@@ -20,7 +20,8 @@ export const DEFAULT_SETTINGS = {
   requireFullscreen: true,
   tabSwitchAllowed: 1,
   resultMode: 'instant',
-  autoSubmit: true
+  autoSubmit: true,
+  requireCamera: true
 };
 
 export function settingsOf(exam) {
@@ -31,7 +32,8 @@ export function settingsOf(exam) {
     requireFullscreen: s.requireFullscreen !== false,
     tabSwitchAllowed: Math.max(0, Math.min(10, Number(s.tabSwitchAllowed == null ? 1 : s.tabSwitchAllowed) || 0)),
     resultMode: s.resultMode === 'admin' ? 'admin' : 'instant',
-    autoSubmit: s.autoSubmit !== false
+    autoSubmit: s.autoSubmit !== false,
+    requireCamera: s.requireCamera !== false
   };
 }
 

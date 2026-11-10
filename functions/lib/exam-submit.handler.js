@@ -50,7 +50,8 @@ export const handler = async (event) => {
       sessionId: id, examId: s.examId, examTitle: s.examTitle || exam.title || '', name: s.name || '',
       score, total, pct, answered, reason, tabSwitches: s.tabSwitches || 0, fullscreenExits: s.fullscreenExits || 0,
       allowed: s.allowed || 0, submittedAt, resultMode: settings.resultMode,
-      token: s.token || '', deviceId: s.deviceId || '', details
+      token: s.token || '', deviceId: s.deviceId || '', details,
+      captureAttempts: s.captureAttempts || 0, cameraOffs: s.cameraOffs || 0, photo: s.photo || '', cameraOn: !!s.cameraOn
     });
     await ref.update({ status: 'submitted', submittedAt, reason });
     await db.collection('adminAlerts').add({
