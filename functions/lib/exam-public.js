@@ -84,14 +84,16 @@ export async function deviceState(token, deviceId) {
 
 const norm = (x) => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
-// Finds the place on a restricted link for this person. Returns the index, or -1.
-// Name is always needed. The reg number or the email can be used instead of each other.
+// Finds the place for this person on a restricted link. Returns the index, or -1.
+// A student's place needs name, email AND registration number. A visitor's place needs name AND email.
 export function findAllowed(list, name, email, reg) {
   const n = norm(name), e = norm(email), r = norm(reg).replace(/\s+/g, '');
   return (Array.isArray(list) ? list : []).findIndex((p) => {
     if (n === '' || norm(p.name) !== n) return false;
-    const preg = norm(p.regNumber || '').replace(/\s+/g, '');
-    if (preg) return r !== '' && preg === r;
+    if (p.source === 'student' || p.regNumber) {
+      const preg = norm(p.regNumber || '').replace(/\s+/g, '');
+      return e !== '' && norm(p.email) === e && r !== '' && preg === r;
+    }
     if (p.email) return e !== '' && norm(p.email) === e;
     return true;
   });

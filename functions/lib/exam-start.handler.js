@@ -25,8 +25,9 @@ export const handler = async (event) => {
     const list = Array.isArray(r.link.allowed) ? r.link.allowed : [];
     let placeIndex = -1;
     if (list.length) {
-      if (!email && !regNumber) return json(400, { error: 'Enter your email or your registration number.' });
+      if (!email) return json(400, { error: 'Enter the email this exam was sent to.' });
       placeIndex = findAllowed(list, name, email, regNumber);
+      if (placeIndex >= 0 && list[placeIndex].source === 'student' && !regNumber) return json(400, { error: 'Students also enter their registration number.' });
       if (placeIndex < 0) return json(403, { error: 'Your name or email is not on the list for this exam. Check it matches exactly, or contact the academy.' });
       if (list[placeIndex].used) return json(403, { error: 'This place has already been used.' });
     }
