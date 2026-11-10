@@ -79,3 +79,15 @@ export async function deviceState(token, deviceId) {
   live.forEach((d) => { const x = d.data() || {}; if (x.token === token && x.status === 'in_progress') hit = { state: 'started' }; });
   return hit;
 }
+
+const norm = (x) => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+// Finds the place on a restricted link for this person. Returns the index, or -1.
+export function findAllowed(list, name, email) {
+  const n = norm(name), e = norm(email);
+  return (Array.isArray(list) ? list : []).findIndex((p) => {
+    // A place with an email needs both the name and the email to match
+    if (p.email) return norm(p.email) === e && e !== '' && norm(p.name) === n && n !== '';
+    return norm(p.name) === n && n !== '';
+  });
+}

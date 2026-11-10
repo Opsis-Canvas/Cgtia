@@ -1,6 +1,6 @@
 /** Starts one attempt: records the start time, sets the deadline, and shuffles the questions if the exam says so. */
-import { db } from './firebaseAdmin.js';
-import { json, CORS, examFromLink, publicExam, settingsOf, deviceState } from './exam-public.js';
+import { db, admin } from './firebaseAdmin.js';
+import { json, CORS, examFromLink, publicExam, settingsOf, deviceState, findAllowed } from './exam-public.js';
 
 export const handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
@@ -8,6 +8,7 @@ export const handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid request.' }); }
   const name = String(body.name || '').trim().slice(0, 120);
+  const email = String(body.email || '').trim().slice(0, 160);
   const deviceId = String(body.deviceId || '').slice(0, 80);
   if (deviceId.length < 8) return json(400, { error: 'This device could not be recognised. Reload the page and try again.' });
   if (name.length < 2) return json(400, { error: 'Enter your full name to begin.' });
@@ -17,6 +18,13 @@ export const handler = async (event) => {
     const prior = await deviceState(r.token, deviceId);
     if (prior && prior.state === 'completed') return json(403, { error: 'You have already completed this exam. Thank you.', device: prior });
     if (prior && prior.state === 'started') return json(403, { error: 'You already started this exam on this device. Contact the academy if you need help.', device: prior });
+    const list = Array.isArray(r.link.allowed) ? r.link.allowed : [];
+    let placeIndex = -1;
+    if (list.length) {
+      placeIndex = findAllowed(list, name, email);
+      if (placeIndex < 0) return json(403, { error: 'Your name or email is not on the list for this exam. Check it matches exactly, or contact the academy.' });
+      if (list[placeIndex].used) return json(403, { error: 'This place has already been used.' });
+    }
     const pub = publicExam(r.exam);
     const n = pub.questions.length;
     if (!n) return json(400, { error: 'This exam has no questions yet.' });
@@ -30,10 +38,20 @@ export const handler = async (event) => {
     await db.collection('examSessions').doc(id).set({
       token: r.token, examId: r.examId, examTitle: pub.title, name,
       startedAt: startedAt.toISOString(), deadline, order,
-      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, deviceId,
+      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, deviceId, email,
       allowed: pub.settings.tabSwitchAllowed, timerMinutes: pub.timerMinutes
     });
-    await db.collection('examLinks').doc(r.token).update({ uses: (r.link.uses || 0) + 1 });
+    await db.collection('adminAlerts').add({
+      kind: 'exam-started', read: false, createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      title: 'Exam started: ' + pub.title,
+      body: name + (email ? ' · ' + email : '') + ' · started just now'
+    });
+    if (placeIndex >= 0) {
+      const next = list.map((pl, i) => (i === placeIndex ? { ...pl, used: true, usedAt: new Date().toISOString() } : pl));
+      await db.collection('examLinks').doc(r.token).update({ allowed: next, uses: (r.link.uses || 0) + 1 });
+    } else {
+      await db.collection('examLinks').doc(r.token).update({ uses: (r.link.uses || 0) + 1 });
+    }
     const byIndex = {};
     pub.questions.forEach((q) => { byIndex[q.i] = q; });
     return json(200, {
