@@ -103,6 +103,7 @@ export function ExamTakePage() {
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [regNo, setRegNo] = useState("");
   const [info, setInfo] = useState({ restricted: false, needsEmail: false });
   const [session, setSession] = useState(null);
   const [answers, setAnswers] = useState({});
@@ -206,7 +207,8 @@ export function ExamTakePage() {
     e.preventDefault();
     setError("");
     if (name.trim().length < 2) { setError("Enter your full name to begin."); return; }
-    if (info.restricted && info.needsEmail && !/^\S+@\S+\.\S+$/.test(email.trim())) { setError("Enter the email address this exam was sent to."); return; }
+    if (info.restricted && !email.trim()) { setError("Enter the email this exam was sent to."); return; }
+    if (info.restricted && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) { setError("That email does not look right."); return; }
     setPhase("consent");
   }
 
@@ -264,7 +266,7 @@ export function ExamTakePage() {
       try { await document.documentElement.requestFullscreen(); } catch (x) { /* the exam still runs */ }
     }
     setPhase("preparing");
-    const r = await post("/api/exam-start", { token, name: name.trim(), email: email.trim(), deviceId: dev, consent: true, cameraOn, photo: snap });
+    const r = await post("/api/exam-start", { token, name: name.trim(), email: email.trim(), regNumber: regNo.trim(), deviceId: dev, consent: true, cameraOn, photo: snap });
     if (!r.ok || r.data.error) {
       if (r.data.device && r.data.device.state === "completed") { setResult(r.data.device); setPhase("completed"); return; }
       if (r.data.device && r.data.device.state === "started") { setPhase("started"); return; }
@@ -366,9 +368,10 @@ export function ExamTakePage() {
         <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your full name</label>
         <input value=${name} onInput=${(e) => setName(e.target.value)} placeholder="As you want it recorded" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
         ${info.restricted ? html`<div style=${{ marginTop: "16px" }}>
-          <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your email${info.needsEmail ? "" : " (optional)"}</label>
-          <input type="email" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="The email this exam was sent to" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
-          <p style=${{ color: MUTED, fontSize: "12px", margin: "8px 4px 0", lineHeight: 1.5 }}>Only the people the academy listed can start this exam.</p>
+          <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your email</label>
+          <input type="email" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="Your email" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
+          <input value=${regNo} onInput=${(e) => setRegNo(e.target.value)} placeholder="Registration number (students only)" style=${{ width: "100%", marginTop: "10px", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
+          <p style=${{ color: MUTED, fontSize: "12px", margin: "8px 4px 0", lineHeight: 1.5 }}>Use the email the academy sent this exam to. Students also enter their registration number.</p>
         </div>` : null}
         ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "14px 0 0", fontSize: "14px" }}>${error}</p>` : null}
         <div style=${{ position: "fixed", left: 0, right: 0, bottom: 0, padding: "14px 20px calc(16px + env(safe-area-inset-bottom, 0px))", background: "rgba(248,250,252,.94)", backdropFilter: "blur(10px)", borderTop: "1px solid " + LINE }}>
