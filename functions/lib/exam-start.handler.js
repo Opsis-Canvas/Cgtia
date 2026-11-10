@@ -9,6 +9,7 @@ export const handler = async (event) => {
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid request.' }); }
   const name = String(body.name || '').trim().slice(0, 120);
   const email = String(body.email || '').trim().slice(0, 160);
+  const regNumber = String(body.regNumber || '').trim().slice(0, 40);
   if (body.consent !== true) return json(400, { error: 'Please read and agree to the notice before you begin.' });
   const photo = typeof body.photo === 'string' && body.photo.indexOf('data:image/jpeg;base64,') === 0 && body.photo.length < 90000 ? body.photo : '';
   const cameraOn = body.cameraOn === true;
@@ -24,7 +25,8 @@ export const handler = async (event) => {
     const list = Array.isArray(r.link.allowed) ? r.link.allowed : [];
     let placeIndex = -1;
     if (list.length) {
-      placeIndex = findAllowed(list, name, email);
+      if (!email && !regNumber) return json(400, { error: 'Enter your email or your registration number.' });
+      placeIndex = findAllowed(list, name, email, regNumber);
       if (placeIndex < 0) return json(403, { error: 'Your name or email is not on the list for this exam. Check it matches exactly, or contact the academy.' });
       if (list[placeIndex].used) return json(403, { error: 'This place has already been used.' });
     }
@@ -42,7 +44,7 @@ export const handler = async (event) => {
     await db.collection('examSessions').doc(id).set({
       token: r.token, examId: r.examId, examTitle: pub.title, name,
       startedAt: startedAt.toISOString(), deadline, order,
-      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, captureAttempts: 0, cameraOffs: 0, deviceId, email,
+      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, captureAttempts: 0, cameraOffs: 0, deviceId, email, regNumber,
       photo, cameraOn, consentAt: new Date().toISOString(),
       allowed: pub.settings.tabSwitchAllowed, timerMinutes: pub.timerMinutes
     });
