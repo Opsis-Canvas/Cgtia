@@ -91,6 +91,7 @@ export function ExamTakePage() {
   const dev = useRef(deviceId()).current;
   const [phase, setPhase] = useState("loading");
   const [consent, setConsent] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [camState, setCamState] = useState("idle"); // idle | asking | on | denied
   const [level, setLevel] = useState(0);
   const [hidden, setHidden] = useState(false);
@@ -207,6 +208,7 @@ export function ExamTakePage() {
     e.preventDefault();
     setError("");
     if (name.trim().length < 2) { setError("Enter your full name to begin."); return; }
+    if (!agreed) { setError("Tick the box to say you have read the rules and the policy."); return; }
     if (info.restricted && !email.trim()) { setError("Enter the email this exam was sent to."); return; }
     if (info.restricted && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) { setError("That email does not look right."); return; }
     setPhase("consent");
@@ -374,9 +376,25 @@ export function ExamTakePage() {
           <p style=${{ color: MUTED, fontSize: "12px", margin: "8px 4px 0", lineHeight: 1.5 }}>Use the email the academy sent this exam to. Students also enter their registration number.</p>
         </div>` : null}
         ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "14px 0 0", fontSize: "14px" }}>${error}</p>` : null}
+        <details class="ex-rise" style=${{ marginTop: "18px", background: "#fff", border: "1px solid " + LINE, borderRadius: "20px", padding: "14px 18px" }}>
+          <summary style=${{ fontWeight: 800, color: NAVY, cursor: "pointer" }}>Camera, microphone and privacy policy</summary>
+          <div style=${{ marginTop: "12px", fontSize: "14px", lineHeight: 1.65, color: INK }}>
+            <p style=${{ margin: "0 0 10px" }}><strong>Camera.</strong> Your front camera is on during the exam. It shows in a small frame in the middle of your screen. It is not recorded in this version.</p>
+            <p style=${{ margin: "0 0 10px" }}><strong>Microphone.</strong> Your microphone is switched on so the academy can confirm it is you. Nothing is recorded in this version.</p>
+            <p style=${{ margin: "0 0 10px" }}><strong>Identity photo.</strong> One photo is taken when you begin. Staff can compare it with the name you typed.</p>
+            <p style=${{ margin: "0 0 10px" }}><strong>Screen activity.</strong> Leaving the exam, switching apps, printing, or taking a screenshot is recorded. The screen is covered when this happens.</p>
+            <p style=${{ margin: "0 0 10px" }}><strong>Who sees it.</strong> Only academy staff running this exam.</p>
+            <p style=${{ margin: "0 0 10px" }}><strong>How long.</strong> The academy keeps this only as long as needed for your result. You can ask for it to be deleted.</p>
+            <p style=${{ margin: 0 }}><strong>If you refuse.</strong> The exam needs your camera and microphone. If you refuse, you will not be able to start it.</p>
+          </div>
+        </details>
+        <label style=${{ display: "flex", gap: "12px", alignItems: "flex-start", background: "#fff", border: "1px solid " + (agreed ? BLUE : LINE), borderRadius: "18px", padding: "14px 16px", cursor: "pointer", marginTop: "14px" }}>
+          <input type="checkbox" checked=${agreed} onChange=${(e) => setAgreed(e.target.checked)} style=${{ marginTop: "3px", width: "18px", height: "18px", accentColor: BLUE }} />
+          <span style=${{ fontSize: "14px", lineHeight: 1.5 }}>I have read the rules, the camera and microphone policy, and the privacy notice, and I agree to them for this exam.</span>
+        </label>
         <div style=${{ position: "fixed", left: 0, right: 0, bottom: 0, padding: "14px 20px calc(16px + env(safe-area-inset-bottom, 0px))", background: "rgba(248,250,252,.94)", backdropFilter: "blur(10px)", borderTop: "1px solid " + LINE }}>
           <div style=${{ maxWidth: "560px", margin: "0 auto" }}>
-            <button type="submit" style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", letterSpacing: ".02em", cursor: "pointer", boxShadow: "0 16px 28px -16px rgba(15,18,108,.8)" }}>Begin the exam</button>
+            <button type="submit" disabled=${!agreed} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", letterSpacing: ".02em", cursor: agreed ? "pointer" : "not-allowed", opacity: agreed ? 1 : .45, boxShadow: "0 16px 28px -16px rgba(15,18,108,.8)" }}>Begin the exam</button>
           </div>
         </div>
       </form>
@@ -424,12 +442,9 @@ export function ExamTakePage() {
             <button type="button" disabled=${camState === "asking"} onClick=${askCamera} style=${{ height: "50px", padding: "0 24px", borderRadius: "999px", border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer", opacity: camState === "asking" ? .6 : 1 }}>${camState === "asking" ? "Waiting for permission…" : "Allow camera and microphone"}</button>
           </div>` : null}
         </div>
-        <label style=${{ display: "flex", gap: "12px", alignItems: "flex-start", background: "#fff", border: "1px solid " + LINE, borderRadius: "18px", padding: "14px 16px", cursor: "pointer", marginBottom: "18px" }}>
-          <input type="checkbox" checked=${consent} onChange=${(e) => setConsent(e.target.checked)} style=${{ marginTop: "3px", width: "18px", height: "18px", accentColor: BLUE }} />
-          <span style=${{ fontSize: "14px", lineHeight: 1.5 }}>I have read this notice. I agree to my camera, microphone, photo and screen activity being used by the academy for this exam only.</span>
-        </label>
+          <p style=${{ color: MUTED, fontSize: "13px", margin: "0 0 18px", lineHeight: 1.5 }}>You agreed to the rules and policy on the first screen. Next, allow the camera so the academy can confirm it is you.</p>
         ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "0 0 14px", fontSize: "14px" }}>${error}</p>` : null}
-        <button type="button" disabled=${!consent || (camState !== "on" && cameraRequired && camState !== "off")} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: (!consent || (camState !== "on" && cameraRequired && camState !== "off")) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
+        <button type="button" disabled=${camState !== "on" && cameraRequired && camState !== "off"} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: (camState !== "on" && cameraRequired && camState !== "off") ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
       </div>
     </div>`;
   }
