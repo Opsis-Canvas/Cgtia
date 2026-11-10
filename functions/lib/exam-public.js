@@ -43,7 +43,7 @@ export async function examFromLink(token) {
   const snap = await db.collection('examLinks').doc(token).get();
   if (!snap.exists) return { error: 'This link is not valid.' };
   const l = snap.data() || {};
-  if (l.revoked) return { error: 'This link has been cancelled.' };
+  if (l.revoked || l.trashed) return { error: 'This link has been cancelled.' };
   const exp = l.expiresAt ? new Date(l.expiresAt).getTime() : 0;
   if (exp && Date.now() > exp) return { error: 'This link has expired.' };
   if (l.maxUses > 0 && (l.uses || 0) >= l.maxUses) return { error: 'This link has already been used.' };
