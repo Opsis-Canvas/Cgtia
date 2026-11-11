@@ -93,10 +93,24 @@ export function ExamTakePage() {
   const [consent, setConsent] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [bright, setBright] = useState(0);
-  const BRIGHT_MIN = 38;
+  const BRIGHT_MIN = 30;
+  const brightRef = useRef(0);
+  const faceOkRef = useRef(false);
+  const lastSpeak = useRef(0);
+  const badMs = useRef(0);
+  function speak(text) {
+    try {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* speech is optional */ }
+  }
   const detRef = useRef(null);
   const [faceOk, setFaceOk] = useState(false);
   const [faceMsg, setFaceMsg] = useState("Looking for your face…");
+  useEffect(() => { faceOkRef.current = faceOk; }, [faceOk]);
   const VISION = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
   const FACE_MODEL = "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
   // Face check: exactly one face, large enough, confident, and all six key points (eyes, ears, nose, mouth) inside the frame
@@ -126,7 +140,7 @@ export function ExamTakePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [regNo, setRegNo] = useState("");
-  const [info, setInfo] = useState({ restricted: false, needsEmail: false });
+  const [info, setInfo] = useState({ restricted: false, needsEmail: false, needsReg: false, needsName: true });
   const [session, setSession] = useState(null);
   const [answers, setAnswers] = useState({});
   const [idx, setIdx] = useState(0);
@@ -152,7 +166,7 @@ export function ExamTakePage() {
         if (!alive) return;
         if (!d.valid) { setError(d.error || "This link is not valid."); setPhase("invalid"); return; }
         setExam(d);
-        setInfo({ restricted: !!d.restricted, needsEmail: !!d.needsEmail, needsReg: !!d.needsReg });
+        setInfo({ restricted: !!d.restricted, needsEmail: !!d.needsEmail, needsReg: !!d.needsReg, needsName: d.needsName !== false });
         if (d.device && d.device.state === "completed") { setResult(d.device); setPhase("completed"); return; }
         if (d.device && d.device.state === "started") { setPhase("started"); return; }
         setPhase("intro");
@@ -195,9 +209,24 @@ export function ExamTakePage() {
       const d = g.getImageData(0, 0, 48, 36).data;
       let sum = 0;
       for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-      setBright(Math.round((sum / (d.length / 4)) / 255 * 100));
+      const b = Math.round((sum / (d.length / 4)) / 255 * 100);
+      brightRef.current = b;
+      setBright(b);
       if (detRef.current && v.readyState >= 2) { try { judgeFaces(detRef.current.detectForVideo(v, performance.now()), v); } catch (e) {} }
     }, 400);
+    return () => clearInterval(t);
+  }, [camState]);
+
+  useEffect(() => {
+    if (camState !== "on") return undefined;
+    const t = setInterval(() => {
+      const ok = brightRef.current >= BRIGHT_MIN && faceOkRef.current;
+      badMs.current = ok ? 0 : badMs.current + 1000;
+      if (badMs.current >= 3000 && Date.now() - lastSpeak.current > 12000) {
+        lastSpeak.current = Date.now();
+        speak(brightRef.current < BRIGHT_MIN ? "Move into a brighter area, and face the light." : "Keep your whole face inside the frame.");
+      }
+    }, 1000);
     return () => clearInterval(t);
   }, [camState]);
 
@@ -261,7 +290,7 @@ export function ExamTakePage() {
   async function begin(e) {
     e.preventDefault();
     setError("");
-    if (name.trim().length < 2) { setError("Enter your full name to begin."); return; }
+    if (info.needsName && name.trim().length < 2) { setError("Enter your full name to begin."); return; }
     if (!agreed) { setError("Tick the box to say you have read the rules and the policy."); return; }
     if (info.needsEmail && !email.trim()) { setError("Enter the email this exam was sent to."); return; }
     if (info.needsReg && !regNo.trim()) { setError("Enter your registration number."); return; }
@@ -422,7 +451,7 @@ export function ExamTakePage() {
             <span style=${{ fontSize: "14px", lineHeight: 1.55, color: INK }}>${v}</span>
           </div>`)}
         </div>
-        <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your full name</label>
+        <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>${info.needsName ? "Your full name" : "Full name (optional)"}</label>
         <input value=${name} onInput=${(e) => setName(e.target.value)} placeholder="As you want it recorded" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
         ${info.needsEmail || info.needsReg ? html`<div style=${{ marginTop: "16px", display: "grid", gap: "10px" }}>
           ${info.needsEmail ? html`<div><label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your email</label>
@@ -479,7 +508,7 @@ export function ExamTakePage() {
         <div style=${{ background: "#fff", border: "1px solid " + LINE, borderRadius: "22px", padding: "18px", marginBottom: "18px", textAlign: "center" }}>
           ${camState === "on" ? html`<div>
             <div style=${{ margin: "0 auto", width: "100%", maxWidth: "300px", display: "flex", gap: "10px", alignItems: "stretch" }}>
-            <div style=${{ flex: "1", aspectRatio: "1 / 1", borderRadius: "20px", overflow: "hidden", background: "#0b1020", position: "relative", border: "3px solid " + (bright >= BRIGHT_MIN ? GREEN : RED) }}>
+            <div style=${{ flex: "1", aspectRatio: "1 / 1", borderRadius: "20px", overflow: "hidden", background: "#0b1020", position: "relative", border: "3px solid " + (bright >= BRIGHT_MIN && faceOk ? GREEN : RED) }}>
               <video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline style=${{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}></video>
             </div>
             <div style=${{ width: "10px", borderRadius: "999px", background: LINE, position: "relative", overflow: "hidden" }}><span style=${{ position: "absolute", bottom: 0, left: 0, right: 0, height: bright + "%", background: bright >= BRIGHT_MIN ? GREEN : RED, transition: "height .3s" }}></span></div>
@@ -565,8 +594,8 @@ export function ExamTakePage() {
         <div style=${{ height: "100%", width: ((idx + 1) / Math.max(1, qs.length)) * 100 + "%", background: "linear-gradient(90deg," + BLUE + "," + NAVY + ")", borderRadius: "999px", transition: "width .4s ease" }}></div>
       </div>
     </div>
-    ${camState === "on" && bright < BRIGHT_MIN ? html`<div class="ex-fade" style=${{ position: "absolute", top: "calc(186px + env(safe-area-inset-top,0px))", left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "#fef3c7", color: "#92400e", borderRadius: "999px", padding: "5px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>Too dark. Move somewhere brighter.</div>` : null}
-    ${camState === "on" ? html`<div class="ex-cam" aria-label="Your camera"><video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline></video></div>` : null}
+    ${camState === "on" && (bright < BRIGHT_MIN || !faceOk) ? html`<div class="ex-fade" style=${{ position: "absolute", top: "calc(186px + env(safe-area-inset-top,0px))", left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "#fef3c7", color: "#92400e", borderRadius: "999px", padding: "5px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>${bright < BRIGHT_MIN ? "Too dark. Move somewhere brighter." : faceMsg}</div>` : null}
+    ${camState === "on" ? html`<div class="ex-cam" style=${{ border: "3px solid " + (bright >= BRIGHT_MIN && faceOk ? GREEN : RED) }} aria-label="Your camera"><video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline></video><div style=${{ position: "absolute", right: "6px", top: "8px", bottom: "8px", width: "6px", borderRadius: "999px", background: "rgba(255,255,255,.35)", overflow: "hidden" }}><span style=${{ position: "absolute", left: 0, right: 0, bottom: 0, height: bright + "%", background: bright >= BRIGHT_MIN ? GREEN : RED }}></span></div></div>` : null}
     ${hidden ? html`<div class="ex-cover" role="alert"><div style=${{ maxWidth: "320px" }}><div style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "10px" }}>Screen hidden</div><p style=${{ opacity: .8, lineHeight: 1.6, margin: "0 0 18px" }}>This was recorded. Return to the exam to continue.</p><button type="button" onClick=${() => setHidden(false)} style=${{ height: "48px", padding: "0 22px", borderRadius: "999px", border: 0, background: "#fff", color: NAVY, fontWeight: 800, cursor: "pointer" }}>Return to the exam</button></div></div>` : null}
     ${warn ? html`<div class="ex-fade" role="alert" style=${{ maxWidth: "640px", width: "calc(100% - 36px)", margin: "10px auto 0", color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "14px", padding: "9px 12px", fontSize: "13px", boxSizing: "border-box" }}>${warn}</div>` : null}
     <div style=${{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "640px", width: "100%", margin: "0 auto", padding: "16px 18px", boxSizing: "border-box" }}>
