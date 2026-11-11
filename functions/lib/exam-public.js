@@ -84,10 +84,10 @@ export async function deviceState(token, deviceId) {
 
 const norm = (x) => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
-// Which details the link asks for. Name is always asked.
+// Which details the link asks for. Name is asked unless the link says otherwise.
 export function reqOf(link) {
   const r = (link && link.required) || {};
-  return { email: !!r.email, reg: !!r.reg };
+  return { name: r.name !== false, email: !!r.email, reg: !!r.reg };
 }
 
 const clean = (x) => norm(x).replace(/\s+/g, '');
@@ -101,15 +101,15 @@ export function lockMatch(lock, req, name, email, reg) {
   return !!clean(name);
 }
 
-// Finds the place for this person on a link with a list. Returns the index, or -1.
-// A place with an email needs the email; a place with a reg number needs the reg number; the link's own choices can add more.
-export function findAllowed(list, name, email, reg, req) {
+// Finds the place this person matches. A place lists only the details it was given (name, email and/or reg);
+// every detail the place lists must match what the visitor typed. Returns the index, or -1.
+export function findAllowed(list, name, email, reg) {
   return (Array.isArray(list) ? list : []).findIndex((p) => {
-    if (clean(name) === '' || clean(p.name) !== clean(name)) return false;
-    const needEmail = !!p.email || !!(req && req.email);
-    const needReg = !!p.regNumber || !!(req && req.reg);
-    if (needEmail && (!email || clean(p.email || email) !== clean(email))) return false;
-    if (needReg && (!reg || clean(p.regNumber || reg) !== clean(reg))) return false;
+    const has = !!(p.name || p.email || p.regNumber);
+    if (!has) return false;
+    if (p.name && clean(p.name) !== clean(name)) return false;
+    if (p.email && clean(p.email) !== clean(email)) return false;
+    if (p.regNumber && clean(p.regNumber) !== clean(reg)) return false;
     return true;
   });
 }

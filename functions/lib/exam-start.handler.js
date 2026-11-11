@@ -7,7 +7,7 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method Not Allowed' });
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid request.' }); }
-  const name = String(body.name || '').trim().slice(0, 120);
+  let name = String(body.name || '').trim().slice(0, 120);
   const email = String(body.email || '').trim().slice(0, 160);
   const regNumber = String(body.regNumber || '').trim().slice(0, 40);
   if (body.consent !== true) return json(400, { error: 'Please read and agree to the notice before you begin.' });
@@ -15,7 +15,6 @@ export const handler = async (event) => {
   const cameraOn = body.cameraOn === true;
   const deviceId = String(body.deviceId || '').slice(0, 80);
   if (deviceId.length < 8) return json(400, { error: 'This device could not be recognised. Reload the page and try again.' });
-  if (name.length < 2) return json(400, { error: 'Enter your full name to begin.' });
   try {
     const r = await examFromLink(String(body.token || '').trim());
     if (r.error) return json(403, { error: r.error });
@@ -25,14 +24,20 @@ export const handler = async (event) => {
     const list = Array.isArray(r.link.allowed) ? r.link.allowed : [];
     let placeIndex = -1;
     if (list.length) {
-      placeIndex = findAllowed(list, name, email, regNumber, reqOf(r.link));
+      const rq = reqOf(r.link);
+      if (rq.name && name.length < 2) return json(400, { error: 'Enter your full name to begin.' });
+      if (rq.email && !email) return json(400, { error: 'Enter the email this exam was sent to.' });
+      if (rq.reg && !regNumber) return json(400, { error: 'Enter your registration number.' });
+      placeIndex = findAllowed(list, name, email, regNumber);
       if (placeIndex < 0) return json(403, { error: 'Your details do not match this exam. Check them, or contact the academy.' });
 
       if (list[placeIndex].used) return json(403, { error: 'This place has already been used.' });
     }
     if (settingsOf(r.exam).requireCamera && !cameraOn) return json(400, { error: 'This exam needs your camera and microphone. Allow them and try again.' });
     const req = reqOf(r.link);
-    if (!list.length && !lockMatch(r.link.lock, req, name, email, regNumber) && (r.link.lock || req.email || req.reg)) return json(403, { error: 'Your details do not match this exam. Check them, or contact the academy.' });
+    if (!list.length && (r.link.lock || req.email || req.reg) && !lockMatch(r.link.lock, req, name, email, regNumber)) return json(403, { error: 'Your details do not match this exam. Check them, or contact the academy.' });
+    if (placeIndex >= 0 && !name) name = list[placeIndex].name || list[placeIndex].email || 'Visitor';
+    if (!name) name = 'Visitor';
     const pub = publicExam(r.exam);
     const n = pub.questions.length;
     if (!n) return json(400, { error: 'This exam has no questions yet.' });

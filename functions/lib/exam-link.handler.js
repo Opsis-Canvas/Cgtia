@@ -13,7 +13,7 @@ export const handler = async (event) => {
     const req = reqOf(r.link);
     const lock = r.link.lock || {};
     const restricted = list.length > 0 || req.email || req.reg || !!lock.name || !!lock.email || !!lock.reg;
-    return json(200, { valid: true, ...publicExam(r.exam), device: dev, restricted, needsEmail: req.email || list.some((p) => !!p.email), needsReg: req.reg || list.some((p) => !!p.regNumber), places: list.length, placesLeft: list.filter((p) => !p.used).length });
+    return json(200, { valid: true, ...publicExam(r.exam), device: dev, restricted, needsName: req.name, needsEmail: req.email || list.some((p) => !!p.email), needsReg: req.reg || list.some((p) => !!p.regNumber), places: list.length, placesLeft: list.filter((p) => !p.used).length });
   } catch (err) {
     console.error('exam-link', err);
     return json(500, { valid: false, error: 'Could not check this link. Try again later.' , detail: String((err && err.message) || err).slice(0, 200) });
