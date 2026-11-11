@@ -52,7 +52,7 @@ export const handler = async (event) => {
       allowed: s.allowed || 0, submittedAt, resultMode: settings.resultMode,
       token: s.token || '', deviceId: s.deviceId || '', details,
       captureAttempts: s.captureAttempts || 0, cameraOffs: s.cameraOffs || 0, photo: s.photo || '', cameraOn: !!s.cameraOn,
-      startedAt: s.startedAt || '', regNumber: s.regNumber || ''
+      startedAt: s.startedAt || '', regNumber: s.regNumber || '', linkLabel: s.linkLabel || 'Link', linkId: s.linkId || s.token || ''
     });
     await ref.update({ status: 'submitted', submittedAt, reason });
     await db.collection('adminAlerts').add({

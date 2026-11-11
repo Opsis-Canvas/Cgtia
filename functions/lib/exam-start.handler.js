@@ -46,7 +46,7 @@ export const handler = async (event) => {
     await db.collection('examSessions').doc(id).set({
       token: r.token, examId: r.examId, examTitle: pub.title, name,
       startedAt: startedAt.toISOString(), deadline, order,
-      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, captureAttempts: 0, cameraOffs: 0, deviceId, email, regNumber,
+      status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, captureAttempts: 0, cameraOffs: 0, deviceId, email, regNumber, linkLabel: r.link.label || 'Link', linkId: r.token,
       photo, cameraOn, consentAt: new Date().toISOString(),
       allowed: pub.settings.tabSwitchAllowed, timerMinutes: pub.timerMinutes
     });
