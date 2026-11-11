@@ -94,6 +94,25 @@ export function ExamTakePage() {
   const [agreed, setAgreed] = useState(false);
   const [bright, setBright] = useState(0);
   const BRIGHT_MIN = 38;
+  const detRef = useRef(null);
+  const [faceOk, setFaceOk] = useState(false);
+  const [faceMsg, setFaceMsg] = useState("Looking for your face…");
+  const VISION = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+  const FACE_MODEL = "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
+  // Face check: exactly one face, large enough, confident, and all six key points (eyes, ears, nose, mouth) inside the frame
+  function judgeFaces(res, v) {
+    const list = (res && res.detections) || [];
+    if (list.length === 0) { setFaceOk(false); setFaceMsg("No face found. Look straight at the camera."); return; }
+    if (list.length > 1) { setFaceOk(false); setFaceMsg("More than one face. Only you should be in the frame."); return; }
+    const d = list[0];
+    const bb = d.boundingBox || {};
+    const big = bb.width / Math.max(1, v.videoWidth) >= 0.2;
+    const inside = (d.keypoints || []).every((k) => k.x >= 0 && k.x <= 1 && k.y >= 0 && k.y <= 1);
+    const sure = ((d.categories && d.categories[0] && d.categories[0].score) || 0) >= 0.6;
+    if (!big) { setFaceOk(false); setFaceMsg("Move closer so your face fills more of the square."); return; }
+    if (!inside || !sure) { setFaceOk(false); setFaceMsg("Your face is not fully visible. Keep your eyes, nose and mouth in the square."); return; }
+    setFaceOk(true); setFaceMsg("Face clear.");
+  }
   const [camState, setCamState] = useState("idle"); // idle | asking | on | denied
   const [level, setLevel] = useState(0);
   const [hidden, setHidden] = useState(false);
@@ -150,6 +169,21 @@ export function ExamTakePage() {
   }, [phase]);
 
   // Brightness of the live picture, 0-100. Measured on a tiny copy of each frame, so it is cheap.
+  // Loads the free face model once. If it cannot load, the exam still runs and staff check the photo by hand.
+  useEffect(() => {
+    if (camState !== "on" || detRef.current) return;
+    (async () => {
+      try {
+        const m = await import(VISION + "/vision_bundle.mjs");
+        const fs = await m.FilesetResolver.forVisionTasks(VISION + "/wasm");
+        detRef.current = await m.FaceDetector.createFromOptions(fs, { baseOptions: { modelAssetPath: FACE_MODEL, delegate: "CPU" }, runningMode: "VIDEO", minDetectionConfidence: 0.6 });
+      } catch (e) {
+        setFaceOk(true);
+        setFaceMsg("Face check unavailable here. Staff will check your photo by hand.");
+      }
+    })();
+  }, [camState]);
+
   useEffect(() => {
     if (camState !== "on") return undefined;
     const c = document.createElement("canvas"); c.width = 48; c.height = 36;
@@ -162,6 +196,7 @@ export function ExamTakePage() {
       let sum = 0;
       for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
       setBright(Math.round((sum / (d.length / 4)) / 255 * 100));
+      if (detRef.current && v.readyState >= 2) { try { judgeFaces(detRef.current.detectForVideo(v, performance.now()), v); } catch (e) {} }
     }, 400);
     return () => clearInterval(t);
   }, [camState]);
@@ -450,6 +485,7 @@ export function ExamTakePage() {
             <div style=${{ width: "10px", borderRadius: "999px", background: LINE, position: "relative", overflow: "hidden" }}><span style=${{ position: "absolute", bottom: 0, left: 0, right: 0, height: bright + "%", background: bright >= BRIGHT_MIN ? GREEN : RED, transition: "height .3s" }}></span></div>
             </div>
             <p style=${{ margin: "14px 0 6px", fontSize: "13px", color: bright >= BRIGHT_MIN ? GREEN : RED, fontWeight: 700 }}>${bright >= BRIGHT_MIN ? "Brightness is good. You can take your photo." : "Too dark. Move to a brighter area, face the light, then try again."}</p>
+            <p style=${{ margin: "0 0 8px", fontSize: "13px", color: faceOk ? GREEN : RED, fontWeight: 700 }}>${faceMsg}</p>
             <p style=${{ margin: "0 0 8px", fontSize: "13px", color: MUTED }}>Keep your face in the square. Say something to test the microphone.</p>
             <div class="ex-meter" style=${{ maxWidth: "300px", margin: "0 auto" }}><span style=${{ width: level + "%" }}></span></div>
           </div>` : null}
@@ -468,7 +504,7 @@ export function ExamTakePage() {
         </div>
           <p style=${{ color: MUTED, fontSize: "13px", margin: "0 0 18px", lineHeight: 1.5 }}>You agreed to the rules and policy on the first screen. Next, allow the camera so the academy can confirm it is you.</p>
         ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "0 0 14px", fontSize: "14px" }}>${error}</p>` : null}
-        <button type="button" disabled=${(camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && bright < BRIGHT_MIN)} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: ((camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && bright < BRIGHT_MIN)) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
+        <button type="button" disabled=${(camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk))} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: ((camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk))) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
       </div>
     </div>`;
   }
