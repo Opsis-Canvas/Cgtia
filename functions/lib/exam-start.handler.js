@@ -36,6 +36,7 @@ export const handler = async (event) => {
       if (list[placeIndex].used) return json(403, { error: 'This place has already been used.' });
     }
     if (settingsOf(r.exam).requireCamera && !cameraOn) return json(400, { error: 'This exam needs your camera and microphone. Allow them and try again.' });
+    if (cameraOn && (!liveness || (!liveness.skipped && liveness.passed < 3))) return json(400, { error: 'The quick check was not passed. Complete it and try again.' });
     const req = reqOf(r.link);
     if (!list.length && (r.link.lock || req.email || req.reg) && !lockMatch(r.link.lock, req, name, email, regNumber)) return json(403, { error: 'Your details do not match this exam. Check them, or contact the academy.' });
     if (placeIndex >= 0 && !name) name = list[placeIndex].name || list[placeIndex].studentName || list[placeIndex].email || 'Visitor';

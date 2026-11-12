@@ -35,6 +35,13 @@ const CSS = `
 .warn-sheet strong{display:block;color:#0f172a;font-size:15px}
 .warn-sheet p{margin:6px 0 14px;color:#334155;font-size:14px;line-height:1.5}
 .warn-sheet button{width:100%;height:50px;border:0;border-radius:999px;background:#0f126c;color:#fff;font-weight:800;cursor:pointer}
+@keyframes exBlink { 0%,42%,58%,100% { transform: scaleY(1); } 50% { transform: scaleY(.08); } }
+@keyframes exNudgeL { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-10px); } }
+@keyframes exNudgeR { 0%,100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
+.ex-blink { transform-origin: 50% 50%; animation: exBlink 1.6s ease-in-out infinite; }
+.ex-nudge-l { animation: exNudgeL 1.2s ease-in-out infinite; }
+.ex-nudge-r { animation: exNudgeR 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .ex-blink, .ex-nudge-l, .ex-nudge-r { animation: none; } }
 @media print { html, body { display: none !important; } }
 .ex-cover{position:fixed;inset:0;z-index:999;background:#0b1020;color:#fff;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center}
 .ex-cam{position:absolute;top:calc(74px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:128px;height:96px;border-radius:18px;overflow:hidden;border:2px solid #fff;box-shadow:0 14px 26px -14px rgba(8,12,40,.7);background:#0b1020;z-index:3}
@@ -91,6 +98,25 @@ function Ring({ pct, color }) {
   </svg>`;
 }
 
+// The cue for each step: an arrow for a turn, an eye for a blink. The motion shows the movement to make.
+function LivenessCue({ kind }) {
+  if (kind === "blink") {
+    return html`<div style=${{ display: "flex", justifyContent: "center", margin: "2px 0 12px" }}>
+      <svg width="132" height="72" viewBox="0 0 132 72" aria-hidden="true">
+        <path d="M8 36 Q66 -8 124 36 Q66 80 8 36 Z" fill="#fff" stroke=${NAVY} strokeWidth="4" />
+        <g class="ex-blink" style=${{ transformOrigin: "66px 36px" }}>
+          <circle cx="66" cy="36" r="16" fill=${NAVY} />
+          <circle cx="72" cy="30" r="4" fill="#fff" />
+        </g>
+      </svg></div>`;
+  }
+  const left = kind === "left";
+  return html`<div style=${{ display: "flex", justifyContent: "center", margin: "2px 0 12px" }}>
+    <svg width="132" height="72" viewBox="0 0 132 72" aria-hidden="true" class=${left ? "ex-nudge-l" : "ex-nudge-r"}>
+      <path d=${left ? "M10 36 L44 10 V26 H122 V46 H44 V62 Z" : "M122 36 L88 10 V26 H10 V46 H88 V62 Z"} fill=${BLUE} />
+    </svg></div>`;
+}
+
 export function ExamTakePage() {
   const token = (new URLSearchParams(window.location.search).get("token") || "").trim();
   const dev = useRef(deviceId()).current;
@@ -121,6 +147,7 @@ export function ExamTakePage() {
   const [liveIdx, setLiveIdx] = useState(0);
   const [liveOrder, setLiveOrder] = useState([]);
   const [liveResult, setLiveResult] = useState(null);
+  const [liveTries, setLiveTries] = useState(0);
   const liveRef = useRef({ idx: 0, order: [], tries: 0, started: 0, passed: 0, failed: 0 });
   const PROMPT = { blink: "Blink once, slowly.", left: "Turn your head to the left, then face forward.", right: "Turn your head to the right, then face forward." };
   useEffect(() => { faceOkRef.current = faceOk; }, [faceOk]);
@@ -211,12 +238,14 @@ export function ExamTakePage() {
 
   function startLiveness() {
     const order = ["blink", "left", "right"].sort(() => Math.random() - 0.5);
-    liveRef.current = { idx: 0, order, tries: 0, started: Date.now(), passed: 0, failed: 0 };
+    setLiveTries((n) => n + 1);
+    liveRef.current = { idx: 0, order, tries: 0, started: Date.now(), passed: 0, failed: 0, hold: 0, closed: false };
     setLiveOrder(order); setLiveIdx(0); setLiveState("running");
     speak(PROMPT[order[0]]);
   }
 
-  // Runs while the check is on: looks for the blink or the head turn, two tries each, then moves on
+  // Runs while the check is on. A step passes only on a clear, held movement: the blink must close and reopen,
+  // and a turn must be clearly to the side it asks for, held for several frames. Two tries per step, then the check fails.
   useEffect(() => {
     if (liveState !== "running") return undefined;
     const t = setInterval(() => {
@@ -225,33 +254,41 @@ export function ExamTakePage() {
       if (!lm || !v || !v.videoWidth) return;
       let res; try { res = lm.detectForVideo(v, performance.now()); } catch (e) { return; }
       const pts = res.faceLandmarks && res.faceLandmarks[0];
-      if (!pts) return;
+      if (!pts) { st.hold = 0; return; }
       const cats = (res.faceBlendshapes && res.faceBlendshapes[0] && res.faceBlendshapes[0].categories) || [];
       const score = (n) => (cats.find((c) => c.categoryName === n) || {}).score || 0;
       const kind = st.order[st.idx];
-      let ok = false;
-      if (kind === "blink") ok = score("eyeBlinkLeft") > 0.5 && score("eyeBlinkRight") > 0.5;
-      else {
+      let now = false;
+      if (kind === "blink") {
+        const closed = score("eyeBlinkLeft") > 0.6 && score("eyeBlinkRight") > 0.6;
+        const open = score("eyeBlinkLeft") < 0.2 && score("eyeBlinkRight") < 0.2;
+        if (closed) st.closed = true;
+        now = st.closed && open;
+      } else {
         const nose = pts[1], le = pts[33], re = pts[263];
         const yaw = (nose.x - (le.x + re.x) / 2) / (Math.abs(re.x - le.x) || 1);
-        ok = kind === "left" ? yaw > 0.12 : yaw < -0.12;
+        now = kind === "left" ? yaw > 0.2 : yaw < -0.2;
       }
-      const advance = () => {
-        st.idx++; st.tries = 0; st.started = Date.now();
-        if (st.idx >= st.order.length) {
+      st.hold = now ? (st.hold || 0) + 1 : 0;
+      if (st.hold < 3) {
+        if (Date.now() - st.started > 6000) {
+          st.tries++; st.started = Date.now(); st.hold = 0; st.closed = false;
+          if (st.tries < 2) { speak("Try again. " + PROMPT[kind]); return; }
+          st.failed++;
           setLiveResult({ passed: st.passed, failed: st.failed, total: 3 });
-          setLiveState("done");
-          speak("Check complete. You can take your photo now.");
-        } else {
-          setLiveIdx(st.idx);
-          speak(PROMPT[st.order[st.idx]]);
+          setLiveState("failed");
+          speak("The check was not passed.");
         }
-      };
-      if (ok) { st.passed++; advance(); return; }
-      if (Date.now() - st.started > 6000) {
-        st.tries++; st.started = Date.now();
-        if (st.tries < 2) { speak("Try again. " + PROMPT[kind]); }
-        else { st.failed++; advance(); }
+        return;
+      }
+      st.passed++; st.idx++; st.tries = 0; st.hold = 0; st.closed = false; st.started = Date.now();
+      if (st.idx >= st.order.length) {
+        setLiveResult({ passed: st.passed, failed: st.failed, total: 3 });
+        setLiveState("done");
+        speak("Check complete. You can take your photo now.");
+      } else {
+        setLiveIdx(st.idx);
+        speak(PROMPT[st.order[st.idx]]);
       }
     }, 120);
     return () => clearInterval(t);
@@ -614,8 +651,9 @@ export function ExamTakePage() {
           <div style=${{ fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, marginBottom: "8px" }}>Quick check</div>
           ${liveState === "idle" ? html`<p style=${{ margin: 0, fontSize: "14px", color: MUTED }}>Preparing the check…</p>` : null}
           ${liveState === "ready" ? html`<p style=${{ margin: "0 0 12px", fontSize: "14px" }}>Blink once, then turn your head left and right. It takes about 15 seconds.</p><button type="button" onClick=${startLiveness} style=${{ height: "44px", padding: "0 20px", borderRadius: "999px", border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Start the quick check</button>` : null}
-          ${liveState === "running" ? html`<p style=${{ margin: "0 0 10px", fontSize: "16px", fontWeight: 800, color: NAVY }}>${PROMPT[liveOrder[liveIdx]]}</p><div style=${{ display: "flex", gap: "6px" }}>${[0, 1, 2].map((i) => html`<span key=${i} style=${{ flex: 1, height: "5px", borderRadius: "999px", background: i < liveIdx ? GREEN : (i === liveIdx ? BLUE : LINE) }}></span>`)}</div>` : null}
+          ${liveState === "running" ? html`<${LivenessCue} kind=${liveOrder[liveIdx]} /><p style=${{ margin: "0 0 10px", fontSize: "16px", fontWeight: 800, color: NAVY }}>${PROMPT[liveOrder[liveIdx]]}</p><div style=${{ display: "flex", gap: "6px" }}>${[0, 1, 2].map((i) => html`<span key=${i} style=${{ flex: 1, height: "5px", borderRadius: "999px", background: i < liveIdx ? GREEN : (i === liveIdx ? BLUE : LINE) }}></span>`)}</div>` : null}
           ${liveState === "done" ? html`<p style=${{ margin: 0, fontSize: "14px", color: GREEN, fontWeight: 700 }}>Check complete.</p>` : null}
+          ${liveState === "failed" ? html`<p style=${{ margin: "0 0 12px", fontSize: "14px", color: RED, fontWeight: 700 }}>The check was not passed. Blink once, then turn your head clearly left and right.</p>${liveTries < 3 ? html`<button type="button" onClick=${startLiveness} style=${{ height: "44px", padding: "0 20px", borderRadius: "999px", border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Try again</button>` : html`<p style=${{ margin: 0, fontSize: "14px", color: MUTED }}>This check could not be completed. Contact the academy.</p>`}` : null}
           ${liveState === "unavailable" ? html`<p style=${{ margin: 0, fontSize: "14px", color: MUTED }}>The quick check is not available on this device. Staff will review your photo by hand.</p>` : null}
         </div>` : null}
         <button type="button" disabled=${(camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk || (liveState !== "done" && liveState !== "unavailable")))} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: ((camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk))) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
