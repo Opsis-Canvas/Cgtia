@@ -13,6 +13,8 @@ export const handler = async (event) => {
   if (body.consent !== true) return json(400, { error: 'Please read and agree to the notice before you begin.' });
   const photo = typeof body.photo === 'string' && body.photo.indexOf('data:image/jpeg;base64,') === 0 && body.photo.length < 90000 ? body.photo : '';
   const cameraOn = body.cameraOn === true;
+  const lv = body.liveness && typeof body.liveness === 'object' ? body.liveness : null;
+  const liveness = lv ? { passed: Number(lv.passed) || 0, failed: Number(lv.failed) || 0, total: 3, skipped: lv.skipped === true } : null;
   const deviceId = String(body.deviceId || '').slice(0, 80);
   if (deviceId.length < 8) return json(400, { error: 'This device could not be recognised. Reload the page and try again.' });
   try {
@@ -36,7 +38,7 @@ export const handler = async (event) => {
     if (settingsOf(r.exam).requireCamera && !cameraOn) return json(400, { error: 'This exam needs your camera and microphone. Allow them and try again.' });
     const req = reqOf(r.link);
     if (!list.length && (r.link.lock || req.email || req.reg) && !lockMatch(r.link.lock, req, name, email, regNumber)) return json(403, { error: 'Your details do not match this exam. Check them, or contact the academy.' });
-    if (placeIndex >= 0 && !name) name = list[placeIndex].name || list[placeIndex].email || 'Visitor';
+    if (placeIndex >= 0 && !name) name = list[placeIndex].name || list[placeIndex].studentName || list[placeIndex].email || 'Visitor';
     if (!name) name = 'Visitor';
     const pub = publicExam(r.exam);
     const n = pub.questions.length;
@@ -52,7 +54,7 @@ export const handler = async (event) => {
       token: r.token, examId: r.examId, examTitle: pub.title, name,
       startedAt: startedAt.toISOString(), deadline, order,
       status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, captureAttempts: 0, cameraOffs: 0, deviceId, email, regNumber, linkLabel: r.link.label || 'Link', linkId: r.token,
-      photo, cameraOn, consentAt: new Date().toISOString(),
+      photo, cameraOn, liveness, livenessFlagged: !!(liveness && liveness.failed >= 2), consentAt: new Date().toISOString(),
       allowed: pub.settings.tabSwitchAllowed, timerMinutes: pub.timerMinutes
     });
     await db.collection('adminAlerts').add({
