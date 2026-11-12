@@ -306,6 +306,8 @@ service cloud.firestore {
     match /siteContent/applyFormDraft { allow read, write: if isAdmin() || isStaff(); }
     match /applyFormHistory/{id} { allow read, write: if isAdmin() || isStaff(); }
 
+    /* Student cohorts. Staff only. */
+    match /cohorts/{id} { allow read, write: if isAdmin() || isStaff(); }
     /* The delete-for-good code. Staff only. */
     match /siteContent/adminSecurity { allow read, write: if isAdmin() || isStaff(); }
     match /siteContent/{docId} {
