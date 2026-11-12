@@ -30,6 +30,11 @@ const CSS = `
 .ex-spin{animation:exSpin .9s linear infinite}
 .ex-draw{stroke-dasharray:60;animation:exDraw .6s ease-out .15s both}
 @media (prefers-reduced-motion: reduce){ .ex-shake,.ex-pulse,.ex-rise,.ex-fade,.ex-spin,.ex-draw{animation:none} }
+.warn-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #cbd5e1;border-radius:20px 20px 0 0;padding:16px 20px calc(18px + env(safe-area-inset-bottom,0px));z-index:40;box-sizing:border-box}
+.warn-grip{width:40px;height:4px;border-radius:999px;background:#cbd5e1;margin:0 auto 12px}
+.warn-sheet strong{display:block;color:#0f172a;font-size:15px}
+.warn-sheet p{margin:6px 0 14px;color:#334155;font-size:14px;line-height:1.5}
+.warn-sheet button{width:100%;height:50px;border:0;border-radius:999px;background:#0f126c;color:#fff;font-weight:800;cursor:pointer}
 @media print { html, body { display: none !important; } }
 .ex-cover{position:fixed;inset:0;z-index:999;background:#0b1020;color:#fff;display:flex;align-items:center;justify-content:center;padding:28px;text-align:center}
 .ex-cam{position:absolute;top:calc(74px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:128px;height:96px;border-radius:18px;overflow:hidden;border:2px solid #fff;box-shadow:0 14px 26px -14px rgba(8,12,40,.7);background:#0b1020;z-index:3}
@@ -110,6 +115,14 @@ export function ExamTakePage() {
   const detRef = useRef(null);
   const [faceOk, setFaceOk] = useState(false);
   const [faceMsg, setFaceMsg] = useState("Looking for your face…");
+  const lmRef = useRef(null);
+  const LM_MODEL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+  const [liveState, setLiveState] = useState("idle"); // idle | ready | running | done | unavailable
+  const [liveIdx, setLiveIdx] = useState(0);
+  const [liveOrder, setLiveOrder] = useState([]);
+  const [liveResult, setLiveResult] = useState(null);
+  const liveRef = useRef({ idx: 0, order: [], tries: 0, started: 0, passed: 0, failed: 0 });
+  const PROMPT = { blink: "Blink once, slowly.", left: "Turn your head to the left, then face forward.", right: "Turn your head to the right, then face forward." };
   useEffect(() => { faceOkRef.current = faceOk; }, [faceOk]);
   const VISION = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
   const FACE_MODEL = "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
@@ -183,6 +196,67 @@ export function ExamTakePage() {
   }, [phase]);
 
   // Brightness of the live picture, 0-100. Measured on a tiny copy of each frame, so it is cheap.
+  // Loads the free face-landmark model once: blinks and head position for the quick check
+  useEffect(() => {
+    if (camState !== "on" || lmRef.current) return;
+    (async () => {
+      try {
+        const m = await import(VISION + "/vision_bundle.mjs");
+        const fs = await m.FilesetResolver.forVisionTasks(VISION + "/wasm");
+        lmRef.current = await m.FaceLandmarker.createFromOptions(fs, { baseOptions: { modelAssetPath: LM_MODEL, delegate: "CPU" }, runningMode: "VIDEO", numFaces: 1, outputFaceBlendshapes: true });
+        setLiveState("ready");
+      } catch (e) { setLiveState("unavailable"); }
+    })();
+  }, [camState]);
+
+  function startLiveness() {
+    const order = ["blink", "left", "right"].sort(() => Math.random() - 0.5);
+    liveRef.current = { idx: 0, order, tries: 0, started: Date.now(), passed: 0, failed: 0 };
+    setLiveOrder(order); setLiveIdx(0); setLiveState("running");
+    speak(PROMPT[order[0]]);
+  }
+
+  // Runs while the check is on: looks for the blink or the head turn, two tries each, then moves on
+  useEffect(() => {
+    if (liveState !== "running") return undefined;
+    const t = setInterval(() => {
+      const st = liveRef.current;
+      const lm = lmRef.current, v = videoRef.current;
+      if (!lm || !v || !v.videoWidth) return;
+      let res; try { res = lm.detectForVideo(v, performance.now()); } catch (e) { return; }
+      const pts = res.faceLandmarks && res.faceLandmarks[0];
+      if (!pts) return;
+      const cats = (res.faceBlendshapes && res.faceBlendshapes[0] && res.faceBlendshapes[0].categories) || [];
+      const score = (n) => (cats.find((c) => c.categoryName === n) || {}).score || 0;
+      const kind = st.order[st.idx];
+      let ok = false;
+      if (kind === "blink") ok = score("eyeBlinkLeft") > 0.5 && score("eyeBlinkRight") > 0.5;
+      else {
+        const nose = pts[1], le = pts[33], re = pts[263];
+        const yaw = (nose.x - (le.x + re.x) / 2) / (Math.abs(re.x - le.x) || 1);
+        ok = kind === "left" ? yaw > 0.12 : yaw < -0.12;
+      }
+      const advance = () => {
+        st.idx++; st.tries = 0; st.started = Date.now();
+        if (st.idx >= st.order.length) {
+          setLiveResult({ passed: st.passed, failed: st.failed, total: 3 });
+          setLiveState("done");
+          speak("Check complete. You can take your photo now.");
+        } else {
+          setLiveIdx(st.idx);
+          speak(PROMPT[st.order[st.idx]]);
+        }
+      };
+      if (ok) { st.passed++; advance(); return; }
+      if (Date.now() - st.started > 6000) {
+        st.tries++; st.started = Date.now();
+        if (st.tries < 2) { speak("Try again. " + PROMPT[kind]); }
+        else { st.failed++; advance(); }
+      }
+    }, 120);
+    return () => clearInterval(t);
+  }, [liveState]);
+
   // Loads the free face model once. If it cannot load, the exam still runs and staff check the photo by hand.
   useEffect(() => {
     if (camState !== "on" || detRef.current) return;
@@ -260,6 +334,7 @@ export function ExamTakePage() {
     const block = (e) => { e.preventDefault(); setWarn("Copying and pasting are turned off for this exam."); };
     const capture = async (why) => {
       setHidden(true);
+      setWarn(why === "leave" ? "You left the exam screen. This was recorded." : "Screenshots are not allowed. This was recorded.");
       const now = Date.now();
       if (now - lastCap.current < 1500) return;
       lastCap.current = now;
@@ -352,7 +427,7 @@ export function ExamTakePage() {
       try { await document.documentElement.requestFullscreen(); } catch (x) { /* the exam still runs */ }
     }
     setPhase("preparing");
-    const r = await post("/api/exam-start", { token, name: name.trim(), email: email.trim(), regNumber: regNo.trim(), deviceId: dev, consent: true, cameraOn, photo: snap });
+    const r = await post("/api/exam-start", { token, name: name.trim(), email: email.trim(), regNumber: regNo.trim(), deviceId: dev, consent: true, cameraOn, photo: snap, liveness: liveResult || (liveState === "unavailable" ? { passed: 0, failed: 0, total: 3, skipped: true } : null) });
     if (!r.ok || r.data.error) {
       if (r.data.device && r.data.device.state === "completed") { setResult(r.data.device); setPhase("completed"); return; }
       if (r.data.device && r.data.device.state === "started") { setPhase("started"); return; }
@@ -417,7 +492,7 @@ export function ExamTakePage() {
   if (phase === "completed" || phase === "started") {
     const completed = phase === "completed";
     const showScore = completed && result && result.state === "completed" && result.resultMode === "instant";
-    return html`<${Screen}><div class="ex-rise" style=${{ margin: "auto", width: "min(440px, 100% - 40px)", background: "#fff", border: "1px solid " + LINE, borderRadius: "28px", padding: "34px 26px", textAlign: "center", boxShadow: "0 30px 60px -36px rgba(15,18,108,.5)" }}>
+    return html`<${Screen}><div class="ex-rise" style=${{ margin: "auto", width: "min(440px, 100% - 40px)", background: "#fff", border: "1px solid " + LINE, borderRadius: "20px", padding: "34px 26px", textAlign: "center", boxShadow: "none" }}>
       <p style=${{ fontSize: "11px", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: BLUE, margin: "0 0 14px" }}>${exam ? exam.title : "Examination"}</p>
       ${showScore ? html`<div class="ex-fade"><${Ring} pct=${result.pct} color=${result.pct >= 50 ? BLUE : RED} /></div>` : html`<${Mark} tone=${completed ? NAVY : "#94a3b8"} />`}
       <h1 style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "23px", fontWeight: 800, color: NAVY, margin: "20px 0 10px", lineHeight: 1.2 }}>
@@ -535,7 +610,15 @@ export function ExamTakePage() {
         </div>
           <p style=${{ color: MUTED, fontSize: "13px", margin: "0 0 18px", lineHeight: 1.5 }}>You agreed to the rules and policy on the first screen. Next, allow the camera so the academy can confirm it is you.</p>
         ${error ? html`<p class="ex-fade" style=${{ color: RED, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "14px", padding: "11px 13px", margin: "0 0 14px", fontSize: "14px" }}>${error}</p>` : null}
-        <button type="button" disabled=${(camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk))} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: ((camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk))) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
+        ${camState === "on" ? html`<div style=${{ background: "#fff", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", marginBottom: "16px" }}>
+          <div style=${{ fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, marginBottom: "8px" }}>Quick check</div>
+          ${liveState === "idle" ? html`<p style=${{ margin: 0, fontSize: "14px", color: MUTED }}>Preparing the check…</p>` : null}
+          ${liveState === "ready" ? html`<p style=${{ margin: "0 0 12px", fontSize: "14px" }}>Blink once, then turn your head left and right. It takes about 15 seconds.</p><button type="button" onClick=${startLiveness} style=${{ height: "44px", padding: "0 20px", borderRadius: "999px", border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Start the quick check</button>` : null}
+          ${liveState === "running" ? html`<p style=${{ margin: "0 0 10px", fontSize: "16px", fontWeight: 800, color: NAVY }}>${PROMPT[liveOrder[liveIdx]]}</p><div style=${{ display: "flex", gap: "6px" }}>${[0, 1, 2].map((i) => html`<span key=${i} style=${{ flex: 1, height: "5px", borderRadius: "999px", background: i < liveIdx ? GREEN : (i === liveIdx ? BLUE : LINE) }}></span>`)}</div>` : null}
+          ${liveState === "done" ? html`<p style=${{ margin: 0, fontSize: "14px", color: GREEN, fontWeight: 700 }}>Check complete.</p>` : null}
+          ${liveState === "unavailable" ? html`<p style=${{ margin: 0, fontSize: "14px", color: MUTED }}>The quick check is not available on this device. Staff will review your photo by hand.</p>` : null}
+        </div>` : null}
+        <button type="button" disabled=${(camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk || (liveState !== "done" && liveState !== "unavailable")))} onClick=${() => startExam(camState === "on")} style=${{ width: "100%", height: "56px", border: 0, borderRadius: "999px", background: NAVY, color: "#fff", fontWeight: 800, fontSize: "16px", cursor: "pointer", opacity: ((camState !== "on" && cameraRequired && camState !== "off") || (camState === "on" && (bright < BRIGHT_MIN || !faceOk))) ? .45 : 1 }}>${camState === "on" ? "Take my photo and begin" : "Begin the exam"}</button>
       </div>
     </div>`;
   }
@@ -566,7 +649,7 @@ export function ExamTakePage() {
 
   if (phase === "done") {
     const instant = result && result.pct != null && result.resultMode !== "admin";
-    return html`<${Screen}><div class="ex-rise" style=${{ margin: "auto", width: "min(440px, 100% - 40px)", background: "#fff", border: "1px solid " + LINE, borderRadius: "28px", padding: "34px 26px", textAlign: "center", boxShadow: "0 30px 60px -36px rgba(15,18,108,.5)" }}>
+    return html`<${Screen}><div class="ex-rise" style=${{ margin: "auto", width: "min(440px, 100% - 40px)", background: "#fff", border: "1px solid " + LINE, borderRadius: "20px", padding: "34px 26px", textAlign: "center", boxShadow: "none" }}>
       <p style=${{ fontSize: "11px", fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: BLUE, margin: "0 0 14px" }}>${exam.title}</p>
       ${instant ? html`<div class="ex-fade"><${Ring} pct=${result.pct} color=${result.pct >= 50 ? BLUE : RED} /></div>` : html`<${Mark} tone=${GREEN} />`}
       <h1 style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "23px", fontWeight: 800, color: NAVY, margin: "20px 0 10px" }}>${instant ? "Your result" : "Thank you"}</h1>
@@ -596,10 +679,10 @@ export function ExamTakePage() {
         <div style=${{ height: "100%", width: ((idx + 1) / Math.max(1, qs.length)) * 100 + "%", background: "linear-gradient(90deg," + BLUE + "," + NAVY + ")", borderRadius: "999px", transition: "width .4s ease" }}></div>
       </div>
     </div>
-    ${camState === "on" && (bright < BRIGHT_MIN || !faceOk) ? html`<div class="ex-fade" style=${{ position: "absolute", top: "calc(186px + env(safe-area-inset-top,0px))", left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "#fef3c7", color: "#92400e", borderRadius: "999px", padding: "5px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>${bright < BRIGHT_MIN ? "Too dark. Move somewhere brighter." : faceMsg}</div>` : null}
+    ${camState === "on" && (bright < BRIGHT_MIN || !faceOk) ? html`<div class="ex-fade" style=${{ position: "absolute", top: "calc(186px + env(safe-area-inset-top,0px))", left: "50%", transform: "translateX(-50%)", zIndex: 3, background: "#e2e8f0", color: "#334155", borderRadius: "999px", padding: "5px 12px", fontSize: "12px", fontWeight: 700, whiteSpace: "nowrap" }}>${bright < BRIGHT_MIN ? "Too dark. Move somewhere brighter." : faceMsg}</div>` : null}
     ${camState === "on" ? html`<div class="ex-cam" style=${{ border: "3px solid " + (bright >= BRIGHT_MIN && faceOk ? GREEN : RED) }} aria-label="Your camera"><video ref=${(el) => { videoRef.current = el; if (el && streamRef.current && el.srcObject !== streamRef.current) { el.srcObject = streamRef.current; el.play && el.play().catch(() => {}); } }} autoPlay muted playsInline></video><div style=${{ position: "absolute", right: "6px", top: "8px", bottom: "8px", width: "6px", borderRadius: "999px", background: "rgba(255,255,255,.35)", overflow: "hidden" }}><span style=${{ position: "absolute", left: 0, right: 0, bottom: 0, height: bright + "%", background: bright >= BRIGHT_MIN ? GREEN : RED }}></span></div></div>` : null}
     ${hidden ? html`<div class="ex-cover" role="alert"><div style=${{ maxWidth: "320px" }}><div style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "22px", fontWeight: 800, marginBottom: "10px" }}>Screen hidden</div><p style=${{ opacity: .8, lineHeight: 1.6, margin: "0 0 18px" }}>This was recorded. Return to the exam to continue.</p><button type="button" onClick=${() => setHidden(false)} style=${{ height: "48px", padding: "0 22px", borderRadius: "999px", border: 0, background: "#fff", color: NAVY, fontWeight: 800, cursor: "pointer" }}>Return to the exam</button></div></div>` : null}
-    ${warn ? html`<div class="ex-fade" role="alert" style=${{ maxWidth: "640px", width: "calc(100% - 36px)", margin: "10px auto 0", color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "14px", padding: "9px 12px", fontSize: "13px", boxSizing: "border-box" }}>${warn}</div>` : null}
+    ${warn && phase === "running" && !hidden ? html`<div class="warn-sheet ex-sheet" role="alertdialog" aria-label="Attention"><div class="warn-grip"></div><strong>Attention</strong><p>${warn}</p><button type="button" onClick=${() => setWarn("")}>Continue the exam</button></div>` : null}
     <div style=${{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: "640px", width: "100%", margin: "0 auto", padding: "16px 18px", boxSizing: "border-box" }}>
       <div style=${{ maxHeight: "100%", overflow: "hidden" }}>
         <h2 key=${"q" + idx} class="ex-rise" style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "21px", fontWeight: 800, color: INK, margin: "0 0 16px", lineHeight: 1.3, userSelect: "none", WebkitUserSelect: "none" }}>${q ? q.prompt : ""}</h2>
@@ -628,7 +711,7 @@ export function ExamTakePage() {
         <div style=${{ width: "44px", height: "5px", borderRadius: "999px", background: LINE, margin: "0 auto 18px" }}></div>
         <h3 style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "21px", fontWeight: 800, color: NAVY, margin: "0 0 8px" }}>Submit your exam?</h3>
         <p style=${{ color: MUTED, lineHeight: 1.6, margin: "0 0 14px" }}>You have answered <strong style=${{ color: INK }}>${answered} of ${qs.length}</strong>. Your answers can't be changed after you submit.</p>
-        ${answered < qs.length ? html`<p style=${{ color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "14px", padding: "10px 12px", fontSize: "13px", margin: "0 0 14px" }}>${qs.length - answered} question(s) are still unanswered.</p>` : null}
+        ${answered < qs.length ? html`<p style=${{ color: "#334155", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "14px", padding: "10px 12px", fontSize: "13px", margin: "0 0 14px" }}>${qs.length - answered} question(s) are still unanswered.</p>` : null}
         <div style=${{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           <button type="button" onClick=${() => setSheet(false)} style=${{ height: "54px", borderRadius: "999px", border: "1px solid " + LINE, background: "#fff", color: NAVY, fontWeight: 800, cursor: "pointer" }}>Keep going</button>
           <button type="button" onClick=${() => submit("manual")} style=${{ height: "54px", borderRadius: "999px", border: 0, background: NAVY, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Submit</button>
