@@ -451,8 +451,10 @@ export function ExamTakePage() {
             <span style=${{ fontSize: "14px", lineHeight: 1.55, color: INK }}>${v}</span>
           </div>`)}
         </div>
+        ${info.needsName ? html`
         <label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>${info.needsName ? "Your full name" : "Full name (optional)"}</label>
         <input value=${name} onInput=${(e) => setName(e.target.value)} placeholder="As you want it recorded" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} />
+        ` : null}
         ${info.needsEmail || info.needsReg ? html`<div style=${{ marginTop: "16px", display: "grid", gap: "10px" }}>
           ${info.needsEmail ? html`<div><label style=${{ display: "block", fontSize: "11px", fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: MUTED, margin: "0 0 8px" }}>Your email</label>
             <input type="email" value=${email} onInput=${(e) => setEmail(e.target.value)} placeholder="Your email" style=${{ width: "100%", border: "1px solid " + LINE, borderRadius: "18px", padding: "16px", font: "inherit", fontSize: "16px", boxSizing: "border-box", background: "#fff" }} /></div>` : null}
