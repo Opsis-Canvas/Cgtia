@@ -124,6 +124,8 @@ export const handler = async (event) => {
   if (missing.length) return bad(400, 'Please fill in: ' + missing.join(', '));
   if (nin && nin.length !== 11) return bad(400, 'NIN must be 11 digits');
   if (!nextOfKinRelation) return bad(400, 'Choose the next of kin relationship');
+  const extra = {};
+  ['whatsapp', 'residentialAddress', 'permanentAddress', 'genotype', 'bloodGroup', 'crisisNote', 'choking', 'sightProblem', 'diabetic', 'bpProblem', 'drugReaction', 'fainting', 'drugInUse', 'asthma', 'allergy', 'crisis', 'chokingDetail', 'sightProblemDetail', 'diabeticDetail', 'bpProblemDetail', 'drugReactionDetail', 'faintingDetail', 'drugInUseDetail', 'asthmaDetail', 'allergyDetail', 'crisisDetail', 'chokingOther', 'sightProblemOther', 'diabeticOther', 'bpProblemOther', 'drugReactionOther', 'faintingOther', 'drugInUseOther', 'asthmaOther', 'allergyOther', 'crisisOther'].forEach((k) => { if (body[k] !== undefined) extra[k] = String(body[k]).trim().slice(0, 400); });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad(400, 'Invalid email');
 
   // If invite locked an email, force it
@@ -175,6 +177,7 @@ export const handler = async (event) => {
     phone,
     nextOfKin: { name: nextOfKinName, phone: nextOfKinPhone, relation: nextOfKinRelation, phoneType: nextOfKinPhoneType },
     nextOfKinPhoneType, surname: got.surname, middleName: got.middleName, lastName: got.lastName,
+    ...extra,
     nextOfKinName,
     nextOfKinPhone,
     nextOfKinRelation,

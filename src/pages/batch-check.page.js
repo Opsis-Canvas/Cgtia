@@ -12,8 +12,22 @@ const INK = "#0f172a";
 const MUTED = "#64748b";
 const LINE = "#dfe6f3";
 const RED = "#b91c1c";
-const LABELS = { surname: "Surname", middleName: "Middle name", lastName: "Last name", email: "Email", phone: "Phone", nin: "NIN", dateOfBirth: "Date of birth", nextOfKinName: "Next of kin name", nextOfKinPhone: "Next of kin phone", nextOfKinPhoneType: "Next of kin phone type", residentialAddress: "Residential address", permanentAddress: "Permanent address", genotype: "Genotype", bloodGroup: "Blood group" };
+const LABELS = { choking: "Choking", sightProblem: "Sight / eye problem", diabetic: "Diabetic", bpProblem: "High / low BP", drugReaction: "Drug reactions", fainting: "Fainting sensation", drugInUse: "Drug in use", asthma: "Asthmatic", allergy: "Allergy", allergyDetail: "What they are allergic to", drugReactionDetail: "Which drug causes a reaction", crisis: "Any crisis / sickness", crisisNote: "Explain the crisis / sickness", surname: "Surname", middleName: "Middle name", lastName: "Last name", email: "Email", phone: "Phone", nin: "NIN", dateOfBirth: "Date of birth", nextOfKinName: "Next of kin name", nextOfKinPhone: "Next of kin phone", nextOfKinPhoneType: "Next of kin phone type", residentialAddress: "Residential address", permanentAddress: "Permanent address", genotype: "Genotype", bloodGroup: "Blood group" };
 const TYPES = { email: "email", phone: "tel", nextOfKinPhone: "tel", dateOfBirth: "date" };
+const HEALTH_OPTIONS = {
+  choking: ["Food", "Liquid", "Tablets or capsules"],
+  sightProblem: ["Short-sightedness", "Long-sightedness", "Astigmatism", "Cataract", "Glaucoma", "Colour blindness", "Eye infection", "Night blindness"],
+  diabetic: ["Type 1 diabetes", "Type 2 diabetes", "Gestational diabetes", "Pre-diabetes"],
+  bpProblem: ["High blood pressure (hypertension)", "Low blood pressure (hypotension)", "Blood pressure that varies"],
+  drugReaction: ["Penicillin", "Sulfonamides (sulfa drugs)", "Aspirin", "Ibuprofen or other NSAIDs", "Paracetamol", "Antimalarials", "Local anaesthetic"],
+  fainting: ["When standing up quickly", "In heat or crowds", "At the sight of blood or pain", "Unknown cause"],
+  drugInUse: ["Metformin", "Insulin", "Amlodipine", "Lisinopril", "Salbutamol inhaler", "Paracetamol", "Artemether-lumefantrine", "Anticonvulsant (for seizures)"],
+  asthma: ["Salbutamol (Ventolin) inhaler", "Beclomethasone (Becotide) inhaler", "Salmeterol or formoterol inhaler", "Prednisolone (steroid tablets)"],
+  allergy: ["Peanuts", "Tree nuts", "Eggs", "Milk or dairy", "Fish", "Shellfish", "Wheat or gluten", "Soya", "Pollen", "Dust mites", "Latex", "Bee or wasp stings", "Penicillin", "Sulfonamides"],
+  crisis: ["Seizure or epilepsy", "Heart condition", "Stroke", "Severe asthma attack", "Very low blood sugar (hypoglycaemia)", "Sickle-cell crisis", "Severe malaria"]
+};
+const YN = ["Yes", "No"];
+const SELECTS = { genotype: ["AA", "AS", "SS", "AC", "SC", "CC", "Unknown"], bloodGroup: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"], choking: YN, sightProblem: YN, diabetic: YN, bpProblem: YN, drugReaction: YN, fainting: YN, drugInUse: YN, asthma: YN, allergy: YN, crisis: YN };
 
 async function post(body) {
   const res = await fetch("/api/batch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -101,8 +115,17 @@ export function BatchCheckPage() {
     <form onSubmit=${submit} style=${{ display: "grid", gap: "14px" }}>
       ${keys.map((k) => html`<div key=${k}>
         <label style=${label}>${LABELS[k] || k} ${rules[k] === "required" ? html`<span style=${{ color: RED }}>*</span>` : html`<span style=${{ color: MUTED, textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>(optional)</span>`}</label>
-        <input type=${TYPES[k] || "text"} style=${field} value=${edits[k] || ""} required=${rules[k] === "required"}
-          onInput=${(e) => setEdits({ ...edits, [k]: e.target.value })} />
+        ${SELECTS[k] ? html`<select style=${field} value=${edits[k] || ""} required=${rules[k] === "required"} onChange=${(e) => setEdits({ ...edits, [k]: e.target.value })}>
+          <option value="">Choose…</option>${SELECTS[k].map((o) => html`<option key=${o} value=${o}>${o}</option>`)}
+        </select>` : k === "crisisNote" ? html`<textarea rows="3" style=${field} value=${edits[k] || ""} onInput=${(e) => setEdits({ ...edits, [k]: e.target.value })}></textarea>`
+          : html`<input type=${TYPES[k] || "text"} style=${field} value=${edits[k] || ""} required=${rules[k] === "required"}
+          onInput=${(e) => setEdits({ ...edits, [k]: e.target.value })} />`}
+        ${HEALTH_OPTIONS[k] && edits[k] === "Yes" ? html`<div style=${{ marginTop: "8px", display: "grid", gap: "8px" }}>
+          <select style=${field} value=${edits[k + "Detail"] || ""} onChange=${(e) => setEdits({ ...edits, [k + "Detail"]: e.target.value })}>
+            <option value="">Which one?</option>${HEALTH_OPTIONS[k].map((o) => html`<option key=${o} value=${o}>${o}</option>`)}<option value="Other">Other (type it)</option>
+          </select>
+          ${edits[k + "Detail"] === "Other" ? html`<input style=${field} placeholder="Type it" value=${edits[k + "Other"] || ""} onInput=${(e) => setEdits({ ...edits, [k + "Other"]: e.target.value })} />` : null}
+        </div>` : null}
       </div>`)}
       ${error ? html`<p style=${errBox}>${error}</p>` : null}
       <button type="submit" style=${btn}>Send for review</button>

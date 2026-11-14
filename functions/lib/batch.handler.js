@@ -101,7 +101,9 @@ export const handler = async (event) => {
   if (body.action === 'submit') {
     const changes = body.changes || {};
     const clean = {};
-    keys.forEach((k) => { if (changes[k] !== undefined) clean[k] = String(changes[k]).trim().slice(0, 300); });
+    const HEALTH_PARENTS = ['choking', 'sightProblem', 'diabetic', 'bpProblem', 'drugReaction', 'fainting', 'drugInUse', 'asthma', 'allergy', 'crisis'];
+    const acceptKeys = keys.concat(keys.flatMap((k) => (HEALTH_PARENTS.includes(k) ? [k + 'Detail', k + 'Other'] : [])));
+    acceptKeys.forEach((k) => { if (changes[k] !== undefined) clean[k] = String(changes[k]).trim().slice(0, 300); });
     if (Object.keys(clean).length === 0) return J(400, { error: 'Nothing has changed.' });
     const final = (k) => (k in clean ? clean[k] : values[k]);
     const missing = keys.filter((k) => rules[k] === 'required' && !String(final(k) || '').trim());
