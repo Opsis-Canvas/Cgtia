@@ -79,6 +79,7 @@ function installFieldCheckForm() {
   const okEl = document.getElementById("fieldCheckSuccess");
   const btn = document.getElementById("fieldCheckSubmit");
 
+  buildExtras();
   // Required fields follow the rules set in admin: the asterisk and the browser check both follow them
   const RULE_IDS = { surname: "fcSurname", middleName: "fcMiddleName", lastName: "fcLastName", email: "fcEmail", phone: "fcPhone", nin: "fcNin", dateOfBirth: "fcDob", nextOfKinName: "fcKinName", nextOfKinPhone: "fcKinPhone", nextOfKinPhoneType: "fcKinPhoneType" };
   fetch("/api/field-rules").then((r) => r.json()).then((d) => {
@@ -122,7 +123,8 @@ function installFieldCheckForm() {
       nextOfKinPhoneType: String(fd.get("nextOfKinPhoneType") || "").trim(),
       surname: String(fd.get("surname") || "").trim(),
       middleName: String(fd.get("middleName") || "").trim(),
-      lastName: String(fd.get("lastName") || "").trim()
+      lastName: String(fd.get("lastName") || "").trim(),
+      ...extraFields(fd)
     };
 
     if (!payload.token) {
@@ -167,3 +169,58 @@ export const FieldCheckPage = () => {
   }, []);
   return html`<${OriginalPage} markup=${field_check_html} />`;
 };
+
+
+// Contact, address and health questions, built here from the same lists as the admin
+const HEALTH_OPTIONS_PAGE = {
+  choking: ["Food", "Liquid", "Tablets or capsules"],
+  sightProblem: ["Short-sightedness", "Long-sightedness", "Astigmatism", "Cataract", "Glaucoma", "Colour blindness", "Eye infection", "Night blindness"],
+  diabetic: ["Type 1 diabetes", "Type 2 diabetes", "Gestational diabetes", "Pre-diabetes"],
+  bpProblem: ["High blood pressure (hypertension)", "Low blood pressure (hypotension)", "Blood pressure that varies"],
+  drugReaction: ["Penicillin", "Sulfonamides (sulfa drugs)", "Aspirin", "Ibuprofen or other NSAIDs", "Paracetamol", "Antimalarials", "Local anaesthetic"],
+  fainting: ["When standing up quickly", "In heat or crowds", "At the sight of blood or pain", "Unknown cause"],
+  drugInUse: ["Metformin", "Insulin", "Amlodipine", "Lisinopril", "Salbutamol inhaler", "Paracetamol", "Artemether-lumefantrine", "Anticonvulsant (for seizures)"],
+  asthma: ["Salbutamol (Ventolin) inhaler", "Beclomethasone (Becotide) inhaler", "Salmeterol or formoterol inhaler", "Prednisolone (steroid tablets)"],
+  allergy: ["Peanuts", "Tree nuts", "Eggs", "Milk or dairy", "Fish", "Shellfish", "Wheat or gluten", "Soya", "Pollen", "Dust mites", "Latex", "Bee or wasp stings", "Penicillin", "Sulfonamides"],
+  crisis: ["Seizure or epilepsy", "Heart condition", "Stroke", "Severe asthma attack", "Very low blood sugar (hypoglycaemia)", "Sickle-cell crisis", "Severe malaria"]
+};
+const EXTRA_FIELDS = ["whatsapp", "residentialAddress", "permanentAddress", "genotype", "bloodGroup", "choking", "sightProblem", "diabetic", "bpProblem", "drugReaction", "fainting", "drugInUse", "asthma", "allergy", "crisis", "crisisNote"];
+EXTRA_FIELDS.push(...Object.keys(HEALTH_OPTIONS_PAGE).flatMap((k) => [k + "Detail", k + "Other"]));
+const HEALTH_LABELS = { choking: "Choking", sightProblem: "Sight / eye problem", diabetic: "Diabetic", bpProblem: "High / low BP", drugReaction: "Drug reactions", fainting: "Fainting sensation", drugInUse: "Drug in use", asthma: "Asthmatic", allergy: "Allergy", crisis: "Any crisis / sickness" };
+function extraFields(fd) {
+  return Object.fromEntries(EXTRA_FIELDS.map((k) => [k, String(fd.get(k) || "").trim()]));
+}
+function buildExtras() {
+  const LBL = "block text-xs font-semibold text-slate-600 mb-1.5";
+  const IN = "w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800";
+  const wrap = (label, input) => `<div><label class="${LBL}">${label}</label>${input}</div>`;
+  const text = (name, label) => wrap(label, `<input name="${name}" class="${IN}" />`);
+  const pick = (name, label, opts) => wrap(label, `<select name="${name}" class="${IN}"><option value="">Choose…</option>${opts.map((o) => `<option>${o}</option>`).join("")}</select>`);
+  const yn = (name, label) => wrap(label, `<select name="${name}" data-health="${name}" class="${IN}"><option value="">Choose…</option><option>No</option><option>Yes</option></select>`);
+  const contact = document.getElementById("fcContact");
+  if (contact) contact.innerHTML = `<div class="grid grid-cols-1 gap-4">${text("whatsapp", "WhatsApp number")}${text("residentialAddress", "Residential address")}${text("permanentAddress", "Permanent home address")}</div>`;
+  const health = document.getElementById("fcHealth");
+  if (!health) return;
+  let html = `<div class="mt-2"><p class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Health information</p><div class="grid grid-cols-1 gap-4">`;
+  html += pick("genotype", "Genotype", ["AA", "AS", "SS", "AC", "SC", "CC", "Unknown"]);
+  html += pick("bloodGroup", "Blood group", ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"]);
+  Object.keys(HEALTH_OPTIONS_PAGE).forEach((k) => {
+    html += yn(k, HEALTH_LABELS[k] || k);
+    html += `<div id="${k}Wrap" class="hidden grid gap-3">${pick(k + "Detail", "Which one?", HEALTH_OPTIONS_PAGE[k])}<div class="hidden">${text(k + "Other", "Type it")}</div></div>`;
+  });
+  html += `<div><label class="${LBL}">Explain the crisis / sickness</label><textarea name="crisisNote" rows="3" class="${IN}"></textarea></div>`;
+  html += `</div></div>`;
+  health.innerHTML = html;
+  health.querySelectorAll("select[data-health]").forEach((sel) => sel.addEventListener("change", () => {
+    const w = document.getElementById(sel.name + "Wrap");
+    if (w) w.classList.toggle("hidden", sel.value !== "Yes");
+  }));
+  Object.keys(HEALTH_OPTIONS_PAGE).forEach((k) => {
+    const d = health.querySelector(`select[name="${k}Detail"]`);
+    if (!d) return;
+    d.addEventListener("change", () => {
+      const o = health.querySelector(`input[name="${k}Other"]`);
+      if (o) o.parentElement.classList.toggle("hidden", d.value !== "Other");
+    });
+  });
+}

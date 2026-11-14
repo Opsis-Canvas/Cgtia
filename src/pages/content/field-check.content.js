@@ -44,6 +44,7 @@ export const field_check_html = `
             <button type="button" id="fcNameDone" class="px-4 py-2 rounded-full bg-blue-900 text-white text-xs font-semibold">Done with name</button>
             <p id="fcNamePreview" class="hidden mt-2 text-sm text-slate-700"></p>
           </div>
+          <div id="fcContact"></div>
           <div>
             <label for="fcNin" class="block text-xs font-semibold text-slate-600 mb-1.5">NIN (National Identification Number) <span class="text-rose-500">*</span></label>
             <input id="fcNin" name="nin" required inputmode="numeric" pattern="[0-9]{11}" maxlength="11"
@@ -113,7 +114,8 @@ export const field_check_html = `
         <p id="fieldCheckError" class="hidden text-sm text-rose-600"></p>
         <p id="fieldCheckSuccess" class="hidden text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3"></p>
 
-        <button type="submit" id="fieldCheckSubmit"
+        <div id="fcHealth"></div>
+          <button type="submit" id="fieldCheckSubmit"
           class="w-full px-8 py-3.5 rounded-full bg-blue-950 text-white text-xs font-semibold tracking-widest uppercase hover:bg-blue-900 smooth-transition disabled:opacity-60">
           Submit profile
         </button>
