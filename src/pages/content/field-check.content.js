@@ -32,8 +32,8 @@ export const field_check_html = `
               <input id="fcSurname" name="surname" required autocomplete="family-name" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" placeholder="As on NIN / passport" />
             </div>
             <div>
-              <label for="fcFirstName" class="block text-xs font-semibold text-slate-600 mb-1.5">First name <span class="text-rose-500">*</span></label>
-              <input id="fcFirstName" name="firstName" required autocomplete="given-name" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
+              <label for="fcFirstName" class="block text-xs font-semibold text-slate-600 mb-1.5">Last name <span class="text-rose-500">*</span></label>
+              <input id="fcLastName" name="lastName" required autocomplete="given-name" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
             </div>
             <div>
               <label for="fcMiddleName" class="block text-xs font-semibold text-slate-600 mb-1.5">Middle name</label>
