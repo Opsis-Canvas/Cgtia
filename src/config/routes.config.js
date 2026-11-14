@@ -19,6 +19,7 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   WALL_OF_FAME: "/wall-of-fame",
   FIELD_CHECK: "/field-check/confirm",
+  BATCH_CHECK: "/batch/check",
   FAQ: "/faq",
   LICENSING_COMPLETE: "/licensing/complete",
   PAY_FEE: "/pay-fee",
