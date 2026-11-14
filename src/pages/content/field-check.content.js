@@ -26,11 +26,27 @@ export const field_check_html = `
 
         <fieldset class="space-y-4">
           <legend class="text-xs font-semibold tracking-widest uppercase text-slate-500 mb-1">Identity</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="fcSurname" class="block text-xs font-semibold text-slate-600 mb-1.5">Surname <span class="text-rose-500">*</span></label>
+              <input id="fcSurname" name="surname" required autocomplete="family-name" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" placeholder="As on NIN / passport" />
+            </div>
+            <div>
+              <label for="fcFirstName" class="block text-xs font-semibold text-slate-600 mb-1.5">First name <span class="text-rose-500">*</span></label>
+              <input id="fcFirstName" name="firstName" required autocomplete="given-name" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
+            </div>
+            <div>
+              <label for="fcMiddleName" class="block text-xs font-semibold text-slate-600 mb-1.5">Middle name</label>
+              <input id="fcMiddleName" name="middleName" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
+            </div>
+            <div>
+              <label for="fcLastName" class="block text-xs font-semibold text-slate-600 mb-1.5">Last name</label>
+              <input id="fcLastName" name="lastName" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
+            </div>
+          </div>
           <div>
-            <label for="fcFullLegalName" class="block text-xs font-semibold text-slate-600 mb-1.5">Full legal name <span class="text-rose-500">*</span></label>
-            <input id="fcFullLegalName" name="fullLegalName" required autocomplete="name"
-              class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800"
-              placeholder="As on NIN / passport" />
+            <button type="button" id="fcNameDone" class="px-4 py-2 rounded-full bg-blue-900 text-white text-xs font-semibold">Done with name</button>
+            <p id="fcNamePreview" class="hidden mt-2 text-sm text-slate-700"></p>
           </div>
           <div>
             <label for="fcNin" class="block text-xs font-semibold text-slate-600 mb-1.5">NIN (National Identification Number) <span class="text-rose-500">*</span></label>
