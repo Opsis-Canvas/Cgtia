@@ -2,7 +2,7 @@
 import { db, admin } from './firebaseAdmin.js';
 import { json, CORS, examFromLink, publicExam, settingsOf, deviceState, findAllowed, reqOf, lockMatch } from './exam-public.js';
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return json(405, { error: 'Method Not Allowed' });
   let body = {};
@@ -15,6 +15,16 @@ export const handler = async (event) => {
   const cameraOn = body.cameraOn === true;
   const lv = body.liveness && typeof body.liveness === 'object' ? body.liveness : null;
   const liveness = lv ? { passed: Number(lv.passed) || 0, failed: Number(lv.failed) || 0, total: 3, skipped: lv.skipped === true } : null;
+  // The identity photo goes to R2 storage when it is bound; otherwise it is kept on the record as before
+  let photoKey = '';
+  if (photo && context && context.env && context.env.PHOTOS) {
+    try {
+      const key = 'exam/' + crypto.randomUUID() + '.jpg';
+      const bin = Uint8Array.from(atob(photo.split(',')[1]), (c) => c.charCodeAt(0));
+      await context.env.PHOTOS.put(key, bin, { httpMetadata: { contentType: 'image/jpeg' } });
+      photoKey = key;
+    } catch (e) { photoKey = ''; }
+  }
   const deviceId = String(body.deviceId || '').slice(0, 80);
   if (deviceId.length < 8) return json(400, { error: 'This device could not be recognised. Reload the page and try again.' });
   try {
@@ -55,7 +65,7 @@ export const handler = async (event) => {
       token: r.token, examId: r.examId, examTitle: pub.title, name,
       startedAt: startedAt.toISOString(), deadline, order,
       status: 'in_progress', tabSwitches: 0, fullscreenExits: 0, captureAttempts: 0, cameraOffs: 0, deviceId, email, regNumber, linkLabel: r.link.label || 'Link', linkId: r.token,
-      photo, cameraOn, liveness, livenessFlagged: !!(liveness && liveness.failed >= 2), consentAt: new Date().toISOString(),
+      photo: photoKey ? '' : photo, photoKey, cameraOn, liveness, livenessFlagged: !!(liveness && liveness.failed >= 2), consentAt: new Date().toISOString(),
       allowed: pub.settings.tabSwitchAllowed, timerMinutes: pub.timerMinutes
     });
     await db.collection('adminAlerts').add({
