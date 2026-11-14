@@ -79,6 +79,16 @@ function installFieldCheckForm() {
   const okEl = document.getElementById("fieldCheckSuccess");
   const btn = document.getElementById("fieldCheckSubmit");
 
+  // The full name is built from its parts; Done shows the preview
+  const composedName = () => ["fcSurname", "fcFirstName", "fcMiddleName", "fcLastName"]
+    .map((id) => (document.getElementById(id)?.value || "").trim()).filter(Boolean).join(" ");
+  document.getElementById("fcNameDone")?.addEventListener("click", () => {
+    const n = composedName();
+    const pv = document.getElementById("fcNamePreview");
+    if (!n || !pv) return;
+    pv.textContent = "Full name: " + n;
+    pv.classList.remove("hidden");
+  });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     hide(errEl);
@@ -87,7 +97,7 @@ function installFieldCheckForm() {
     const fd = new FormData(form);
     const payload = {
       token: String(fd.get("token") || token || "").trim(),
-      fullLegalName: String(fd.get("fullLegalName") || "").trim(),
+      fullLegalName: composedName() || String(fd.get("fullLegalName") || "").trim(),
       nin: String(fd.get("nin") || "").replace(/\D/g, ""),
       dateOfBirth: String(fd.get("dateOfBirth") || "").trim(),
       email: String(fd.get("email") || "").trim().toLowerCase(),
