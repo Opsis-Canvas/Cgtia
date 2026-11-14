@@ -80,7 +80,7 @@ function installFieldCheckForm() {
   const btn = document.getElementById("fieldCheckSubmit");
 
   // The full name is built from its parts; Done shows the preview
-  const composedName = () => ["fcSurname", "fcFirstName", "fcMiddleName"]
+  const composedName = () => ["fcSurname", "fcMiddleName", "fcLastName"]
     .map((id) => (document.getElementById(id)?.value || "").trim()).filter(Boolean).join(" ");
   document.getElementById("fcNameDone")?.addEventListener("click", () => {
     const n = composedName();
