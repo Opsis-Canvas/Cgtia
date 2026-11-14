@@ -51,7 +51,7 @@ export const handler = async (event) => {
       score, total, pct, answered, reason, tabSwitches: s.tabSwitches || 0, fullscreenExits: s.fullscreenExits || 0,
       allowed: s.allowed || 0, submittedAt, resultMode: settings.resultMode,
       token: s.token || '', deviceId: s.deviceId || '', details,
-      captureAttempts: s.captureAttempts || 0, cameraOffs: s.cameraOffs || 0, photo: s.photo || '', cameraOn: !!s.cameraOn,
+      captureAttempts: s.captureAttempts || 0, cameraOffs: s.cameraOffs || 0, photo: s.photo || '', photoKey: s.photoKey || '', cameraOn: !!s.cameraOn,
       startedAt: s.startedAt || '', regNumber: s.regNumber || '', liveness: s.liveness || null, livenessFlagged: !!s.livenessFlagged, linkLabel: s.linkLabel || 'Link', linkId: s.linkId || s.token || ''
     });
     await ref.update({ status: 'submitted', submittedAt, reason });
