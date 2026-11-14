@@ -104,7 +104,8 @@ function installFieldCheckForm() {
       phone: String(fd.get("phone") || "").trim(),
       nextOfKinName: String(fd.get("nextOfKinName") || "").trim(),
       nextOfKinPhone: String(fd.get("nextOfKinPhone") || "").trim(),
-      nextOfKinRelation: String(fd.get("nextOfKinRelation") || "").trim()
+      nextOfKinRelation: String(fd.get("nextOfKinRelation") || "").trim(),
+      nextOfKinPhoneType: String(fd.get("nextOfKinPhoneType") || "").trim()
     };
 
     if (!payload.token) {

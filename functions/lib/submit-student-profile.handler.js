@@ -110,6 +110,7 @@ export const handler = async (event) => {
   const nextOfKinName = String(body.nextOfKinName || '').trim();
   const nextOfKinPhone = String(body.nextOfKinPhone || '').trim();
   const nextOfKinRelation = String(body.nextOfKinRelation || '').trim();
+  const nextOfKinPhoneType = String(body.nextOfKinPhoneType || '').trim();
 
   if (!fullLegalName || !email || !dateOfBirth || !phone) {
     return bad(400, 'Missing required identity or contact fields');
@@ -167,7 +168,8 @@ export const handler = async (event) => {
     dateOfBirth,
     email,
     phone,
-    nextOfKin: { name: nextOfKinName, phone: nextOfKinPhone, relation: nextOfKinRelation },
+    nextOfKin: { name: nextOfKinName, phone: nextOfKinPhone, relation: nextOfKinRelation, phoneType: nextOfKinPhoneType },
+    nextOfKinPhoneType,
     nextOfKinName,
     nextOfKinPhone,
     nextOfKinRelation,

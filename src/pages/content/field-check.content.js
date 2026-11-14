@@ -87,6 +87,15 @@ export const field_check_html = `
               class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
           </div>
           <div>
+            <label for="fcKinPhoneType" class="block text-xs font-semibold text-slate-600 mb-1.5">Next of kin phone is <span class="text-rose-500">*</span></label>
+            <select id="fcKinPhoneType" name="nextOfKinPhoneType" required
+              class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800">
+              <option value="">Select…</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Normal phone">Normal phone</option>
+            </select>
+          </div>
+          <div>
             <label for="fcKinRelation" class="block text-xs font-semibold text-slate-600 mb-1.5">Relationship <span class="text-rose-500">*</span></label>
             <select id="fcKinRelation" name="nextOfKinRelation" required
               class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800">
