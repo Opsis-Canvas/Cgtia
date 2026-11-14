@@ -39,10 +39,6 @@ export const field_check_html = `
               <label for="fcMiddleName" class="block text-xs font-semibold text-slate-600 mb-1.5">Middle name</label>
               <input id="fcMiddleName" name="middleName" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
             </div>
-            <div>
-              <label for="fcLastName" class="block text-xs font-semibold text-slate-600 mb-1.5">Last name</label>
-              <input id="fcLastName" name="lastName" class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:border-blue-900/40 focus:bg-white outline-none text-sm text-slate-800" />
-            </div>
           </div>
           <div>
             <button type="button" id="fcNameDone" class="px-4 py-2 rounded-full bg-blue-900 text-white text-xs font-semibold">Done with name</button>
