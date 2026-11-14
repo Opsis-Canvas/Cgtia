@@ -79,6 +79,20 @@ function installFieldCheckForm() {
   const okEl = document.getElementById("fieldCheckSuccess");
   const btn = document.getElementById("fieldCheckSubmit");
 
+  // Required fields follow the rules set in admin: the asterisk and the browser check both follow them
+  const RULE_IDS = { surname: "fcSurname", middleName: "fcMiddleName", lastName: "fcLastName", email: "fcEmail", phone: "fcPhone", nin: "fcNin", dateOfBirth: "fcDob", nextOfKinName: "fcKinName", nextOfKinPhone: "fcKinPhone", nextOfKinPhoneType: "fcKinPhoneType" };
+  fetch("/api/field-rules").then((r) => r.json()).then((d) => {
+    const rules = d.rules || {};
+    Object.entries(RULE_IDS).forEach(([k, id]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const req = k === "email" || k === "surname" || rules[k] === "required";
+      el.required = req;
+      const star = document.querySelector('label[for="' + id + '"] .text-rose-500');
+      if (star) star.style.display = req ? "" : "none";
+    });
+  }).catch(() => {});
+
   // The full name is built from its parts; Done shows the preview
   const composedName = () => ["fcSurname", "fcMiddleName", "fcLastName"]
     .map((id) => (document.getElementById(id)?.value || "").trim()).filter(Boolean).join(" ");
@@ -105,23 +119,14 @@ function installFieldCheckForm() {
       nextOfKinName: String(fd.get("nextOfKinName") || "").trim(),
       nextOfKinPhone: String(fd.get("nextOfKinPhone") || "").trim(),
       nextOfKinRelation: String(fd.get("nextOfKinRelation") || "").trim(),
-      nextOfKinPhoneType: String(fd.get("nextOfKinPhoneType") || "").trim()
+      nextOfKinPhoneType: String(fd.get("nextOfKinPhoneType") || "").trim(),
+      surname: String(fd.get("surname") || "").trim(),
+      middleName: String(fd.get("middleName") || "").trim(),
+      lastName: String(fd.get("lastName") || "").trim()
     };
 
     if (!payload.token) {
       show(errEl, "Missing invite token. Use the link from the academy.");
-      return;
-    }
-    if (!payload.fullLegalName || !payload.email || !payload.dateOfBirth) {
-      show(errEl, "Please fill in all required fields.");
-      return;
-    }
-    if (payload.nin.length !== 11) {
-      show(errEl, "NIN must be exactly 11 digits.");
-      return;
-    }
-    if (!payload.nextOfKinName || !payload.nextOfKinPhone || !payload.nextOfKinRelation) {
-      show(errEl, "Please complete next-of-kin details.");
       return;
     }
 

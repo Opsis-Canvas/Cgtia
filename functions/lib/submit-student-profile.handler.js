@@ -112,13 +112,18 @@ export const handler = async (event) => {
   const nextOfKinRelation = String(body.nextOfKinRelation || '').trim();
   const nextOfKinPhoneType = String(body.nextOfKinPhoneType || '').trim();
 
-  if (!fullLegalName || !email || !dateOfBirth || !phone) {
-    return bad(400, 'Missing required identity or contact fields');
-  }
-  if (nin.length !== 11) return bad(400, 'NIN must be 11 digits');
-  if (!nextOfKinName || !nextOfKinPhone || !nextOfKinRelation) {
-    return bad(400, 'Next of kin details required');
-  }
+  // Required fields follow the rules set in admin. Email and the name are always needed to create the record.
+  const rsnap = await db.collection('settings').doc('studentFields').get();
+  const rules = rsnap.exists ? ((rsnap.data() || {}).rules || {}) : {};
+  const got = {
+    surname: String(body.surname || '').trim(), middleName: String(body.middleName || '').trim(), lastName: String(body.lastName || '').trim(),
+    email, phone, nin, dateOfBirth, nextOfKinName, nextOfKinPhone, nextOfKinPhoneType
+  };
+  if (!fullLegalName || !email) return bad(400, 'Please enter your name and email');
+  const missing = Object.keys(got).filter((k) => rules[k] === 'required' && !String(got[k] || '').trim());
+  if (missing.length) return bad(400, 'Please fill in: ' + missing.join(', '));
+  if (nin && nin.length !== 11) return bad(400, 'NIN must be 11 digits');
+  if (!nextOfKinRelation) return bad(400, 'Choose the next of kin relationship');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return bad(400, 'Invalid email');
 
   // If invite locked an email, force it
@@ -135,7 +140,7 @@ export const handler = async (event) => {
       return bad(409, 'A student profile already exists for this email. Contact the academy if you need a correction.');
     }
     // Block same NIN on another student
-    const ninQ = await db.collection('students').where('nin', '==', nin).limit(1).get();
+    const ninQ = (nin ? await db.collection('students').where('nin', '==', nin).limit(1).get() : { empty: true, docs: [] });
     if (!ninQ.empty) {
       const other = ninQ.docs[0];
       if (other.id !== id) {
@@ -144,7 +149,7 @@ export const handler = async (event) => {
     }
     // Also block NIN already used on a licensing request
     try {
-      const ninLic = await db.collection('licensingRequests').where('nin', '==', nin).limit(1).get();
+      const ninLic = (nin ? await db.collection('licensingRequests').where('nin', '==', nin).limit(1).get() : { empty: true, docs: [] });
       if (!ninLic.empty) {
         return bad(409, 'This NIN is already linked to a licensing request. Contact the academy if you need help.');
       }
@@ -169,7 +174,7 @@ export const handler = async (event) => {
     email,
     phone,
     nextOfKin: { name: nextOfKinName, phone: nextOfKinPhone, relation: nextOfKinRelation, phoneType: nextOfKinPhoneType },
-    nextOfKinPhoneType,
+    nextOfKinPhoneType, surname: got.surname, middleName: got.middleName, lastName: got.lastName,
     nextOfKinName,
     nextOfKinPhone,
     nextOfKinRelation,
