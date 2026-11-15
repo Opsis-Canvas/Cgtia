@@ -52,6 +52,7 @@ export function BatchCheckPage() {
   const [values, setValues] = useState({});
   const [edits, setEdits] = useState({});
   const [message, setMessage] = useState("");
+  const [stepIdx, setStepIdx] = useState(0);
 
   useEffect(() => {
     post({ action: "info", token })
@@ -110,24 +111,51 @@ export function BatchCheckPage() {
   }
 
   const keys = Object.keys(rules);
-  return shell(html`<h1 style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "24px", fontWeight: 800, color: NAVY, margin: "0 0 10px" }}>Check your details</h1>
-    <p style=${{ color: MUTED, lineHeight: 1.6, margin: "0 0 20px" }}>Correct anything that is wrong. Optional fields can be left as they are. Changes go to the academy for review.</p>
-    <form onSubmit=${submit} style=${{ display: "grid", gap: "14px" }}>
-      ${keys.map((k) => html`<div key=${k}>
-        <label style=${label}>${LABELS[k] || k} ${rules[k] === "required" ? html`<span style=${{ color: RED }}>*</span>` : html`<span style=${{ color: MUTED, textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>(optional)</span>`}</label>
-        ${SELECTS[k] ? html`<select style=${field} value=${edits[k] || ""} required=${rules[k] === "required"} onChange=${(e) => setEdits({ ...edits, [k]: e.target.value })}>
-          <option value="">Choose…</option>${SELECTS[k].map((o) => html`<option key=${o} value=${o}>${o}</option>`)}
-        </select>` : k === "crisisNote" ? html`<textarea rows="3" style=${field} value=${edits[k] || ""} onInput=${(e) => setEdits({ ...edits, [k]: e.target.value })}></textarea>`
-          : html`<input type=${TYPES[k] || "text"} style=${field} value=${edits[k] || ""} required=${rules[k] === "required"}
-          onInput=${(e) => setEdits({ ...edits, [k]: e.target.value })} />`}
-        ${HEALTH_OPTIONS[k] && edits[k] === "Yes" ? html`<div style=${{ marginTop: "8px", display: "grid", gap: "8px" }}>
-          <select style=${field} value=${edits[k + "Detail"] || ""} onChange=${(e) => setEdits({ ...edits, [k + "Detail"]: e.target.value })}>
-            <option value="">Which one?</option>${HEALTH_OPTIONS[k].map((o) => html`<option key=${o} value=${o}>${o}</option>`)}<option value="Other">Other (type it)</option>
-          </select>
-          ${edits[k + "Detail"] === "Other" ? html`<input style=${field} placeholder="Type it" value=${edits[k + "Other"] || ""} onInput=${(e) => setEdits({ ...edits, [k + "Other"]: e.target.value })} />` : null}
-        </div>` : null}
-      </div>`)}
+  // Steps: the student works through one group at a time
+  const GROUPS = [
+    { title: "About you", keys: ["surname", "middleName", "lastName", "dateOfBirth", "nin"] },
+    { title: "Contact and address", keys: ["email", "phone", "whatsapp", "residentialAddress", "permanentAddress", "nextOfKinName", "nextOfKinPhone", "nextOfKinPhoneType"] },
+    { title: "Health", keys: ["genotype", "bloodGroup", "choking", "sightProblem", "diabetic", "bpProblem", "drugReaction", "fainting", "drugInUse", "asthma", "allergy", "crisis", "crisisNote"] }
+  ];
+  const steps = GROUPS.map((g) => ({ title: g.title, keys: g.keys.filter((k) => keys.includes(k)) })).filter((g) => g.keys.length);
+  const leftover = keys.filter((k) => !steps.some((g) => g.keys.includes(k)));
+  if (leftover.length) steps.push({ title: "More", keys: leftover });
+  const cur = steps[stepIdx] || steps[0] || { title: "", keys: [] };
+  const isLast = stepIdx >= steps.length - 1;
+  const backBtn = { height: "54px", padding: "0 22px", borderRadius: "999px", border: "1px solid " + LINE, background: "#fff", color: NAVY, fontWeight: 800, cursor: "pointer" };
+
+  const renderField = (k) => html`<div key=${k}>
+    <label style=${label}>${LABELS[k] || k} ${rules[k] === "required" ? html`<span style=${{ color: RED }}>*</span>` : html`<span style=${{ color: MUTED, textTransform: "none", letterSpacing: 0, fontWeight: 600 }}>(optional)</span>`}</label>
+    ${SELECTS[k] ? html`<select style=${field} value=${edits[k] || ""} required=${rules[k] === "required"} onChange=${(e) => setEdits({ ...edits, [k]: e.target.value })}>
+      <option value="">Choose…</option>${SELECTS[k].map((o) => html`<option key=${o} value=${o}>${o}</option>`)}
+    </select>` : k === "crisisNote" ? html`<textarea rows="3" style=${field} value=${edits[k] || ""} onInput=${(e) => setEdits({ ...edits, [k]: e.target.value })}></textarea>`
+      : html`<input type=${TYPES[k] || "text"} style=${field} value=${edits[k] || ""} required=${rules[k] === "required"} onInput=${(e) => setEdits({ ...edits, [k]: e.target.value })} />`}
+    ${HEALTH_OPTIONS[k] && edits[k] === "Yes" ? html`<div style=${{ marginTop: "8px", display: "grid", gap: "8px" }}>
+      <select style=${field} value=${edits[k + "Detail"] || ""} onChange=${(e) => setEdits({ ...edits, [k + "Detail"]: e.target.value })}>
+        <option value="">Which one?</option>${HEALTH_OPTIONS[k].map((o) => html`<option key=${o} value=${o}>${o}</option>`)}<option value="Other">Other (type it)</option>
+      </select>
+      ${edits[k + "Detail"] === "Other" ? html`<input style=${field} placeholder="Type it" value=${edits[k + "Other"] || ""} onInput=${(e) => setEdits({ ...edits, [k + "Other"]: e.target.value })} />` : null}
+    </div>` : null}
+  </div>`;
+
+  function next(e) {
+    e.preventDefault();
+    if (!isLast) { setError(""); setStepIdx(stepIdx + 1); return; }
+    submit(e);
+  }
+
+  return shell(html`<h1 style=${{ fontFamily: "Montserrat, Inter, sans-serif", fontSize: "24px", fontWeight: 800, color: NAVY, margin: "0 0 6px" }}>Check your details</h1>
+    <p style=${{ color: MUTED, lineHeight: 1.6, margin: "0 0 18px" }}>Correct anything that is wrong. Optional fields can be left as they are. Changes go to the academy for review.</p>
+    <div style=${{ display: "flex", gap: "6px", marginBottom: "18px" }}>
+      ${steps.map((g, i) => html`<span key=${g.title} style=${{ flex: 1, height: "6px", borderRadius: "999px", background: i <= stepIdx ? BLUE : LINE }}></span>`)}
+    </div>
+    <p style=${{ fontSize: "11px", fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", color: BLUE, margin: "0 0 14px" }}>Step ${stepIdx + 1} of ${steps.length} · ${cur.title}</p>
+    <form onSubmit=${next} style=${{ display: "grid", gap: "14px" }}>
+      ${cur.keys.map(renderField)}
       ${error ? html`<p style=${errBox}>${error}</p>` : null}
-      <button type="submit" style=${btn}>Send for review</button>
+      <div style=${{ display: "flex", gap: "10px" }}>
+        ${stepIdx > 0 ? html`<button type="button" style=${backBtn} onClick=${() => { setError(""); setStepIdx(stepIdx - 1); }}>Back</button>` : null}
+        <button type="submit" style=${{ ...btn, flex: 1 }}>${isLast ? "Send for review" : "Next"}</button>
+      </div>
     </form>`);
 }
