@@ -306,6 +306,8 @@ service cloud.firestore {
     match /siteContent/applyFormDraft { allow read, write: if isAdmin() || isStaff(); }
     match /applyFormHistory/{id} { allow read, write: if isAdmin() || isStaff(); }
 
+    /* Device tokens for push notifications. Staff only. */
+    match /pushTokens/{id} { allow read, write: if isAdmin() || isStaff(); }
     /* Batch links and the change requests they create. Staff only. */
     match /batchLinks/{id} { allow read, write: if isAdmin() || isStaff(); }
     match /studentChangeRequests/{id} { allow read, write: if isAdmin() || isStaff(); }
