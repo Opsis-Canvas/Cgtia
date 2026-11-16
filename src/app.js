@@ -113,6 +113,10 @@ window.__cgtiaRouter = router;
 
 installApplyFlow();
 installAuthFlow();
+// Opened from another page's Portal link: show the sign-in sheet on home, where it works
+if (window.location.pathname === "/" && new URLSearchParams(window.location.search).get("portal") === "1") {
+  setTimeout(() => { try { if (window.toggleAuthScreen) window.toggleAuthScreen("signin"); } catch (e) {} }, 800);
+}
 (async () => {
   try { await loadSiteSettings(); } catch (e) {}
   try { await installPromoBanner(); } catch (e) {}
