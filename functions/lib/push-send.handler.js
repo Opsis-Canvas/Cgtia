@@ -39,7 +39,7 @@ async function emailOf(idToken) {
   return d.users && d.users[0] ? String(d.users[0].email || '').toLowerCase() : '';
 }
 
-export const handler = async (event) => {
+const sendPush = async (event) => {
   if (event.httpMethod === 'OPTIONS') return J(204, {});
   if (event.httpMethod !== 'POST') return J(405, { error: 'Method Not Allowed' });
   let body = {};
@@ -69,4 +69,14 @@ export const handler = async (event) => {
     if (r.ok) sent++; else failed++;
   }
   return J(200, { sent, failed });
+};
+
+// Any error is returned as readable JSON (with CORS), so the admin shows the real reason instead of "Failed to fetch".
+export const handler = async (event) => {
+  try {
+    return await sendPush(event);
+  } catch (err) {
+    console.error('push-send', err);
+    return J(500, { error: 'Server error: ' + (err && err.message ? err.message : String(err)) });
+  }
 };
