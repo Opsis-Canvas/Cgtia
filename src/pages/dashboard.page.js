@@ -646,6 +646,7 @@ export function DashboardPage() {
           pendingUser = u;
           authReady = true;
           setUser(u);
+          if (u) import("../services/push.service.js").then((m) => m.setupPortalPush(u.email || "")).catch(() => {});
           if (!u) {
             await minSplash;
             if (cancelled) return;

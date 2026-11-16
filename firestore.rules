@@ -307,7 +307,11 @@ service cloud.firestore {
     match /applyFormHistory/{id} { allow read, write: if isAdmin() || isStaff(); }
 
     /* Device tokens for push notifications. Staff only. */
-    match /pushTokens/{id} { allow read, write: if isAdmin() || isStaff(); }
+    match /pushTokens/{id} {
+      allow create, update: if request.auth != null && request.resource.data.role == 'student' && request.resource.data.email == request.auth.token.email;
+      allow read, delete: if isAdmin() || isStaff();
+      allow write: if isAdmin() || isStaff();
+    }
     /* Batch links and the change requests they create. Staff only. */
     match /batchLinks/{id} { allow read, write: if isAdmin() || isStaff(); }
     match /studentChangeRequests/{id} { allow read, write: if isAdmin() || isStaff(); }
