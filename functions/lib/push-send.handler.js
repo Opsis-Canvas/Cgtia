@@ -53,7 +53,8 @@ export const handler = async (event) => {
   const url = String(body.url || '/').slice(0, 300);
   const snap = await db.collection('pushTokens').get();
   const tokens = [];
-  snap.forEach((d) => { const v = d.data() || {}; if (v.token && (!body.audience || v.role === body.audience)) tokens.push(v.token); });
+  const onlyStudent = String(body.studentId || '');
+  snap.forEach((d) => { const v = d.data() || {}; if (v.token && (!body.audience || v.role === body.audience) && (!onlyStudent || v.studentId === onlyStudent)) tokens.push(v.token); });
   if (!tokens.length) return J(200, { sent: 0, failed: 0 });
 
   const sa = serviceAccount();
