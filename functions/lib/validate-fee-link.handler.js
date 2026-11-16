@@ -74,6 +74,18 @@ export const handler = async (event) => {
       }
     }
 
+    // Block a payment that is already complete for this fee and this student
+    if (payerEmail && !payerError && (link.feeId || link.feeType)) {
+      const mine = await db.collection('payments').where('email', '==', payerEmail).get();
+      const paidRows = mine.docs.filter((doc) => {
+        const x = doc.data() || {};
+        const same = link.feeId ? x.feeId === link.feeId : x.feeType === (link.feeType || 'custom');
+        return same && String(x.status || '').toLowerCase() === 'paid';
+      }).length;
+      const needed = Number(link.installmentsMax) || 1;
+      if (paidRows >= needed) payerError = 'You have already paid for this fee. If you think this is wrong, contact the academy.';
+    }
+
     let amount = Number(link.amount) || 0;
     let feeName = link.feeName || 'Fee';
     let feeType = link.feeType || 'custom';
