@@ -5,7 +5,8 @@
 import { db } from './firebaseAdmin.js';
 const API_KEY = 'AIzaSyCZOA3OxPyRyRT9XUTsFTUWKViFmkpfOV0';
 const PROJECT = 'verify-cgtia-cert';
-const J = (code, obj) => ({ statusCode: code, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(obj) });
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
+const J = (code, obj) => ({ statusCode: code, headers: { ...CORS, 'Content-Type': 'application/json' }, body: JSON.stringify(obj) });
 const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
 const enc = (o) => b64u(new TextEncoder().encode(JSON.stringify(o)));
 
@@ -40,7 +41,7 @@ async function emailOf(idToken) {
 }
 
 const sendPush = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return J(204, {});
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
   if (event.httpMethod !== 'POST') return J(405, { error: 'Method Not Allowed' });
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch (e) { return J(400, { error: 'Bad request' }); }
