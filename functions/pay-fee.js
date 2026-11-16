@@ -19,7 +19,7 @@ export async function onRequest(context) {
   if (feeName) title = feeName + ' · CGTIA Payment';
   const page = await env.ASSETS.fetch(new URL('/index.html', url.origin));
   const img = url.origin + '/assets/images/og/payment-og.jpg';
-  const desc = 'Pay your school fees securely online. Powered by Caregivers Training and Internship Academy Limited.';
+  const desc = 'Pay your school fees and other payments securely online. Powered by Caregivers Training and Internship Academy Limited.';
   const tags = `<meta name="description" content="${esc(desc)}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="CGTIA">
