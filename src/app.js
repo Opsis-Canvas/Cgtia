@@ -62,6 +62,7 @@ const routeTable = {
   [ROUTES.FORM_LINK]: lazy(() => import("./pages/apply-form.page.js"), "ApplyFormPage"),
   [ROUTES.FORM_OPEN]: lazy(() => import("./pages/apply-form.page.js"), "ApplyFormPage"),
   [ROUTES.EXAM_TAKE]: lazy(() => import("./pages/exam-take.page.js"), "ExamTakePage"),
+  [ROUTES.RESET_PASSWORD]: lazy(() => import("./pages/reset-password.page.js"), "ResetPasswordPage"),
   "/index": lazy(() => import("./pages/home.page.js"), "HomePage"),
   __notfound__: () => NotFoundPage
 };

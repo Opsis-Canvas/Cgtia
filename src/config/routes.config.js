@@ -25,5 +25,6 @@ export const ROUTES = {
   PAY_FEE: "/pay-fee",
   FORM_LINK: "/apply-form/confirm",
   FORM_OPEN: "/apply-form",
-  EXAM_TAKE: "/exam/take"
+  EXAM_TAKE: "/exam/take",
+  RESET_PASSWORD: "/reset"
 };
