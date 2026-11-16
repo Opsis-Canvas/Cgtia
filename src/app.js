@@ -53,6 +53,7 @@ const routeTable = {
   [ROUTES.TERMS]: lazy(() => import("./pages/terms.page.js"), "TermsPage"),
   [ROUTES.VERIFY]: lazy(() => import("./pages/verify.page.js"), "VerifyPage"),
   [ROUTES.FIELD_CHECK]: lazy(() => import("./pages/field-check.page.js"), "FieldCheckPage"),
+  [ROUTES.BATCH_CHECK]: lazy(() => import("./pages/batch-check.page.js"), "BatchCheckPage"),
   [ROUTES.FAQ]: lazy(() => import("./pages/faq.page.js"), "FaqPage"),
   [ROUTES.LICENSING_COMPLETE]: lazy(() => import("./pages/licensing-complete.page.js"), "LicensingCompletePage"),
   [ROUTES.DASHBOARD]: lazy(() => import("./pages/dashboard.page.js"), "DashboardPage"),
