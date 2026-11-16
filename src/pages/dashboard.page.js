@@ -531,6 +531,17 @@ function LoginGate({ onAuthed }) {
           </button>
         </div>
         ${err ? html`<div class="status-banner is-error" role="alert"><span aria-hidden="true">!</span><span>${err}</span></div>` : null}
+        <p style=${{ margin: "10px 0 0", textAlign: "center" }}>
+          <button type="button" onClick=${async () => {
+            const em = (document.getElementById("cgtia-email") || {}).value || "";
+            if (!em.trim()) { setErr("Type your email first, then tap Forgot password."); return; }
+            try {
+              const { auth, sendPasswordResetEmail } = await firebaseAuth();
+              await sendPasswordResetEmail(auth, em.trim());
+            } catch (e) { /* same message either way */ }
+            alert("If that email has a student account, a reset link has been sent. Check your inbox and spam folder.");
+          }} style=${{ background: "none", border: 0, color: "var(--ink, #0f126c)", fontWeight: 700, cursor: "pointer" }}>Forgot password?</button>
+        </p>
         <button type="submit" class="pill-ink" disabled=${loading}>${loading ? "Signing in…" : "Sign in"}</button>
       </form>
       <p style=${{ marginTop: 16, fontSize: 13 }}><a href="/" style=${{ color: "var(--muted)" }}>← Back to website</a></p>
