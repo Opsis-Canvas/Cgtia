@@ -13,7 +13,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   const d = payload.data || {};
-  self.registration.showNotification(d.title || "CGTIA", { body: d.body || "", data: { url: d.url || "/" } });
+  self.registration.showNotification(d.title || "CGTIA", { body: d.body || "", icon: "/assets/images/push/icon-512.png", badge: "/assets/images/push/badge-96.png", data: { url: d.url || "/" } });
 });
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();

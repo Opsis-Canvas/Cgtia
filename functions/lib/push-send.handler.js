@@ -53,23 +53,25 @@ const sendPush = async (event) => {
   const text = String(body.body || '').slice(0, 240);
   const url = String(body.url || '/').slice(0, 300);
   const snap = await db.collection('pushTokens').get();
-  const tokens = [];
-  const only = new Set([].concat(body.studentIds || (body.studentId ? [body.studentId] : [])).map(String).filter(Boolean));
-  snap.forEach((d) => { const v = d.data() || {}; if (v.token && (!body.audience || v.role === body.audience) && (only.size === 0 || only.has(v.studentId))) tokens.push(v.token); });
-  if (!tokens.length) return J(200, { sent: 0, failed: 0 });
+  const targets = [];
+  snap.forEach((d) => { const v = d.data() || {}; if (v.token && (!body.audience || v.role === body.audience) && (only.size === 0 || only.has(v.studentId))) targets.push({ token: v.token, email: v.email || '', studentId: v.studentId || '', role: v.role || '' }); });
+  if (!targets.length) return J(200, { sent: 0, failed: 0, deliveries: [] });
 
   const sa = serviceAccount();
   const at = await accessToken(sa);
   let sent = 0, failed = 0;
-  for (const t of tokens) {
+  const deliveries = [];
+  for (const tg of targets) {
     // data-only, so the worker shows exactly one alert per device
     const r = await fetch('https://fcm.googleapis.com/v1/projects/' + PROJECT + '/messages:send', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + at },
-      body: JSON.stringify({ message: { token: t, data: { title, body: text, url } } })
+      body: JSON.stringify({ message: { token: tg.token, data: { title, body: text, url } } })
     });
-    if (r.ok) sent++; else failed++;
+    const ok = r.ok;
+    if (ok) sent++; else failed++;
+    deliveries.push({ email: tg.email, studentId: tg.studentId, role: tg.role, ok });
   }
-  return J(200, { sent, failed });
+  return J(200, { sent, failed, deliveries });
 };
 
 // Any error is returned as readable JSON (with CORS), so the admin shows the real reason instead of "Failed to fetch".

@@ -47,6 +47,8 @@ export async function loadActivePromotions() {
       if (!data.active) return;
       // Main website only — portal campaigns use showInPortal and must not appear here
       if (data.showOnSite === false) return;
+      // Students-only and batch promotions are for the portal, not the public website
+      if (data.audience === "students" || data.audience === "batch") return;
       if (data.endsAt) {
         const end = data.endsAt.toMillis ? data.endsAt.toMillis() : new Date(data.endsAt).getTime();
         if (end && end < now) return;
