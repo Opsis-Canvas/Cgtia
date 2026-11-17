@@ -1,6 +1,6 @@
 // Portal push: after a student signs in, their device is registered for their own alerts only.
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getMessaging, getToken, isSupported } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
+import { getMessaging, getToken, isSupported, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const CONFIG = {
@@ -22,7 +22,7 @@ export async function setupPortalPush(email) {
   let studentId = "";
   snap.forEach((d) => { if (!studentId && d.data().trashed !== true) studentId = d.id; });
   if (!studentId) return;
-  if (Notification.permission === "granted") return register(app, db, studentId, addr);
+  if (Notification.permission === "granted") { listen(app); return register(app, db, studentId, addr); }
   if (Notification.permission === "default") offer(async () => {
     const p = await Notification.requestPermission();
     if (p === "granted") await register(app, db, studentId, addr);
@@ -48,4 +48,13 @@ function offer(onYes) {
   document.body.appendChild(box);
   document.getElementById("cgtia-push-yes").onclick = async () => { box.remove(); try { await onYes(); } catch (e) {} };
   document.getElementById("cgtia-push-no").onclick = () => box.remove();
+}
+
+// Show a push even while the portal is open, instead of the browser handing it to the page and dropping it
+function listen(app) {
+  onMessage(getMessaging(app), async (payload) => {
+    const d = payload.data || {};
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    if (reg) reg.showNotification(d.title || "CGTIA", { body: d.body || "", icon: "/assets/images/push/icon-512.png", badge: "/assets/images/push/badge-96.png", data: { url: d.url || "/" } });
+  });
 }

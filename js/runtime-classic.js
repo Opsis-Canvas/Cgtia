@@ -1,4 +1,4 @@
-var __feeLabel = function (fee) { if (fee && fee.nextAmount) return Number(fee.nextAmount); var n = Number(fee && fee.installmentsMax) || 1; return n > 1 ? Math.ceil(Number(fee.amount) / n) : Number(fee && fee.amount); };
+var __feeLabel = function (fee) { if (!fee) return 0; if (fee.nextAmount) return Number(fee.nextAmount); var t = Number(fee.chosenTotal || 1); var a = Number(fee.amount) || 0; return t > 1 ? Math.ceil(a / t) : a; };
 
     /* deferred: React OriginalPage calls init after markup inject
     window.addEventListener('DOMContentLoaded', () => {
@@ -2001,7 +2001,7 @@ window.openApplyForProgram = function (programId) {
         email: email,
         fullName: fullName || "",
         regNumber: reg || "",
-        installmentsTotal: fee.installmentsMax || 1,
+        installmentsTotal: fee.chosenTotal || fee.installmentsMax || 1,
         installmentNumber: (fee && fee.nextInstallment) || 1
       })
     });
@@ -2106,6 +2106,7 @@ window.openApplyForProgram = function (programId) {
   function showForm(fee) {
     var token = fee.token || getTokenFromUrl();
     var pending = loadPending(token);
+    if (!fee.chosenTotal) fee.chosenTotal = fee.lockedPlan || 1;
 
     var statusBox = el("div", {
       style: {
@@ -2144,6 +2145,37 @@ window.openApplyForProgram = function (programId) {
     var nameInput = fieldInput({ placeholder: "Your full name", value: (pending && pending.fullName) || "" });
     var emailInput = fieldInput({ type: "email", placeholder: "the email you gave the school", value: (pending && pending.email) || "" });
     var regInput = fieldInput({ placeholder: "optional — if you remember it", value: (pending && pending.regNumber) || "" });
+
+    var planBox = el("div", { style: { display: "none", marginTop: "0.9rem" } }, []);
+    function buildPlanBox(f) {
+      var n = Number(f.installmentsMax) || 1;
+      planBox.innerHTML = "";
+      if (!f.plans || f.plans.length < 2 || n <= 1 || f.lockedPlan) {
+        planBox.style.display = "none";
+        return;
+      }
+      planBox.style.display = "block";
+      planBox.appendChild(el("p", { style: { margin: "0 0 0.45rem", fontSize: "0.8rem", fontWeight: "700", color: "#475569" } }, ["How would you like to pay?"]));
+      f.plans.forEach(function (p) {
+        var on = (f.chosenTotal || 1) === p.total;
+        var opt = el("button", { type: "button", style: { display: "block", width: "100%", textAlign: "left", padding: "0.7rem 0.9rem", marginBottom: "0.4rem", borderRadius: "12px", border: on ? "2px solid #0948e6" : "1px solid #cbd5e1", background: on ? "#eff6ff" : "#ffffff", cursor: "pointer", fontSize: "0.9rem", color: "#0f172a" } }, [
+          p.total === 1 ? "Pay in full: " + formatNaira(p.per) : p.total + " instalments: " + formatNaira(p.per) + " each"
+        ]);
+        opt.addEventListener("click", function () {
+          f.chosenTotal = p.total;
+          f.nextAmount = null;
+          f.nextInstallment = 1;
+          payBtn.textContent = "Pay " + formatNaira(__feeLabel(f));
+          buildPlanBox(f);
+        });
+        planBox.appendChild(opt);
+      });
+      var note = f.chosenTotal > 1
+        ? "Instalment 1 of " + f.chosenTotal + ": pay " + formatNaira(__feeLabel(f)) + " now. The total fee is " + formatNaira(f.amount) + ", paid in " + f.chosenTotal + " instalments."
+        : "You are paying the full fee of " + formatNaira(f.amount) + " now.";
+      planBox.appendChild(el("p", { style: { margin: "0.3rem 0 0", fontSize: "0.82rem", color: "#334155" } }, [note]));
+    }
+    buildPlanBox(fee);
 
     var payBtn = el("button", {
       type: "button",
@@ -2376,6 +2408,7 @@ window.openApplyForProgram = function (programId) {
               setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
               return;
             }
+            if (pre && pre.lockedPlan) { fee.chosenTotal = pre.lockedPlan; fee.lockedPlan = pre.lockedPlan; buildPlanBox(fee); }
             fee.nextAmount = pre && pre.nextAmount;
             fee.nextInstallment = pre && pre.nextInstallment;
             openPaystackNow();
@@ -2409,7 +2442,7 @@ window.openApplyForProgram = function (programId) {
             studentEmail: email,
             regNumber: reg || "",
             fullName: fullName || "",
-            installmentsTotal: fee.installmentsMax || 1,
+            installmentsTotal: fee.chosenTotal || fee.installmentsMax || 1,
             installmentNumber: 1
           },
           callback: function (response) {
@@ -2509,6 +2542,7 @@ window.openApplyForProgram = function (programId) {
       el("div", { style: { height: "0.85rem" } }, []),
       fieldLabel("Registration number (optional)"),
       regInput,
+      planBox,
       payBtn,
       resumeBtn,
       statusBox,

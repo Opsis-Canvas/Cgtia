@@ -112,6 +112,30 @@ export const handler = async (event) => {
       } catch (e) { /* use link snapshot */ }
     }
 
+    if (installmentsMax > 1) {
+      const per = Math.ceil(amount / installmentsMax);
+      description = (description ? description + ' ' : '') + 'This fee is paid in ' + installmentsMax + ' instalments. Pay ₦' + per.toLocaleString('en-NG') + ' now (instalment 1 of ' + installmentsMax + '); the balance is paid in ' + (installmentsMax - 1) + ' more payment(s), ' + installmentIntervalDays + ' days apart.';
+    }
+    // The instalment choices offered, and the plan already in progress for this student
+    const plans = [];
+    for (let n = 1; n <= (Number(installmentsMax) || 1); n++) plans.push({ total: n, per: n === 1 ? amount : Math.ceil(amount / n) });
+    let lockedPlan = 0, nextAmountOut = null, nextInstallmentOut = 1;
+    if (payerEmail && link.feeId) {
+      try {
+        const mine2 = await db.collection('payments').where('email', '==', payerEmail).get();
+        const rows2 = mine2.docs.map((d) => d.data() || {}).filter((x) => x.feeId === link.feeId);
+        if (rows2.length) {
+          const paid2 = rows2.filter((x) => String(x.status || '').toLowerCase() === 'paid');
+          const paidSum = paid2.reduce((n, x) => n + (Number(x.amount) || 0), 0);
+          lockedPlan = Number(rows2[0].installmentsTotal) || 1;
+          const left = Math.max(0, amount - paidSum);
+          const remainingN = Math.max(1, lockedPlan - paid2.length);
+          nextInstallmentOut = paid2.length + 1;
+          nextAmountOut = remainingN <= 1 ? left : Math.ceil(left / remainingN);
+        }
+      } catch (e) { /* no plan yet */ }
+    }
+
     return json(200, {
       valid: true,
       token,
@@ -124,13 +148,10 @@ export const handler = async (event) => {
       installmentIntervalDays,
       mode: link.mode || 'multi',
       expiresAt: expiresMs ? new Date(expiresMs).toISOString() : null,
-      nextInstallment: paidRows + 1,
-      nextAmount: (function () {
-        const n = Number(installmentsMax) || 1;
-        const per = Math.ceil(amount / n);
-        if (paidRows + 1 > n) return 0;
-        return paidRows + 1 === n ? amount - per * (n - 1) : per;
-      })(),
+      plans: installmentsMax > 1 ? plans : [],
+      lockedPlan,
+      nextInstallment: nextInstallmentOut,
+      nextAmount: nextAmountOut,
       payerError
     });
   } catch (err) {
