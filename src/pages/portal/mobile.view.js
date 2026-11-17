@@ -628,10 +628,8 @@ export function slideGroups(slides, seconds) {
   const all = slides || [];
   const cards = all.filter((x) => x.kind === "card");
   const designs = all.filter((x) => x.kind !== "card" && x.kind !== "story");
-  const stories = all.filter((x) => x.kind === "story");
   return html`${cards.length ? html`<${SlideCarousel} key="cards" slides=${cards} seconds=${seconds} />` : null}
-    ${designs.length ? html`<${SlideCarousel} key="designs" slides=${designs} seconds=${seconds} />` : null}
-    ${stories.length ? html`<${SlideCarousel} key="stories" slides=${stories} seconds=${seconds} />` : null}`;
+    ${designs.length ? html`<${SlideCarousel} key="designs" slides=${designs} seconds=${seconds} />` : null}`;
 }
 
 /* Dashboard carousel: admin-managed slides. A "design" slide is the designer's artwork. A "card" slide is a background
@@ -639,12 +637,13 @@ export function slideGroups(slides, seconds) {
    swipe, dots. */
 export function SlideCarousel({ slides, seconds }) {
   const list = slides || [];
+  const shrunkRow = list.length > 1 && list.every((x) => x.kind !== "card" && (Number(x.scale) || 100) < 100);
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef(null);
   const ms = Math.max(3, Number(seconds) || 6) * 1000;
   useEffect(() => {
-    if (list.length < 2 || paused) return undefined;
+    if (list.length < 2 || paused || shrunkRow) return undefined;
     const t = setInterval(() => setIdx((i) => (i + 1) % list.length), ms);
     return () => clearInterval(t);
   }, [list.length, paused, ms]);
@@ -656,7 +655,7 @@ export function SlideCarousel({ slides, seconds }) {
   const hasProtrude = list.some((x) => x.kind === "card" && x.placeholder && x.placeholderMode === "protrude");
   const isCardNow = !!(list[safeIdx] && list[safeIdx].kind === "card");
   const isStoryNow = !!(list[safeIdx] && list[safeIdx].kind === "story");
-  return html`<section class=${"slides" + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "") + (isStoryNow ? " is-story-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
+  return html`<section class=${"slides" + (shrunkRow ? " is-row" : "") + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "") + (isStoryNow ? " is-story-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
       onMouseEnter=${pause} onMouseLeave=${resume}
       onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
       onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
@@ -667,7 +666,7 @@ export function SlideCarousel({ slides, seconds }) {
         if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
       }}>
     <div class="slides-stage">
-      ${list.map((s, k) => html`<article class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
+      ${list.map((s, k) => html`<article style=${s.kind !== "card" && (Number(s.scale) || 100) < 100 ? { width: (Number(s.scale) || 100) + "%" } : undefined} class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
           onClick=${() => { if (s.ctaUrl && k === safeIdx) window.open(s.ctaUrl, "_blank", "noopener"); }}>
         ${s.kind === "story"
           ? html`<div class="slide-story">
@@ -1141,18 +1140,22 @@ export function AttendancePage({ rows, onBack }) {
   </div>`;
 }
 
-/* Pop-up announcement: a design-system slide marked "show as pop-up". Shows once a day per device. */
-const POPUP_KEY = "cgtia_popup_seen";
-function popupSeenToday(id) {
-  try { const m = JSON.parse(localStorage.getItem(POPUP_KEY) || "{}"); return m[id] === new Date().toDateString(); }
-  catch (_) { return false; }
+/* Pop-up: an admin slide of type "Pop-up". Each time it is shown counts as one view for the day,
+   counted per student and per device. Its daily limit is set in the admin (popupMax). */
+const POPUP_VIEWS_KEY = "cgtia_popup_views";
+function popupViews() { try { return JSON.parse(localStorage.getItem(POPUP_VIEWS_KEY) || "{}"); } catch (_) { return {}; } }
+function popupViewsToday(studentKey, id) {
+  const v = popupViews()[studentKey + "|" + id];
+  return v && v.day === new Date().toDateString() ? v.n : 0;
 }
-function markPopupSeen(id) {
-  try { const m = JSON.parse(localStorage.getItem(POPUP_KEY) || "{}"); m[id] = new Date().toDateString(); localStorage.setItem(POPUP_KEY, JSON.stringify(m)); }
-  catch (_) {}
+function bumpPopupView(studentKey, id) {
+  const m = popupViews(); const k = studentKey + "|" + id; const day = new Date().toDateString();
+  m[k] = { day, n: m[k] && m[k].day === day ? m[k].n + 1 : 1 };
+  try { localStorage.setItem(POPUP_VIEWS_KEY, JSON.stringify(m)); } catch (_) {}
 }
-export function PopupDesign({ slides }) {
-  const pool = (slides || []).filter((x) => x.popup && x.kind !== "card" && x.kind !== "story" && (x.imageMobile || x.imageDesktop));
+export function PopupDesign({ slides, studentKey }) {
+  const key = studentKey || "guest";
+  const pool = (slides || []).filter((x) => x.kind === "story" && (x.imageMobile || x.imageDesktop));
   const [current, setCurrent] = useState(null);
   // While the pop-up is open the page behind it cannot scroll
   useEffect(() => {
@@ -1161,19 +1164,24 @@ export function PopupDesign({ slides }) {
     return () => { document.body.style.overflow = ""; };
   }, [current]);
   useEffect(() => {
-    setCurrent(pool.find((x) => !popupSeenToday(x.id)) || null);
-  }, [pool.length]);
+    const next = pool.find((x) => popupViewsToday(key, x.id) < (Number(x.popupMax) || 1)) || null;
+    if (next) bumpPopupView(key, next.id);
+    setCurrent(next);
+  }, [pool.length, key]);
   if (!current) return null;
-  const close = () => { markPopupSeen(current.id); setCurrent(null); };
-  const activate = () => { if (current.ctaUrl) window.open(current.ctaUrl, "_blank", "noopener"); close(); };
+  const close = () => setCurrent(null);
+  const act = () => { if (current.ctaUrl) window.open(current.ctaUrl, "_blank", "noopener"); close(); };
   return html`<div class="popup-layer" role="dialog" aria-modal="true" aria-label="Announcement">
-    <div class=${"popup-art" + (current.ctaUrl ? " has-link" : "")} onClick=${activate}>
-      <picture>
-        ${current.imageDesktop ? html`<source media="(min-width: 860px)" srcset=${current.imageDesktop} />` : null}
-        <img src=${current.imageMobile || current.imageDesktop} alt=${current.title || ""} />
-      </picture>
+    <div class="popup-card">
+      <div class="popup-art">
+        <picture>
+          ${current.imageDesktop ? html`<source media="(min-width: 860px)" srcset=${current.imageDesktop} />` : null}
+          <img src=${current.imageMobile || current.imageDesktop} alt=${current.title || ""} />
+        </picture>
+      </div>
+      ${current.ctaLabel ? html`<button type="button" class="popup-cta" onClick=${act}>${current.ctaLabel}</button>` : null}
     </div>
-    <button type="button" class="popup-close" aria-label="Close" onClick=${(e) => { e.stopPropagation(); close(); }}>×</button>
+    <button type="button" class="popup-close" aria-label="Close" onClick=${close}>×</button>
   </div>`;
 }
 

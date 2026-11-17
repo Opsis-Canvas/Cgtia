@@ -42,7 +42,8 @@ export function OnboardingView({ onStart, mode = "welcome" }) {
           <small style=${{ display: "block", marginTop: 6, opacity: 0.7, fontSize: 12 }}>Modules, results and fees</small>
         </div>`
       : html`<button class="ob-go" aria-label="Get started" onClick=${onStart}>
-          ${Icon({ name: "arrow", size: 26 })}
+          <span>Get started</span>
+          ${Icon({ name: "arrow", size: 22 })}
         </button>`}
   </div>`;
 }

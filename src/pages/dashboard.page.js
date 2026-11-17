@@ -264,6 +264,8 @@ async function loadPortalData(user) {
         ctaLabel: a.ctaLabel || "Learn more",
         ctaUrl: a.ctaUrl || "",
         kind: a.kind === "card" ? "card" : a.kind === "story" ? "story" : "design",
+        scale: Math.min(100, Math.max(40, Number(a.scale) || 100)),
+        popupMax: Math.min(5, Math.max(1, Number(a.popupMax) || 1)),
         storyImage: a.storyImage || "",
         overlayText: a.overlayText === true,
         popup: a.popup === true,
@@ -851,7 +853,7 @@ export function DashboardPage() {
   // Desktop keeps the wide sidebar layout; deep lesson/test flows use the app view
   const deep = /^(course|lesson|test|lcheck|mquiz|fees:|receipt|grade:|notice:)/.test(String(section || ""));
   return html`
-    <${PopupDesign} slides=${data.slides || []} />
+    <${PopupDesign} slides=${data.slides || []} studentKey=${(data.student && (data.student.id || data.student.email)) || "guest"} />
     ${isDesktop
       ? html`<${DesktopView} ctx=${ctx} deepView=${deep ? html`<${MobileView} ctx=${ctx} />` : null} />`
       : html`<${MobileView} ctx=${ctx} />`}
