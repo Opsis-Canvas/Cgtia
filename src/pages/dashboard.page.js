@@ -679,7 +679,7 @@ export function DashboardPage() {
             console.warn(e);
             await minSplash;
             if (cancelled) return;
-            setData({ student: { name: u.email, email: u.email, role: "Student" }, courses: [], grades: [], payments: [], portalSettings: {}, linked: false });
+            setData({ _placeholder: true, student: { name: u.email, email: u.email, role: "Student" }, courses: [], grades: [], payments: [], portalSettings: {}, linked: false });
             setPhase("app");
           }
         });

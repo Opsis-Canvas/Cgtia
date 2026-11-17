@@ -638,6 +638,7 @@ export function slideGroups(slides, seconds) {
 export function SlideCarousel({ slides, seconds }) {
   const list = slides || [];
   const shrunkRow = list.length > 1 && list.every((x) => x.kind !== "card" && (Number(x.scale) || 100) < 100);
+  const shrunkOne = list.length === 1 && list[0].kind !== "card" && (Number(list[0].scale) || 100) < 100;
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef(null);
@@ -655,7 +656,7 @@ export function SlideCarousel({ slides, seconds }) {
   const hasProtrude = list.some((x) => x.kind === "card" && x.placeholder && x.placeholderMode === "protrude");
   const isCardNow = !!(list[safeIdx] && list[safeIdx].kind === "card");
   const isStoryNow = !!(list[safeIdx] && list[safeIdx].kind === "story");
-  return html`<section class=${"slides" + (shrunkRow ? " is-row" : "") + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "") + (isStoryNow ? " is-story-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
+  return html`<section style=${shrunkOne ? { maxWidth: (Number(list[0].scale) || 100) + "%", margin: "0 auto" } : undefined} class=${"slides" + (shrunkRow ? " is-row" : "") + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "") + (isStoryNow ? " is-story-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
       onMouseEnter=${pause} onMouseLeave=${resume}
       onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
       onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
@@ -666,7 +667,7 @@ export function SlideCarousel({ slides, seconds }) {
         if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
       }}>
     <div class="slides-stage">
-      ${list.map((s, k) => html`<article style=${s.kind !== "card" && (Number(s.scale) || 100) < 100 ? { width: (Number(s.scale) || 100) + "%" } : undefined} class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
+      ${list.map((s, k) => html`<article style=${shrunkRow && s.kind !== "card" && (Number(s.scale) || 100) < 100 ? { width: (Number(s.scale) || 100) + "%" } : undefined} class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
           onClick=${() => { if (s.ctaUrl && k === safeIdx) window.open(s.ctaUrl, "_blank", "noopener"); }}>
         ${s.kind === "story"
           ? html`<div class="slide-story">
@@ -1179,6 +1180,8 @@ export function PopupDesign({ slides, studentKey }) {
           <img src=${current.imageMobile || current.imageDesktop} alt=${current.title || ""} />
         </picture>
       </div>
+      ${current.title ? html`<h3 class="popup-title">${current.title}</h3>` : null}
+      ${current.body ? html`<p class="popup-body">${current.body}</p>` : null}
       ${current.ctaLabel ? html`<button type="button" class="popup-cta" onClick=${act}>${current.ctaLabel}</button>` : null}
     </div>
     <button type="button" class="popup-close" aria-label="Close" onClick=${close}>×</button>
@@ -1641,7 +1644,7 @@ export function MobileView({ ctx }) {
         <h1 class="display">${first}</h1>
       </section>
       ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
-      ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
+      ${(slides || []).length ? slideGroups(slides, slideSeconds) : ctx._placeholder ? html`<section class="m-banner skel" aria-busy="true" aria-label="Loading"><div class="skel-line w70"></div><div class="skel-line w90"></div><div class="skel-line w50"></div></section>` : html`
       <section class="m-banner">
         <div class="m-banner-copy">
           <h2 class="display">${linked ? "Your dashboard" : "Link your file"}</h2>
