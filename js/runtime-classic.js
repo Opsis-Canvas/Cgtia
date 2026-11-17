@@ -1,3 +1,4 @@
+var __feeLabel = function (fee) { if (fee && fee.nextAmount) return Number(fee.nextAmount); var n = Number(fee && fee.installmentsMax) || 1; return n > 1 ? Math.ceil(Number(fee.amount) / n) : Number(fee && fee.amount); };
 
     /* deferred: React OriginalPage calls init after markup inject
     window.addEventListener('DOMContentLoaded', () => {
@@ -2001,7 +2002,7 @@ window.openApplyForProgram = function (programId) {
         fullName: fullName || "",
         regNumber: reg || "",
         installmentsTotal: fee.installmentsMax || 1,
-        installmentNumber: 1
+        installmentNumber: (fee && fee.nextInstallment) || 1
       })
     });
     var json = {};
@@ -2160,7 +2161,7 @@ window.openApplyForProgram = function (programId) {
         boxShadow: "0 8px 20px rgba(29,78,216,0.35)",
         letterSpacing: "0.01em"
       }
-    }, ["Pay " + formatNaira(fee.amount)]);
+    }, ["Pay " + formatNaira(__feeLabel(fee))]);
 
     var resumeBtn = el("button", {
       type: "button",
@@ -2288,7 +2289,7 @@ window.openApplyForProgram = function (programId) {
         "Name: " + (fullName || "—") + "\n" +
         "Email: " + (email || "—") + "\n" +
         (reg ? ("Reg number: " + reg + "\n") : "") +
-        "Amount: " + formatNaira(fee.amount) + "\n" +
+        "Amount: " + formatNaira(__feeLabel(fee)) + "\n" +
         "Paystack reference: " + ref + "\n" +
         "(If I paid by bank transfer I can also attach my bank receipt.)";
 
@@ -2333,19 +2334,19 @@ window.openApplyForProgram = function (programId) {
           setStatus("error", "Payment could not be verified yet. Keep this page open and tap “Verify / complete previous payment”, or contact the academy with reference " + reference + ".");
           savePending(token, { reference: reference, email: email, fullName: fullName, regNumber: reg, feeId: fee.feeId });
           resumeBtn.style.display = "block";
-          setBusy(false, "Pay " + formatNaira(fee.amount));
+          setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
           return false;
         }
         setStatus("pending", "Payment received (ref: " + reference + "). Recording may take a moment — you can tap Verify below if needed.");
         savePending(token, { reference: reference, email: email, fullName: fullName, regNumber: reg, feeId: fee.feeId });
         resumeBtn.style.display = "block";
-        setBusy(false, "Pay " + formatNaira(fee.amount));
+        setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
         return false;
       } catch (err) {
         setStatus("pending", "Network issue while confirming. Your payment may still have gone through. Tap “Verify / complete previous payment” when online. Ref: " + reference);
         savePending(token, { reference: reference, email: email, fullName: fullName, regNumber: reg, feeId: fee.feeId });
         resumeBtn.style.display = "block";
-        setBusy(false, "Pay " + formatNaira(fee.amount));
+        setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
         return false;
       }
     }
@@ -2372,9 +2373,11 @@ window.openApplyForProgram = function (programId) {
           .then(function (pre) {
             if (pre && pre.payerError) {
               setStatus("error", pre.payerError);
-              setBusy(false, "Pay " + formatNaira(fee.amount));
+              setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
               return;
             }
+            fee.nextAmount = pre && pre.nextAmount;
+            fee.nextInstallment = pre && pre.nextInstallment;
             openPaystackNow();
           })
           .catch(function () { openPaystackNow(); });
@@ -2382,14 +2385,14 @@ window.openApplyForProgram = function (programId) {
       function openPaystackNow() {
         if (typeof PaystackPop === "undefined") {
           setStatus("error", "Payment library still loading. Try again in a moment.");
-          setBusy(false, "Pay " + formatNaira(fee.amount));
+          setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
           return;
         }
         var ref = "fee_" + (token || "").slice(0, 8) + "_" + Date.now().toString(36);
         var handler = PaystackPop.setup({
           key: window.CGTIA_PAYSTACK_PUBLIC_KEY,
           email: email,
-          amount: Math.round(Number(fee.amount) * 100),
+          amount: Math.round(Number(__feeLabel(fee)) * 100),
           currency: "NGN",
           ref: ref,
           metadata: {
@@ -2417,7 +2420,7 @@ window.openApplyForProgram = function (programId) {
           onClose: function () {
             if (payBtn.textContent.indexOf("Paid") === -1 && payBtn.textContent.indexOf("Confirming") === -1) {
               setStatus("info", "Payment window closed. Tap Pay when you are ready to continue.");
-              setBusy(false, "Pay " + formatNaira(fee.amount));
+              setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
             }
           }
         });
@@ -2434,7 +2437,7 @@ window.openApplyForProgram = function (programId) {
         s.onload = openPopup;
         s.onerror = function () {
           setStatus("error", "Could not load Paystack. Check your connection and try again.");
-          setBusy(false, "Pay " + formatNaira(fee.amount));
+          setBusy(false, "Pay " + formatNaira(__feeLabel(fee)));
         };
         document.head.appendChild(s);
       }
@@ -2497,7 +2500,7 @@ window.openApplyForProgram = function (programId) {
           color: BRAND.navy,
           letterSpacing: "-0.02em"
         }
-      }, [formatNaira(fee.amount)]),
+      }, [formatNaira(__feeLabel(fee))]),
       fieldLabel("Full name"),
       nameInput,
       el("div", { style: { height: "0.85rem" } }, []),

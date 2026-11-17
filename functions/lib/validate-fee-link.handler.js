@@ -74,10 +74,11 @@ export const handler = async (event) => {
       }
     }
 
+    let paidRows = 0;
     // Block a payment that is already complete for this fee and this student
     if (payerEmail && !payerError && (link.feeId || link.feeType)) {
       const mine = await db.collection('payments').where('email', '==', payerEmail).get();
-      const paidRows = mine.docs.filter((doc) => {
+      paidRows = mine.docs.filter((doc) => {
         const x = doc.data() || {};
         const same = link.feeId ? x.feeId === link.feeId : x.feeType === (link.feeType || 'custom');
         return same && String(x.status || '').toLowerCase() === 'paid';
@@ -123,6 +124,13 @@ export const handler = async (event) => {
       installmentIntervalDays,
       mode: link.mode || 'multi',
       expiresAt: expiresMs ? new Date(expiresMs).toISOString() : null,
+      nextInstallment: paidRows + 1,
+      nextAmount: (function () {
+        const n = Number(installmentsMax) || 1;
+        const per = Math.ceil(amount / n);
+        if (paidRows + 1 > n) return 0;
+        return paidRows + 1 === n ? amount - per * (n - 1) : per;
+      })(),
       payerError
     });
   } catch (err) {
