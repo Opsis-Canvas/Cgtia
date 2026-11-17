@@ -755,6 +755,8 @@ var __feeLabel = function (fee) { if (!fee) return 0; if (fee.nextAmount) return
 
         /* --- SIGN IN OVERLAY MECHANICS --- */
     function toggleAuthScreen() {
+      window.location.href = "/dashboard";
+      return;
       const container = document.getElementById('authScreen');
       const drawer = document.getElementById('authDrawer');
       const isClosed = container.classList.contains('pointer-events-none');

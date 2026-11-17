@@ -69,6 +69,38 @@ async function recordFeePayment(data, body) {
   }
 
   const payId = reference || ('fee_' + Date.now().toString(36));
+
+  // Server check: compare this payment with the plan the student is on
+  let flagged = false, flagReason = '';
+  if (email && feeId) {
+    try {
+      const feeSnap = await db.collection('feeDefinitions').doc(feeId).get();
+      const fee = feeSnap.exists ? (feeSnap.data() || {}) : null;
+      const rows = (await db.collection('payments').where('email', '==', email).get()).docs
+        .map((d) => d.data() || {}).filter((x) => x.feeId === feeId && x.payId !== payId);
+      const paidRows = rows.filter((x) => String(x.status || '').toLowerCase() === 'paid');
+      const sentTotal = Number(body.installmentsTotal || meta.installmentsTotal) || 1;
+      const planTotal = rows.length ? (Number(rows[0].installmentsTotal) || 1) : sentTotal;
+      const total = fee ? Number(fee.amount) || 0 : 0;
+      if (fee && total) {
+        const paidSum = paidRows.reduce((n, x) => n + (Number(x.amount) || 0), 0);
+        const remainingN = Math.max(1, planTotal - paidRows.length);
+        const expected = remainingN <= 1 ? total - paidSum : Math.ceil((total - paidSum) / remainingN);
+        if (rows.length && sentTotal !== planTotal) { flagged = true; flagReason = 'the plan does not match the one already chosen'; }
+        else if (paidRows.length >= planTotal) { flagged = true; flagReason = 'the fee is already paid in full'; }
+        else if (Math.abs(amountNaira - expected) > 1) { flagged = true; flagReason = 'the amount does not match the plan (expected ₦' + expected.toLocaleString('en-NG') + ')'; }
+      }
+    } catch (e) { flagged = false; }
+  }
+  if (flagged) {
+    try {
+      await db.collection('adminAlerts').doc('review_' + payId).set({
+        kind: 'payment-review', title: 'Payment needs review: ' + (fullName || email || 'student'),
+        body: '₦' + amountNaira.toLocaleString('en-NG') + ' · ' + flagReason, read: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (e) { /* the payment is still recorded for review */ }
+  }
   const existing = await db.collection('payments').doc(payId).get();
   if (existing.exists && (existing.data() || {}).status === 'paid') {
     return { recorded: true, already: true, payId, studentId };
@@ -83,8 +115,10 @@ async function recordFeePayment(data, body) {
     amountPaid: amountNaira,
     method: channel,
     channel,
-    status: 'paid',
-    paymentStatus: 'paid',
+    status: flagged ? 'review' : 'paid',
+    paymentStatus: flagged ? 'review' : 'paid',
+    flagged: flagged,
+    flagReason: flagReason || null,
     feeId,
     feeName,
     feeType,

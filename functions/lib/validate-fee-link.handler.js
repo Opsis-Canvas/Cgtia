@@ -77,12 +77,23 @@ export const handler = async (event) => {
     let paidRows = 0;
     // Block a payment that is already complete for this fee and this student
     if (payerEmail && !payerError && (link.feeId || link.feeType)) {
-      const mine = await db.collection('payments').where('email', '==', payerEmail).get();
-      paidRows = mine.docs.filter((doc) => {
-        const x = doc.data() || {};
-        const same = link.feeId ? x.feeId === link.feeId : x.feeType === (link.feeType || 'custom');
-        return same && String(x.status || '').toLowerCase() === 'paid';
-      }).length;
+      // This student's record, then every payment that could be theirs: by email, student ID and registration number
+      let student = null;
+      try {
+        const sq = await db.collection('students').where('email', '==', payerEmail).limit(1).get();
+        if (!sq.empty) student = { id: sq.docs[0].id, ...(sq.docs[0].data() || {}) };
+      } catch (e) { /* no record yet */ }
+      const queries = [db.collection('payments').where('email', '==', payerEmail).get()];
+      if (student && student.id) queries.push(db.collection('payments').where('studentId', '==', student.id).get());
+      if (student && student.regNumber) queries.push(db.collection('payments').where('regNumber', '==', student.regNumber).get());
+      const snaps = await Promise.all(queries);
+      const found = new Map();
+      snaps.forEach((sn) => sn.docs.forEach((d) => found.set(d.id, d.data() || {})));
+      const sameFee = (x) => {
+        if (link.feeId) return x.feeId === link.feeId || (!x.feeId && [x.feeType, x.program, x.purpose].includes(link.feeType));
+        return [x.feeType, x.program, x.purpose].includes(link.feeType || 'custom');
+      };
+      paidRows = [...found.values()].filter((x) => sameFee(x) && String(x.status || '').toLowerCase() === 'paid').length;
       const needed = Number(link.installmentsMax) || 1;
       if (paidRows >= needed) payerError = 'You have already paid for this fee. If you think this is wrong, contact the academy.';
     }

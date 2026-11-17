@@ -78,6 +78,8 @@ window.togglePasswordVisibility = function (inputId, btn) {
 };
 
 window.toggleAuthScreen = function () {
+  window.location.href = "/dashboard";
+  return;
   const container = document.getElementById("authScreen");
   if (!container) return;
   const closed =

@@ -4113,3 +4113,42 @@ body [data-ts][data-ts] {
   letter-spacing: var(--ts-ls) !important;
   word-spacing: var(--ts-ws) !important;
 }
+
+/* Student sign-in: the same look as the portal dashboard */
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--mist, #f4f6fa); }
+.auth-card { width: 100%; max-width: 420px; background: #ffffff; border: 1px solid var(--line); border-radius: 24px; padding: 28px 24px; box-shadow: 0 24px 48px -30px rgba(10, 17, 40, 0.35); box-sizing: border-box; }
+.auth-logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.auth-card h1 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 6px; color: var(--ink); }
+.auth-card .sub { color: #64748b; font-size: 14px; line-height: 1.5; margin: 0 0 16px; }
+.auth-card label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin: 14px 0 6px; letter-spacing: 0.02em; }
+.auth-card input { width: 100%; height: 46px; border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; background: #f8fafc; font: inherit; color: var(--ink); box-sizing: border-box; }
+.auth-card button[type="submit"] { width: 100%; height: 48px; margin-top: 18px; border: 0; border-radius: 999px; background: var(--ink); color: #ffffff; font-weight: 800; font-size: 15px; cursor: pointer; }
+.auth-card button[type="submit"]:disabled { opacity: 0.6; cursor: wait; }
+
+/* Desktop student dashboard: icon strip that opens on hover, content kept to a readable width */
+@media (min-width: 900px) {
+  .d-shell { grid-template-columns: minmax(0, 1fr); }
+  .d-side {
+    position: fixed; top: 0; bottom: 0; left: 0; width: 72px; height: 100vh; z-index: 40;
+    overflow: hidden; padding: 24px 12px; align-items: stretch; background: var(--mist);
+    transition: width 0.2s ease, box-shadow 0.2s ease;
+  }
+  .d-side:hover { width: 248px; box-shadow: 0 18px 40px -20px rgba(10, 17, 40, 0.35); }
+  .d-side .logo, .d-side .profile, .d-nav a span, .d-nav button span { opacity: 0; white-space: nowrap; transition: opacity 0.15s ease; }
+  .d-side:hover .logo, .d-side:hover .profile, .d-side:hover .d-nav a span, .d-side:hover .d-nav button span { opacity: 1; }
+  .d-side .profile { align-items: flex-start; text-align: left; }
+  .d-nav a { justify-content: flex-start; }
+  .d-main { margin-left: 72px; padding: 40px 40px 32px; max-width: 1120px; width: 100%; box-sizing: border-box; }
+  .d-main .pill-ink, .d-main button.pill-ink { width: auto; min-width: 160px; }
+}
+
+/* Get started screen (desktop): the dashboard's colours, card and button style */
+.obd { background: var(--mist, #f4f6fa); }
+.obd-copy { background: transparent; }
+.obd-text p { color: #64748b; }
+.obd-art { background: #ffffff; border-left: 1px solid var(--line); }
+.obd-cta {
+  height: 52px; min-width: 200px; padding: 0 28px; border: 0; border-radius: 999px;
+  background: var(--ink); color: #ffffff; font-weight: 800; font-size: 15px; cursor: pointer;
+  box-shadow: 0 16px 30px -18px rgba(10, 17, 40, 0.6);
+}
