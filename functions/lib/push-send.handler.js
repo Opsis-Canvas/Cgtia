@@ -52,9 +52,11 @@ const sendPush = async (event) => {
   const title = String(body.title || 'CGTIA').slice(0, 80);
   const text = String(body.body || '').slice(0, 240);
   const url = String(body.url || '/').slice(0, 300);
+  const only = new Set([].concat(body.studentIds || (body.studentId ? [body.studentId] : [])).map(String).filter(Boolean));
+  const onlyEmails = new Set([].concat(body.emails || []).map((x) => String(x).toLowerCase().trim()).filter(Boolean));
   const snap = await db.collection('pushTokens').get();
   const targets = [];
-  snap.forEach((d) => { const v = d.data() || {}; if (v.token && (!body.audience || v.role === body.audience) && (only.size === 0 || only.has(v.studentId))) targets.push({ token: v.token, email: v.email || '', studentId: v.studentId || '', role: v.role || '' }); });
+  snap.forEach((d) => { const v = d.data() || {}; if (v.token && (!body.audience || v.role === body.audience) && (only.size === 0 || only.has(v.studentId)) && (onlyEmails.size === 0 || onlyEmails.has(String(v.email || '').toLowerCase()))) targets.push({ token: v.token, email: v.email || '', studentId: v.studentId || '', role: v.role || '' }); });
   if (!targets.length) return J(200, { sent: 0, failed: 0, deliveries: [] });
 
   const sa = serviceAccount();
