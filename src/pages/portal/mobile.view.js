@@ -1644,7 +1644,7 @@ export function MobileView({ ctx }) {
         <h1 class="display">${first}</h1>
       </section>
       ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
-      ${(slides || []).length ? slideGroups(slides, slideSeconds) : ctx._placeholder ? html`<section class="m-banner skel" aria-busy="true" aria-label="Loading"><div class="skel-line w70"></div><div class="skel-line w90"></div><div class="skel-line w50"></div></section>` : html`
+      ${(slides || []).length ? slideGroups(slides, slideSeconds) : ctx.loading ? html`<section class="m-banner skel" aria-busy="true" aria-label="Loading"><div class="skel-line w70"></div><div class="skel-line w90"></div><div class="skel-line w50"></div></section>` : html`
       <section class="m-banner">
         <div class="m-banner-copy">
           <h2 class="display">${linked ? "Your dashboard" : "Link your file"}</h2>

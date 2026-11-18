@@ -836,6 +836,7 @@ export function DashboardPage() {
     paidTotal,
     onLogout: logout,
     linked: !!(data && data.linked),
+    loading: !data,
     announcements: (data && data.announcements) || [],
     promos: (data && data.promos) || [],
     slides: (data && data.slides) || [],

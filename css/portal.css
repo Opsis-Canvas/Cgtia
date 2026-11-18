@@ -4189,3 +4189,14 @@ body [data-ts][data-ts] {
 .skel-line.w90 { width: 90%; }
 .skel-line.w50 { width: 50%; }
 @keyframes skel-move { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Shrunk design slides: side by side in a grid; the freed space is used by the next slides */
+.slides.is-grid .slides-stage { display: flex; flex-wrap: wrap; gap: 12px; height: auto !important; aspect-ratio: auto !important; background: none; border-radius: 0; overflow: visible; }
+.slides.is-grid .slide { position: relative; inset: auto; opacity: 1; transform: none; pointer-events: auto; flex: 0 0 auto; }
+.slides.is-grid .slide .img-frame img { height: auto; aspect-ratio: 4 / 5; }
+.slides.is-grid .slides-dots, .slides.is-grid .slide-cta { display: none; }
+/* Card slide: the same height as the "Your dashboard" box (phone 140px, desktop 240px) */
+.slides.is-card-now .slides-stage { height: 140px !important; aspect-ratio: auto !important; }
+.slides.is-card-now .slide-card-text { padding: 14px 16px 44px; }
+.slides.is-card-now .slide-card-text h3 { font-size: 17px; }
+@media (min-width: 860px) { .slides.is-card-now .slides-stage { height: 240px !important; aspect-ratio: auto !important; } }
