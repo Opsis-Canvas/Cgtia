@@ -637,17 +637,22 @@ export function slideGroups(slides, seconds) {
    swipe, dots. */
 export function SlideCarousel({ slides, seconds }) {
   const list = slides || [];
-  const shrunkRow = list.length > 1 && list.every((x) => x.kind !== "card" && (Number(x.scale) || 100) < 100);
-  const shrunkOne = list.length === 1 && list[0].kind !== "card" && (Number(list[0].scale) || 100) < 100;
+  /* Design scale: when any design is < 100%, the whole housing resizes (not just the image).
+     Multiple scaled designs → horizontal row; single scaled design → centered at scale% width. */
+  const isDesign = (x) => x && x.kind !== "card" && x.kind !== "story";
+  const anyShrunk = list.some((x) => isDesign(x) && (Number(x.scale) || 100) < 100);
+  const allShrunkDesigns = list.length > 0 && list.every((x) => isDesign(x) && (Number(x.scale) || 100) < 100);
+  const shrunkRow = allShrunkDesigns && list.length > 1;
+  const shrunkOne = allShrunkDesigns && list.length === 1;
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef(null);
   const ms = Math.max(3, Number(seconds) || 6) * 1000;
   useEffect(() => {
-    if (list.length < 2 || paused || shrunkRow) return undefined;
+    if (list.length < 2 || paused || shrunkRow || shrunkOne) return undefined;
     const t = setInterval(() => setIdx((i) => (i + 1) % list.length), ms);
     return () => clearInterval(t);
-  }, [list.length, paused, ms]);
+  }, [list.length, paused, ms, shrunkRow, shrunkOne]);
   const safeIdx = list.length ? idx % list.length : 0;
   if (!list.length) return null;
   const go = (k) => setIdx((k + list.length) % list.length);
@@ -656,7 +661,16 @@ export function SlideCarousel({ slides, seconds }) {
   const hasProtrude = list.some((x) => x.kind === "card" && x.placeholder && x.placeholderMode === "protrude");
   const isCardNow = !!(list[safeIdx] && list[safeIdx].kind === "card");
   const isStoryNow = !!(list[safeIdx] && list[safeIdx].kind === "story");
-  return html`<section style=${shrunkOne ? { maxWidth: (Number(list[0].scale) || 100) + "%", margin: "0 auto" } : undefined} class=${"slides" + (shrunkRow ? " is-row" : "") + (hasProtrude ? " has-protrude" : "") + (isCardNow ? " is-card-now" : "") + (isStoryNow ? " is-story-now" : "")} aria-roledescription="carousel" aria-label="Highlights"
+  const sectionClass = "slides"
+    + (shrunkRow ? " is-row is-grid" : "")
+    + (shrunkOne ? " is-shrunk-one" : "")
+    + (hasProtrude ? " has-protrude" : "")
+    + (isCardNow && !shrunkRow && !shrunkOne ? " is-card-now" : "")
+    + (isStoryNow && !shrunkRow && !shrunkOne ? " is-story-now" : "");
+  const sectionStyle = shrunkOne
+    ? { maxWidth: (Number(list[0].scale) || 100) + "%", width: (Number(list[0].scale) || 100) + "%", margin: "0 auto" }
+    : undefined;
+  return html`<section style=${sectionStyle} class=${sectionClass} aria-roledescription="carousel" aria-label="Highlights"
       onMouseEnter=${pause} onMouseLeave=${resume}
       onPointerDown=${pause} onPointerUp=${resume} onPointerCancel=${resume}
       onTouchStart=${(e) => { touchX.current = e.touches[0].clientX; }}
@@ -667,8 +681,13 @@ export function SlideCarousel({ slides, seconds }) {
         if (Math.abs(dx) > 40) go(safeIdx + (dx < 0 ? 1 : -1));
       }}>
     <div class="slides-stage">
-      ${list.map((s, k) => html`<article style=${shrunkRow && s.kind !== "card" && (Number(s.scale) || 100) < 100 ? { width: (Number(s.scale) || 100) + "%" } : undefined} class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${k !== safeIdx ? "true" : "false"}
-          onClick=${() => { if (s.ctaUrl && k === safeIdx) window.open(s.ctaUrl, "_blank", "noopener"); }}>
+      ${list.map((s, k) => {
+        const sc = Number(s.scale) || 100;
+        const itemStyle = (shrunkRow || (shrunkOne && isDesign(s))) && isDesign(s) && sc < 100
+          ? { width: sc + "%", maxWidth: sc + "%", flex: "0 0 " + sc + "%" }
+          : (shrunkRow && isDesign(s) ? { width: sc + "%", flex: "0 0 " + sc + "%" } : undefined);
+        return html`<article style=${itemStyle} class=${"slide" + (k === safeIdx ? " is-on" : "") + (s.kind === "card" ? " is-card" : s.kind === "story" ? " is-story" : " is-design")} key=${s.id} aria-hidden=${(!shrunkRow && !shrunkOne && k !== safeIdx) ? "true" : "false"}
+          onClick=${() => { if (s.ctaUrl && (shrunkRow || shrunkOne || k === safeIdx)) window.open(s.ctaUrl, "_blank", "noopener"); }}>
         ${s.kind === "story"
           ? html`<div class="slide-story">
               <img class="slide-story-img" src=${s.storyImage} alt=${s.title || ""} loading="lazy" decoding="async" />
@@ -687,10 +706,11 @@ export function SlideCarousel({ slides, seconds }) {
                 : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>`}
               ${(s.overlayText && (s.title || s.body) && (s.imageMobile || s.imageDesktop)) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
             </div>`}
-      </article>`)}
-      ${(list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
+      </article>`;
+      })}
+      ${(!shrunkRow && !shrunkOne && list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
     </div>
-    ${list.length > 1 ? html`<div class="slides-dots">
+    ${(!shrunkRow && !shrunkOne && list.length > 1) ? html`<div class="slides-dots">
       ${list.map((_, k) => html`<button type="button" key=${k} class=${"slides-dot" + (k === safeIdx ? " on" : "")} aria-label=${"Show slide " + (k + 1)} onClick=${() => go(k)}></button>`)}
     </div>` : null}
   </section>`;

@@ -131,7 +131,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .m-app {
   max-width: 440px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
   padding: calc(14px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  display: flex; flex-direction: column; gap: 14px;
+  display: flex; flex-direction: column; gap: 12px;
 }
 .m-top { display: flex; align-items: center; justify-content: space-between; }
 .m-top-r { display: flex; align-items: center; gap: 10px; }
@@ -147,8 +147,8 @@ h1, h2, h3, h4, p { margin: 0; }
 
 /* Banner: 140px card; the person PNG hangs above the card's top edge */
 .m-banner {
-  position: relative; height: 140px; background: var(--sand); border-radius: 18px;
-  padding: 16px; display: flex; align-items: center; margin-top: 8px;
+  position: relative; height: 140px; min-height: 140px; background: var(--sand); border-radius: 18px;
+  padding: 16px; display: flex; align-items: center; margin-top: 4px;
 }
 .m-banner-copy { width: 56%; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; position: relative; z-index: 1; }
 .m-banner h2 { font-size: 16px; line-height: 1.2; }
@@ -1580,10 +1580,10 @@ body.is-portal::before, body.is-portal::after { display: none !important; }
 [data-theme="dark"] .m-app .sticky-top { background: transparent !important; }
 
 /* Spacing: consistent rhythm on phones and desktop */
-.m-app { gap: 24px; background: #eef1f7; }
+.m-app { gap: 12px; background: #eef1f7; }
 .m-app > section + section, .m-app > .m-scroll > * + * { margin-top: 0; }
-.m-banner { min-height: 196px; padding: 24px 150px 24px 22px; box-sizing: border-box; border-radius: 26px; }
-.m-banner-copy { width: 100%; gap: 10px; }
+.m-banner { min-height: 140px; height: 140px; padding: 16px 140px 16px 18px; box-sizing: border-box; border-radius: 22px; }
+.m-banner-copy { width: 58%; max-width: 58%; gap: 6px; }
 .d-main { gap: 26px; }
 .d-banner { min-height: 240px; padding: 36px 40px; }
 .stats { gap: 18px; }
@@ -1694,7 +1694,7 @@ body.is-portal::before, body.is-portal::after { display: none !important; }
 
 /* Small phones (Galaxy A51 and smaller) */
 @media (max-width: 400px) {
-  .m-banner { padding-right: 130px; min-height: 180px; }
+  .m-banner { padding-right: 120px; min-height: 140px; height: 140px; }
   .btn-block { max-width: 100%; height: 46px; font-size: 14px; }
   .result-ring { width: 180px; height: 180px; }
   .result-ring-val { font-size: 38px; }
@@ -1719,10 +1719,10 @@ body.mesh-gradient-canvas::before, body.mesh-gradient-canvas::after { display: n
 .m-tiles .m-tile:nth-child(even) { background: linear-gradient(140deg, #0948e6 0%, #2a6cff 100%) !important; }
 
 /* Spacing: even rhythm between banner, tiles, sections */
-.m-app { gap: 22px; }
-.m-tiles { gap: 12px; }
-.m-section-h { margin: 6px 0 2px; }
-.more-grid { gap: 12px; }
+.m-app { gap: 12px; }
+.m-tiles { gap: 10px; }
+.m-section-h { margin: 4px 0 2px; }
+.more-grid { gap: 10px; }
 
 /* Long buttons: sized to the content, centred, never full phone width */
 .btn-block, .btn-block.secondary { max-width: 340px !important; width: 100%; margin-left: auto; margin-right: auto; }
@@ -4166,14 +4166,109 @@ body [data-ts][data-ts] {
 }
 
 
-/* Dashboard carousel: shrunk design slides sit side by side and scroll, with no fade */
-.slides.is-row { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; align-items: flex-start; }
-.slides.is-row::-webkit-scrollbar { display: none; }
-.slides.is-row .slide { position: relative; inset: auto; opacity: 1; transform: none; pointer-events: auto; flex: 0 0 auto; scroll-snap-align: start; }
-.slides.is-row .slides-dots { display: none; }
+/* Dashboard carousel: shrunk design slides — whole housing resizes with scale, horizontal row */
+.slides.is-row,
+.slides.is-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  align-items: flex-start;
+  -webkit-overflow-scrolling: touch;
+}
+.slides.is-row::-webkit-scrollbar,
+.slides.is-grid::-webkit-scrollbar { display: none; }
+.slides.is-row .slides-stage,
+.slides.is-grid .slides-stage {
+  display: contents; /* stage no longer forces aspect-ratio height */
+  background: none !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  overflow: visible !important;
+  border-radius: 0;
+}
+.slides.is-row .slide,
+.slides.is-grid .slide {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(140deg, #0f126c, #0948e6);
+}
+.slides.is-row .slide-design,
+.slides.is-grid .slide-design {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.slides.is-row .slide-design .img-frame,
+.slides.is-grid .slide-design .img-frame {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.slides.is-row .slide-design .img-frame img,
+.slides.is-grid .slide-design .img-frame img {
+  position: relative;
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+  display: block;
+  border-radius: 18px;
+}
+.slides.is-row .slides-dots,
+.slides.is-grid .slides-dots,
+.slides.is-row .slide-cta,
+.slides.is-grid .slide-cta { display: none; }
+/* Single scaled design: section width = scale%, image defines height */
+.slides.is-shrunk-one {
+  margin-left: auto;
+  margin-right: auto;
+}
+.slides.is-shrunk-one .slides-stage {
+  height: auto !important;
+  aspect-ratio: auto !important;
+  background: none !important;
+  overflow: visible;
+}
+.slides.is-shrunk-one .slide {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.slides.is-shrunk-one .slide-design,
+.slides.is-shrunk-one .slide-design .img-frame {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: auto;
+}
+.slides.is-shrunk-one .slide-design .img-frame img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
 /* Card slide: text box sized like the "Your dashboard" fallback */
-.slides .slide.is-card .slide-card-text { padding: 18px 18px 56px; max-width: 62%; }
-.slides .slide.is-card .slide-card-text h3 { font-size: 19px; }
+.slides .slide.is-card .slide-card-text { padding: 16px 16px 52px; max-width: 58%; }
+.slides .slide.is-card .slide-card-text h3 { font-size: 16px; line-height: 1.2; font-weight: 800; }
+.slides .slide.is-card .slide-card-text p { font-size: 11.5px; line-height: 1.35; }
 /* Pop-up: picture, action button, close */
 .popup-card { position: relative; width: min(88vw, 360px); }
 .popup-cta { display: block; width: 100%; height: 48px; margin-top: 12px; border: 0; border-radius: 999px; background: #0a1128; color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; }
@@ -4191,21 +4286,21 @@ body [data-ts][data-ts] {
 @keyframes skel-move { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
 /* Shrunk design slides: side by side in a grid; the freed space is used by the next slides */
-.slides.is-grid .slides-stage { display: flex; flex-wrap: wrap; gap: 12px; height: auto !important; aspect-ratio: auto !important; background: none; border-radius: 0; overflow: visible; }
-.slides.is-grid .slide { position: relative; inset: auto; opacity: 1; transform: none; pointer-events: auto; flex: 0 0 auto; }
-.slides.is-grid .slide .img-frame img { height: auto; aspect-ratio: 4 / 5; }
-.slides.is-grid .slides-dots, .slides.is-grid .slide-cta { display: none; }
+/* (is-grid layout handled above with is-row — keep height from image) */
 /* Card slide: the same height as the "Your dashboard" box (phone 140px, desktop 240px) */
 .slides.is-card-now .slides-stage { height: 140px !important; aspect-ratio: auto !important; }
 .slides.is-card-now .slide-card-text { padding: 14px 16px 44px; }
-.slides.is-card-now .slide-card-text h3 { font-size: 17px; }
+.slides.is-card-now .slide-card-text h3 { font-size: 16px; line-height: 1.2; }
 @media (min-width: 860px) { .slides.is-card-now .slides-stage { height: 240px !important; aspect-ratio: auto !important; } }
 
 /* Design slides in a grid: each one is its own box, and the picture fills its box */
-.slides.is-grid .slide-design { position: relative; inset: auto; }
-.slides.is-grid .slide-design .img-frame { position: relative; inset: auto; width: 100%; height: auto; }
-.slides.is-grid .slide-design .img-frame img { position: relative; width: 100%; height: auto; aspect-ratio: 4 / 5; }
+/* design image height follows artwork (see is-row/is-grid block) */
 /* Card slide: at least the height of the "Your dashboard" box, and tall enough for its text and button */
-.slides.is-card-now .slides-stage { height: auto !important; min-height: 140px; aspect-ratio: auto !important; }
-.slides.is-card-now .slide-card-text { padding: 14px 16px 64px; }
-@media (min-width: 860px) { .slides.is-card-now .slides-stage { min-height: 240px; } }
+.slides.is-card-now .slides-stage { height: 140px !important; min-height: 140px; aspect-ratio: auto !important; }
+.slides.is-card-now .slide-card-text { padding: 14px 16px 48px; }
+.slides.is-card-now .slide-card-text h3 { font-size: 16px; line-height: 1.2; }
+.slides.is-card-now .slide-card-text p { font-size: 11.5px; line-height: 1.35; }
+@media (min-width: 860px) {
+  .slides.is-card-now .slides-stage { height: 180px !important; min-height: 180px; }
+  .m-banner { height: 180px; min-height: 180px; }
+}
