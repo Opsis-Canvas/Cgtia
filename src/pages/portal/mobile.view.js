@@ -521,7 +521,10 @@ function cardPhStyle(s) {
   return { transform: "translate(" + x + "%," + y + "%) scale(" + sc + ")", transformOrigin: "right bottom" };
 }
 function cardTextStyle(s) {
-  return { fontSize: (Number(s.textSize) || 24) + "px", fontWeight: Number(s.textWeight) || 800 };
+  /* Phone density: admin heading size is capped so long copy never blows the banner */
+  const raw = Number(s.textSize) || 18;
+  const size = Math.min(17, Math.max(15, raw > 20 ? 17 : raw));
+  return { fontSize: size + "px", fontWeight: Number(s.textWeight) || 800, lineHeight: 1.15 };
 }
 
 /* Stories: a row of round thumbnails. Tapping one opens the full-screen viewer, which plays in order like Instagram:
@@ -704,11 +707,11 @@ export function SlideCarousel({ slides, seconds }) {
               ${(s.imageMobile || s.imageDesktop)
                 ? html`<${ImageFrame} mobile=${s.imageMobile} desktop=${s.imageDesktop} alt=${s.title || ""} />`
                 : html`<div class="slide-text"><h3>${s.title}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>`}
-              ${(s.overlayText && (s.title || s.body) && (s.imageMobile || s.imageDesktop)) ? html`<div class="slide-overlay"><h3>${s.title || ""}</h3>${s.body ? html`<p data-ts=${tsAttr(s.bodyStyle)} style=${textStyleInline(s.bodyStyle)}>${s.body}</p>` : null}</div>` : null}
+              ${(s.overlayText && s.title && (s.imageMobile || s.imageDesktop) && !shrunkRow && !shrunkOne) ? html`<div class="slide-overlay"><h3>${s.title}</h3></div>` : null}
             </div>`}
       </article>`;
       })}
-      ${(!shrunkRow && !shrunkOne && list[safeIdx] && list[safeIdx].ctaUrl) ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
+      ${(!shrunkRow && !shrunkOne && list[safeIdx] && list[safeIdx].ctaUrl && list[safeIdx].kind === "card") ? html`<a class="slide-cta" href=${list[safeIdx].ctaUrl} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>${list[safeIdx].ctaLabel || "Learn more"}</a>` : null}
     </div>
     ${(!shrunkRow && !shrunkOne && list.length > 1) ? html`<div class="slides-dots">
       ${list.map((_, k) => html`<button type="button" key=${k} class=${"slides-dot" + (k === safeIdx ? " on" : "")} aria-label=${"Show slide " + (k + 1)} onClick=${() => go(k)}></button>`)}
