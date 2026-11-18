@@ -751,10 +751,15 @@ export function ModuleCard({ c, i, email, onOpen }) {
     c.code || null,
     prog.modulePassed ? "Passed" : null
   ].filter(Boolean).join(" · ");
+  const cover = (c.coverUrl || c.imageUrl || "").trim();
   return html`<article class=${"mod-card mod-flat" + (finished ? " is-done" : "") + (started ? " is-live" : "")}
       role="button" tabindex="0"
       onClick=${onOpen} onKeyDown=${(e) => { if (e.key === "Enter") onOpen(); }}>
-    <span class="mod-flat-num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
+    <div class=${"mod-flat-art" + (cover ? " has-art" : "")} aria-hidden="true">
+      ${cover
+        ? html`<img src=${cover} alt="" loading="lazy" decoding="async" onError=${(e) => { try { e.currentTarget.style.display = "none"; e.currentTarget.parentElement.classList.remove("has-art"); } catch (_) {} }} />`
+        : html`<span class="mod-flat-num">${String(i + 1).padStart(2, "0")}</span>`}
+    </div>
     <div class="mod-flat-main">
       <h4>${c.title || c.code || "Module"}</h4>
       ${meta ? html`<p class="mod-flat-meta">${meta}</p>` : null}
@@ -763,7 +768,7 @@ export function ModuleCard({ c, i, email, onOpen }) {
         <span>${finished ? "Complete" : (done + "/" + total)}</span>
       </div>
     </div>
-    <span class="mod-flat-cta">${cta}<span aria-hidden="true"> →</span></span>
+    <span class="mod-flat-cta">${cta} ${Icon({ name: "arrow", size: 14 })}</span>
   </article>`;
 }
 
@@ -869,7 +874,7 @@ export function attendanceCard(rows, onOpen) {
 export function attendanceStrip(rows, onOpen) {
   const { attended, counted, pct } = attendancePct(rows);
   return html`<button type="button" class="att-strip" onClick=${onOpen}>
-    <span class="att-strip-ico" aria-hidden="true">${Icon({ name: "check", size: 18 })}</span>
+    <span class="att-strip-ico" aria-hidden="true">${Icon({ name: "cal", size: 18 })}</span>
     <span class="att-strip-text">
       <strong>${pct != null ? pct + "% attendance" : "Attendance"}</strong>
       <small>${counted ? attended + " of " + counted + " sessions attended" : "Sessions appear here once your tutor marks them"}</small>
@@ -945,39 +950,46 @@ function ScheduleSheet({ item, onClose }) {
 
 /* Profile: identity card, record grid, status notes */
 export function ProfileCard({ student, linked, name }) {
+  const s = student || {};
   const rows = [
-    ["Reg number", student?.reg],
-    ["Programme", student?.program],
-    ["Cohort", student?.cohort],
-    ["Status", student?.status],
-    ["Start date", student?.startDate],
-    ["Phone", student?.phone],
-    ["Certificate code", student?.certificateCode],
-    ["Next of kin", student?.nextOfKin]
+    { k: "Reg number", v: s.reg || s.regNumber || "—" },
+    { k: "Programme", v: s.program || s.programme || "—" },
+    { k: "Cohort", v: s.cohort || "—" },
+    { k: "Status", v: s.status || "—" },
+    { k: "Start date", v: s.startDate || s.startedAt || "—" },
+    { k: "Phone", v: s.phone || s.mobile || "—" },
+    { k: "Certificate code", v: s.certificateCode || "—" },
+    { k: "Next of kin", v: s.nextOfKin || s.nok || "—" }
   ];
-  return html`<div class="pf">
-    <section class="pf-hero">
-      <${Avatar} src=${student?.avatar} name=${name} size=${72} />
-      <div class="pf-id">
-        <h2>${name}</h2>
-        <p>${student?.email || ""}</p>
-        <span class=${"pf-chip " + (linked ? "is-ok" : "is-warn")}>${linked ? "File linked" : "File not linked"}</span>
+  const formDone = s.profileComplete === true || s.profileFormDone === true;
+  return html`<div class="prof-page">
+    <section class="prof-hero">
+      <div class="prof-avatar" aria-hidden="true">${(name || "S").charAt(0).toUpperCase()}</div>
+      <div class="prof-hero-copy">
+        <h1 class="display">${name || "Student"}</h1>
+        <p class="prof-email">${s.email || ""}</p>
+        <span class=${"prof-badge" + (linked ? " is-ok" : "")}>${linked ? "File linked" : "Not linked"}</span>
       </div>
     </section>
-    <section class="pf-grid">
-      ${rows.map(([k, v]) => html`<div class="pf-cell" key=${k}><span>${k}</span><strong>${v || "—"}</strong></div>`)}
+    <section class="prof-grid" aria-label="Student details">
+      ${rows.map((r) => html`<div class="prof-cell" key=${r.k}>
+        <span class="prof-k">${r.k}</span>
+        <strong class="prof-v">${r.v}</strong>
+      </div>`)}
     </section>
-    <section class="pf-note">
-      <span>Profile form</span>
-      <strong>${student?.profileCompleted ? "Completed" : "Not completed yet"}</strong>
-    </section>
-    ${linked
-      ? html`<p class="pf-foot">NIN and other legal details stay with the academy office. Contact them to update anything here.</p>`
-      : html`<${Empty} title="Student file not linked" body="Ask admissions to put this exact email on your student record." />`}
+    <button type="button" class=${"prof-form-cta" + (formDone ? " is-done" : "")}
+      onClick=${() => { /* profile form hook */ }}>
+      <span>
+        <strong>Profile form</strong>
+        <small>${formDone ? "Submitted" : "Not completed yet"}</small>
+      </span>
+      ${Icon({ name: "arrow", size: 16 })}
+    </button>
+    <p class="prof-note">NIN and other legal details stay with the academy office. Contact them to update anything here.</p>
   </div>`;
 }
 
-/* The student's own answer queries, with the office reply once resolved */
+
 export function MyQueries({ student }) {
   const [rows, setRows] = useState([]);
   const email = String(student?.email || "").toLowerCase();
@@ -1456,7 +1468,7 @@ export function MessagesScreen({ messages, student, setSection }) {
     { q: "When will my results be published?", a: "Results appear under Grades after your instructor publishes them. Check Snapshot on the home screen for a count." },
     { q: "How do I pay fees?", a: "Open Fees from Quick actions. Use the fee link the academy sent you, or ask Support below if you do not have one." },
     { q: "My modules are missing", a: "Ask admissions to match this email to your student record. Once linked, modules show under Continue learning." },
-    { q: "Where is my student ID?", a: "Open Certificates & ID. Status updates when the academy issues your card." }
+    { q: "Where is my student ID?", a: "Open Certificates & ID. ID card shows Ready only after the Student ID fee is paid. Your reg number still appears when your file is linked." }
   ];
 
   useEffect(() => { setLocal(messages || []); }, [messages]);
@@ -1524,18 +1536,25 @@ export function MessagesScreen({ messages, student, setSection }) {
       </div>
     </section>
 
-    <form class="msg-composer" onSubmit=${send}>
-      <div class="msg-composer-fields">
-        <input class="msg-input" value=${subject} onInput=${(e) => setSubject(e.target.value)} placeholder="Subject" autocomplete="off" />
-        <textarea class="msg-text" rows="2" value=${body} onInput=${(e) => setBody(e.target.value)} placeholder="Write your message…"></textarea>
+    <form class="msg-dock" onSubmit=${send}>
+      <div class="msg-dock-card">
+        <label class="msg-field">
+          <span class="msg-lab">Subject</span>
+          <input value=${subject} onInput=${(e) => setSubject(e.target.value)} placeholder="e.g. Fee receipt question" autocomplete="off" />
+        </label>
+        <label class="msg-field msg-field-area">
+          <span class="msg-lab">Message</span>
+          <textarea rows="2" value=${body} onInput=${(e) => setBody(e.target.value)} placeholder="Write your message…"></textarea>
+        </label>
         ${note ? html`<p class="msg-note">${note}</p>` : null}
       </div>
       <button type="submit" class="msg-send" disabled=${busy} aria-label="Send to academy">
-        ${busy ? "…" : html`${Icon({ name: "mail", size: 18 })}`}
+        ${busy ? "…" : Icon({ name: "mail", size: 18 })}
       </button>
     </form>
   </div>`;
 }
+
 
 export function SettingsScreen({ student, user, onLogout, setSection }) {
   const [pw1, setPw1] = useState("");
@@ -1546,7 +1565,6 @@ export function SettingsScreen({ student, user, onLogout, setSection }) {
     try { return localStorage.getItem("cgtia_notify") !== "0"; } catch (_) { return true; }
   });
   const [dark, setDark] = useState(() => {
-    /* Night mode ON by default; only stay light if user explicitly chose it */
     try {
       const v = localStorage.getItem("cgtia_theme");
       if (v === "light") return false;
@@ -1557,127 +1575,95 @@ export function SettingsScreen({ student, user, onLogout, setSection }) {
     } catch (_) { return true; }
   });
 
-  function toggleNotify() {
-    const next = !notify;
-    setNotify(next);
-    try { localStorage.setItem("cgtia_notify", next ? "1" : "0"); } catch (_) {}
-  }
-  function toggleDark() {
-    const next = !dark;
-    setDark(next);
-    try {
-      localStorage.setItem("cgtia_theme", next ? "dark" : "light");
-      document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-    } catch (_) {}
-  }
   useEffect(() => {
     try {
       document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      localStorage.setItem("cgtia_theme", dark ? "dark" : "light");
     } catch (_) {}
   }, [dark]);
 
-  async function changePassword(e) {
+  async function savePassword(e) {
     e.preventDefault();
     setMsg("");
     if (pw1.length < 6) { setMsg("Use at least 6 characters."); return; }
     if (pw1 !== pw2) { setMsg("Passwords do not match."); return; }
     setBusy(true);
     try {
-      const { initializeApp, getApps, getApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-      const authMod = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
-      const cfg = {
-        apiKey: "AIzaSyCZOA3OxPyRyRT9XUTsFTUWKViFmkpfOV0",
-        authDomain: "verify-cgtia-cert.firebaseapp.com",
-        projectId: "verify-cgtia-cert",
-        storageBucket: "verify-cgtia-cert.firebasestorage.app",
-        messagingSenderId: "766655761701",
-        appId: "1:766655761701:web:45f559e0e38023439b5ecc"
-      };
-      const app = getApps().length ? getApp() : initializeApp(cfg);
-      const auth = authMod.getAuth(app);
-      const u = auth.currentUser || user;
-      if (!u) throw new Error("Please sign in again.");
-      await authMod.updatePassword(u, pw1);
+      const { getFirebase } = await import("../../services/firebase.service.js");
+      const fb = await getFirebase();
+      if (fb.auth && fb.api && user) {
+        await fb.api.updatePassword(user, pw1);
+      }
       setPw1(""); setPw2("");
       setMsg("Password updated.");
     } catch (err) {
-      const code = err && err.code;
-      if (code === "auth/requires-recent-login") {
-        setMsg("For security, sign out and sign in again, then change your password.");
-      } else {
-        setMsg(err.message || "Could not update password.");
-      }
+      setMsg(err.message || "Could not update password. Sign in again and try.");
     } finally {
       setBusy(false);
     }
   }
 
-  return html`<div>
+  function toggleNotify(v) {
+    setNotify(v);
+    try { localStorage.setItem("cgtia_notify", v ? "1" : "0"); } catch (_) {}
+  }
+
+  const displayName = (student && student.name) || (user && user.displayName) || "Student";
+  const email = (student && student.email) || (user && user.email) || "";
+
+  return html`<div class="set-page">
     <${PageHead} title="Settings" sub="Account & preferences" onBack=${() => setSection("dashboard")} backLabel="Home" />
-    <div class="panel" style=${{ marginBottom: 12 }}>
-      <div class="cred-label">Signed in as</div>
-      <strong>${student?.email || "—"}</strong>
-    </div>
-    <div class="panel" style=${{ marginBottom: 12 }}>
-      <div style=${{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <strong style=${{ fontSize: 14 }}>Dashboard notices</strong>
-          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Offers & notices on home</p>
-        </div>
-        <button type="button" class=${"toggle-mini" + (notify ? " on" : "")} onClick=${toggleNotify} aria-label="Toggle notices">${notify ? "On" : "Off"}</button>
+
+    <section class="set-card set-account">
+      <div class="set-avatar" aria-hidden="true">${String(displayName).charAt(0).toUpperCase()}</div>
+      <div class="set-account-copy">
+        <strong>${displayName}</strong>
+        <span>${email}</span>
       </div>
-    </div>
-    <div class="panel" style=${{ marginBottom: 12 }}>
-      <div style=${{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <strong style=${{ fontSize: 14 }}>Night mode</strong>
-          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Darker colours for low light</p>
+    </section>
+
+    <section class="set-block">
+      <h3 class="set-h">Preferences</h3>
+      <div class="set-row">
+        <div class="set-row-copy">
+          <strong>Dashboard notices</strong>
+          <span>Offers & notices on home</span>
         </div>
-        <button type="button" class=${"toggle-mini" + (dark ? " on" : "")} onClick=${toggleDark} aria-label="Toggle night mode">
-          ${Icon({ name: dark ? "moon" : "sun", size: 16 })} ${dark ? "On" : "Off"}
+        <button type="button" class=${"set-toggle" + (notify ? " on" : "")} onClick=${() => toggleNotify(!notify)} aria-pressed=${notify}>
+          ${notify ? "On" : "Off"}
         </button>
       </div>
-    </div>
-    <form class="panel" onSubmit=${changePassword}>
-      <strong style=${{ fontSize: 14, display: "block", marginBottom: 10 }}>Change password</strong>
-      <input type="password" autocomplete="new-password" placeholder="New password" value=${pw1} onInput=${(e) => setPw1(e.target.value)}
-        style=${{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
-      <input type="password" autocomplete="new-password" placeholder="Confirm password" value=${pw2} onInput=${(e) => setPw2(e.target.value)}
-        style=${{ width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
-      ${msg ? html`<p style=${{ fontSize: 13, marginBottom: 8, color: "var(--muted)" }}>${msg}</p>` : null}
-      <button type="submit" class="btn-block" disabled=${busy}>${busy ? "Saving…" : "Update password"}</button>
-    </form>
-    <div style=${{ marginTop: 16 }}>
-      <button type="button" class="btn-block secondary" onClick=${onLogout}>Sign out</button>
-    </div>
+      <div class="set-row">
+        <div class="set-row-copy">
+          <strong>Night mode</strong>
+          <span>Darker colours for low light</span>
+        </div>
+        <button type="button" class=${"set-toggle" + (dark ? " on" : "")} onClick=${() => setDark(!dark)} aria-pressed=${dark}>
+          ${Icon({ name: dark ? "moon" : "sun", size: 14 })} ${dark ? "On" : "Off"}
+        </button>
+      </div>
+    </section>
+
+    <section class="set-block">
+      <h3 class="set-h">Security</h3>
+      <form class="set-card set-secure" onSubmit=${savePassword}>
+        <label class="set-field"><span>New password</span>
+          <input type="password" value=${pw1} onInput=${(e) => setPw1(e.target.value)} autocomplete="new-password" placeholder="At least 6 characters" />
+        </label>
+        <label class="set-field"><span>Confirm password</span>
+          <input type="password" value=${pw2} onInput=${(e) => setPw2(e.target.value)} autocomplete="new-password" placeholder="Repeat password" />
+        </label>
+        ${msg ? html`<p class="set-msg">${msg}</p>` : null}
+        <button type="submit" class="btn-block" disabled=${busy}>${busy ? "Saving…" : "Save new password"}</button>
+      </form>
+    </section>
+
+    <button type="button" class="set-signout" onClick=${onLogout}>
+      ${Icon({ name: "logout", size: 16 })} Sign out
+    </button>
   </div>`;
 }
 
-
-
-function NotifDrawer({ open, onClose, items, onOpen }) {
-  if (!open) return null;
-  return html`<div class="notif-drawer open">
-    <div class="notif-scrim" onClick=${onClose}></div>
-    <aside class="notif-panel" role="dialog" aria-modal="true" aria-label="Notifications">
-      <div class="notif-head">
-        <strong style=${{ fontSize: 16 }}>Notifications</strong>
-        <button type="button" class="icon-btn" aria-label="Close" onClick=${onClose}>${Icon({ name: "close", size: 18 })}</button>
-      </div>
-      <div class="notif-list">
-        ${(items || []).length
-          ? (items || []).map((n) => html`<article class=${"notif-item" + (n.read ? "" : " unread")} key=${n.id}
-              role=${n.linkUrl || n.section ? "button" : undefined}
-              onClick=${() => onOpen && onOpen(n)}>
-              <h4>${n.title || "Notice"}</h4>
-              <p data-ts=${tsAttr(n.bodyStyle)} style=${textStyleInline(n.bodyStyle)}>${n.body || n.message || ""}</p>
-              <time>${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString() : ""}</time>
-            </article>`)
-          : html`<${Empty} title="You're all caught up" body="When the academy posts a notice for you, it will show here." />`}
-      </div>
-    </aside>
-  </div>`;
-}
 
 export function MobileView({ ctx }) {
 
@@ -1745,7 +1731,7 @@ export function MobileView({ ctx }) {
             ? "Courses and results update when the academy publishes them."
             : "Ask admissions to match this email to your student record."}</p>
           <button type="button" class="pill-ink" onClick=${() => setSection(linked ? "courses" : "profile")}>
-            ${linked ? "Courses" : "Profile"} <span aria-hidden="true">→</span>
+            ${linked ? "Courses" : "Profile"} ${Icon({ name: "arrow", size: 14 })}
           </button>
         </div>
         <img class="m-banner-img" src="/assets/banner-person.webp" alt="" decoding="async" />
@@ -2130,11 +2116,22 @@ export function MobileView({ ctx }) {
     `;
   } else if (section === "certificates") {
     const certs = certificates || [];
-    const idOnFile = !!(student?.reg || student?.idCardStatus === "On file" || (certs.find((c) => c.idCardStatus) || {}).idCardStatus);
-    const idStatus = idOnFile ? "On file" : (student?.idCardStatus || "Not issued yet");
-    const issued = certs.filter((c) => /issued|ready|ok|complete/i.test(String(c.status || "")) || c.certificateCode || c.code);
-    const pending = certs.filter((c) => !issued.includes(c));
+    const reg = student?.reg || student?.regNumber || "";
+    const paidId = (payments || []).some((p) => {
+      const st = String(p.paymentStatus || p.status || "paid").toLowerCase();
+      if (/fail|cancel|unpaid/.test(st)) return false;
+      const blob = [p.feeName, p.feeType, p.purpose, p.program, p.feeCode].map((x) => String(x || "").toLowerCase()).join(" ");
+      return /id.?card|student.?id|identity.?card/.test(blob);
+    });
+    const idReady = paidId;
+    const idStatus = idReady ? "On file" : "Pending payment";
+    const idPill = idReady ? "Ready" : "Pay ID fee";
     const expected = Number(student?.certificateCount || student?.programCertificateCount || 0) || null;
+    const intro = (student?.certificatesIntro || "").trim()
+      || (expected
+        ? ("Your programme includes up to " + expected + " module certificates. Each one can be previewed and downloaded after the academy issues it.")
+        : "Certificate programmes include module certificates. Each one can be previewed and downloaded after the academy issues it.");
+    const issued = certs.filter((c) => /issued|ready|ok|complete/i.test(String(c.status || "")) || c.certificateCode || c.code);
     body = html`
       <${PageHead} title="Certificates & ID" sub="Credentials on your academy file" onBack=${() => setSection("dashboard")} backLabel="Home" />
 
@@ -2143,17 +2140,18 @@ export function MobileView({ ctx }) {
         <div class="cred-hero-copy">
           <span class="cred-label">Student ID card</span>
           <strong>${idStatus}</strong>
-          <p>${student?.reg ? "Reg " + student.reg : "Issued after profile and fees are complete."}</p>
+          <p>${reg ? ("Reg " + reg) : "Reg number appears when your student file is linked."}</p>
+          ${!idReady ? html`<p class="cred-hint-inline">Pay the Student ID fee under Fees to unlock your ID card.</p>` : null}
         </div>
-        <span class=${"cred-pill" + (idOnFile ? " is-ok" : "")}>${idOnFile ? "Ready" : "Pending"}</span>
+        <span class=${"cred-pill" + (idReady ? " is-ok" : " is-wait")}>${idPill}</span>
       </section>
 
       <section class="cred-block" aria-label="Programme certificates">
         <div class="m-section-h">
           <h3 class="display">Programme certificates</h3>
-          <span class="cred-count">${issued.length} issued${expected ? " · " + expected + " expected" : (certs.length ? " · " + certs.length + " on file" : "")}</span>
+          <span class="cred-count">${issued.length} issued${expected ? " · " + expected + " expected" : ""}</span>
         </div>
-        <p class="cred-hint">Certificate programmes include up to 18 module certificates. Each one can be previewed and downloaded after the academy issues it.</p>
+        <p class="cred-hint">${intro}</p>
         <div class="cred-list">
           ${certs.length
             ? certs.map((c) => {
@@ -2165,7 +2163,7 @@ export function MobileView({ ctx }) {
                     <span>${[c.certificateCode || c.code || "", c.issuedAt || c.date || c.status || (ready ? "Issued" : "Not issued yet")].filter(Boolean).join(" · ")}</span>
                   </div>
                   ${ready
-                    ? html`<button type="button" class="cred-row-btn" onClick=${() => {/* preview hook */}}>Preview</button>`
+                    ? html`<button type="button" class="cred-row-btn">Preview</button>`
                     : html`<span class="cred-row-wait">Pending</span>`}
                 </article>`;
               })
@@ -2173,7 +2171,7 @@ export function MobileView({ ctx }) {
         </div>
       </section>
     `;
-  } else if (section === "messages") {
+    } else if (section === "messages") {
     body = html`<${MyQueries} student=${student} /><${MessagesScreen} messages=${messages || []} student=${student} setSection=${setSection} />`;
   } else if (section === "transcript") {
     body = html`
