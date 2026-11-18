@@ -3,7 +3,19 @@ import { createElement, useCallback, useState, useEffect, useRef } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed, formatLessonHtml } from "./shared.js";
-import { ASSETS, snapshotArt } from "./assets.js";
+function snapshotArt(id) {
+  const map = {
+    courses: "/assets/snapshot/modules.webp",
+    grades: "/assets/snapshot/results.webp",
+    score: "/assets/snapshot/score.webp",
+    fees: "/assets/snapshot/fees.webp"
+  };
+  const key = String(id || "").toLowerCase();
+  const src = map[key] || map[String(id || "")];
+  if (!src) return null;
+  return { src, alt: key || "Snapshot" };
+}
+
 import { MenuDrawer } from "./drawer.view.js";
 import { getFirebase } from "../../services/firebase.service.js";
 
@@ -1719,18 +1731,14 @@ export function MobileView({ ctx }) {
     const allSlides = slides || [];
     const cardSlides = allSlides.filter((x) => x.kind === "card");
     const designSlides = allSlides.filter((x) => x.kind !== "card" && x.kind !== "story");
-    body = html`
-      <section class="m-hello">
-        <p class="sm">Hello</p>
-        <h1 class="display">${first}</h1>
-      </section>
-      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
-      ${cardSlides.length
-        ? html`<${SlideCarousel} key="cards" slides=${cardSlides} seconds=${slideSeconds} />`
-        : (designSlides.length ? null : (ctx.loading
-          ? html`<section class="m-banner skel" aria-busy="true" aria-label="Loading"><div class="skel-line w70"></div><div class="skel-line w90"></div><div class="skel-line w50"></div></section>`
-          : html`
-      <section class="m-banner">
+    let bannerBlock = null;
+    if (cardSlides.length) {
+      bannerBlock = html`<${SlideCarousel} key="cards" slides=${cardSlides} seconds=${slideSeconds} />`;
+    } else if (!designSlides.length) {
+      if (ctx.loading) {
+        bannerBlock = html`<section class="m-banner skel" aria-busy="true" aria-label="Loading"><div class="skel-line w70"></div><div class="skel-line w90"></div><div class="skel-line w50"></div></section>`;
+      } else {
+        bannerBlock = html`<section class="m-banner">
         <div class="m-banner-copy">
           <h2 class="display">${linked ? "Your dashboard" : "Link your file"}</h2>
           <p>${linked
@@ -1740,27 +1748,17 @@ export function MobileView({ ctx }) {
             ${linked ? "Courses" : "Profile"} <span aria-hidden="true">→</span>
           </button>
         </div>
-        <img
-          class="m-banner-img"
-          src="/assets/banner-person.webp"
-          alt=""
-          decoding="async"
-          style=${{
-            position: "absolute",
-            right: "-4px",
-            bottom: "0px",
-            height: "108%",
-            width: "auto",
-            maxWidth: "56%",
-            objectFit: "contain",
-            objectPosition: "bottom right",
-            zIndex: 3,
-            pointerEvents: "none",
-            display: "block"
-          }}
-        />
+        <img class="m-banner-img" src="/assets/banner-person.webp" alt="" decoding="async" />
+      </section>`;
+      }
+    }
+    body = html`
+      <section class="m-hello">
+        <p class="sm">Hello</p>
+        <h1 class="display">${first}</h1>
       </section>
-      `))}
+      ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
+      ${bannerBlock}
 
       <section class="home-quick" aria-label="Quick actions">
         <div class="quick-row">
@@ -2136,6 +2134,7 @@ export function MobileView({ ctx }) {
     const idStatus = idOnFile ? "On file" : (student?.idCardStatus || "Not issued yet");
     const issued = certs.filter((c) => /issued|ready|ok|complete/i.test(String(c.status || "")) || c.certificateCode || c.code);
     const pending = certs.filter((c) => !issued.includes(c));
+    const expected = Number(student?.certificateCount || student?.programCertificateCount || 0) || null;
     body = html`
       <${PageHead} title="Certificates & ID" sub="Credentials on your academy file" onBack=${() => setSection("dashboard")} backLabel="Home" />
 
@@ -2152,7 +2151,7 @@ export function MobileView({ ctx }) {
       <section class="cred-block" aria-label="Programme certificates">
         <div class="m-section-h">
           <h3 class="display">Programme certificates</h3>
-          <span class="cred-count">${issued.length} issued${certs.length ? " · " + certs.length + " total" : ""}</span>
+          <span class="cred-count">${issued.length} issued${expected ? " · " + expected + " expected" : (certs.length ? " · " + certs.length + " on file" : "")}</span>
         </div>
         <p class="cred-hint">Certificate programmes include up to 18 module certificates. Each one can be previewed and downloaded after the academy issues it.</p>
         <div class="cred-list">
