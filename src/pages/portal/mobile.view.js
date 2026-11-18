@@ -739,23 +739,19 @@ export function ModuleCard({ c, i, email, onOpen }) {
     c.code || null,
     prog.modulePassed ? "Passed" : null
   ].filter(Boolean).join(" · ");
-  return html`<article class=${"mod-card mod-card-v2" + (finished ? " is-done" : "") + (started ? " is-live" : "")}
+  return html`<article class=${"mod-card mod-flat" + (finished ? " is-done" : "") + (started ? " is-live" : "")}
       role="button" tabindex="0"
       onClick=${onOpen} onKeyDown=${(e) => { if (e.key === "Enter") onOpen(); }}>
-    <div class="mod-v2-accent" aria-hidden="true"><span>${String(i + 1).padStart(2, "0")}</span></div>
-    <div class="mod-v2-body">
-      <div class="mod-v2-top">
-        <h4>${c.title || c.code || "Module"}</h4>
-        ${meta ? html`<p>${meta}</p>` : null}
-      </div>
-      <div class="mod-v2-foot">
-        <div class="mod-v2-prog" aria-label=${pct + " percent complete"}>
-          <div class="mod-v2-bar"><i style=${{ width: pct + "%" }}></i></div>
-          <small>${finished ? "Complete" : (done + " of " + total)}</small>
-        </div>
-        <span class=${"mod-v2-cta" + (finished ? " is-muted" : "")}>${cta}</span>
+    <span class="mod-flat-num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
+    <div class="mod-flat-main">
+      <h4>${c.title || c.code || "Module"}</h4>
+      ${meta ? html`<p class="mod-flat-meta">${meta}</p>` : null}
+      <div class="mod-flat-prog" aria-label=${pct + " percent complete"}>
+        <div class="mod-flat-bar"><i style=${{ width: pct + "%" }}></i></div>
+        <span>${finished ? "Complete" : (done + "/" + total)}</span>
       </div>
     </div>
+    <span class="mod-flat-cta">${cta}<span aria-hidden="true"> →</span></span>
   </article>`;
 }
 
@@ -1443,6 +1439,13 @@ export function MessagesScreen({ messages, student, setSection }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [local, setLocal] = useState(messages || []);
+  const [faqOpen, setFaqOpen] = useState(null);
+  const faqs = [
+    { q: "When will my results be published?", a: "Results appear under Grades after your instructor publishes them. Check Snapshot on the home screen for a count." },
+    { q: "How do I pay fees?", a: "Open Fees from Quick actions. Use the fee link the academy sent you, or ask Support below if you do not have one." },
+    { q: "My modules are missing", a: "Ask admissions to match this email to your student record. Once linked, modules show under Continue learning." },
+    { q: "Where is my student ID?", a: "Open Certificates & ID. Status updates when the academy issues your card." }
+  ];
 
   useEffect(() => { setLocal(messages || []); }, [messages]);
 
@@ -1469,7 +1472,7 @@ export function MessagesScreen({ messages, student, setSection }) {
       setLocal([{ id: ref.id, subject: subject.trim(), body: body.trim(), status: "open", createdAt: { toDate: () => new Date() } }, ...local]);
       setSubject("");
       setBody("");
-      setNote("Message sent. The academy will reply here when they can.");
+      setNote("Sent. The academy will reply here.");
     } catch (err) {
       setNote(err.message || "Could not send. Try again later.");
     } finally {
@@ -1477,29 +1480,48 @@ export function MessagesScreen({ messages, student, setSection }) {
     }
   }
 
-  return html`<div>
-    <${PageHead} title="Messages" sub="Support with the academy" onBack=${() => setSection("dashboard")} backLabel="Home" />
-    <form class="panel" onSubmit=${send} style=${{ marginBottom: 14 }}>
-      <label class="cred-label">Subject</label>
-      <input style=${{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} value=${subject} onInput=${(e) => setSubject(e.target.value)} placeholder="e.g. Fee receipt question" />
-      <label class="cred-label">Message</label>
-      <textarea rows="4" style=${{ width: "100%", marginBottom: 10, boxSizing: "border-box" }} value=${body} onInput=${(e) => setBody(e.target.value)} placeholder="Write your message…"></textarea>
-      ${note ? html`<p style=${{ fontSize: 13, marginBottom: 8, color: "var(--muted)" }}>${note}</p>` : null}
-      <button type="submit" class="btn-block" disabled=${busy}>${busy ? "Sending…" : "Send to academy"}</button>
+  return html`<div class="msg-page">
+    <${PageHead} title="Messages" sub="FAQ and support with the academy" onBack=${() => setSection("dashboard")} backLabel="Home" />
+
+    <section class="msg-faq" aria-label="Frequently asked">
+      <div class="m-section-h"><h3 class="display">FAQ</h3></div>
+      <div class="faq-list">
+        ${faqs.map((f, i) => html`<div class=${"faq-item" + (faqOpen === i ? " is-open" : "")} key=${i}>
+          <button type="button" class="faq-q" onClick=${() => setFaqOpen(faqOpen === i ? null : i)} aria-expanded=${faqOpen === i}>
+            <span>${f.q}</span>
+            <span class="faq-chev" aria-hidden="true">${faqOpen === i ? "−" : "+"}</span>
+          </button>
+          ${faqOpen === i ? html`<div class="faq-a">${f.a}</div>` : null}
+        </div>`)}
+      </div>
+    </section>
+
+    <section class="msg-thread" aria-label="Your messages">
+      <div class="m-section-h"><h3 class="display">Support thread</h3></div>
+      <div class="msg-list">
+        ${local.length
+          ? local.map((m) => html`<article class="msg-bubble" key=${m.id}>
+              <header>
+                <strong>${m.subject || "Message"}</strong>
+                <em>${(m.status || "open").toString()}</em>
+              </header>
+              <p>${m.body || ""}</p>
+              ${m.reply ? html`<div class="msg-reply"><span>Academy</span><p>${m.reply}</p></div>` : null}
+            </article>`)
+          : html`<${Empty} title="No messages yet" body="Use the composer below if FAQ does not answer your question." />`}
+      </div>
+    </section>
+
+    <form class="msg-composer" onSubmit=${send}>
+      <div class="msg-composer-fields">
+        <input class="msg-input" value=${subject} onInput=${(e) => setSubject(e.target.value)} placeholder="Subject" autocomplete="off" />
+        <textarea class="msg-text" rows="2" value=${body} onInput=${(e) => setBody(e.target.value)} placeholder="Write your message…"></textarea>
+        ${note ? html`<p class="msg-note">${note}</p>` : null}
+      </div>
+      <button type="submit" class="msg-send" disabled=${busy} aria-label="Send to academy">
+        ${busy ? "…" : html`${Icon({ name: "mail", size: 18 })}`}
+      </button>
     </form>
-    <div class="m-section-h"><h3 class="display">Your messages</h3></div>
-    <div class="m-list">
-      ${local.length
-        ? local.map((m) => html`<article class="m-card" key=${m.id}>
-            <span class="badge tone-mist">${(m.status || "open").toString().slice(0, 4)}</span>
-            <div class="m-card-text">
-              <h4>${m.subject || "Message"}</h4>
-              <p>${(m.body || "").slice(0, 100)}${(m.body || "").length > 100 ? "…" : ""}</p>
-              ${m.reply ? html`<p style=${{ marginTop: 6, color: "var(--ink)" }}><strong>Reply:</strong> ${m.reply}</p>` : null}
-            </div>
-          </article>`)
-        : html`<${Empty} title="No messages yet" body="Send a note above if you need help with fees, classes, or your profile." />`}
-    </div>
   </div>`;
 }
 
@@ -1674,15 +1696,7 @@ export function MobileView({ ctx }) {
 
   let body = null;
   if (section === "dashboard") {
-    /* Home hierarchy (edtech pattern):
-       1) Hello + stories
-       2) Banner / promos
-       3) Continue learning (primary action)
-       4) Quick actions
-       5) Snapshot stats
-       6) Notices (if any)
-       7) Attendance strip (full calendar lives on Attendance page)
-    */
+    /* Order: Stories → Banner(cards) → Quick actions → Designs → Continue → Snapshot → Attendance */
     const email = ctx.student && ctx.student.email;
     const ranked = (courses || []).map((c, i) => {
       const lessons = Array.isArray(c.lessons) ? c.lessons : [];
@@ -1702,13 +1716,20 @@ export function MobileView({ ctx }) {
       { id: "messages", label: "Messages", icon: "mail" },
       { id: "certificates", label: "Certificates", icon: "grid" }
     ];
+    const allSlides = slides || [];
+    const cardSlides = allSlides.filter((x) => x.kind === "card");
+    const designSlides = allSlides.filter((x) => x.kind !== "card" && x.kind !== "story");
     body = html`
       <section class="m-hello">
         <p class="sm">Hello</p>
         <h1 class="display">${first}</h1>
       </section>
       ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
-      ${(slides || []).length ? slideGroups(slides, slideSeconds) : ctx.loading ? html`<section class="m-banner skel" aria-busy="true" aria-label="Loading"><div class="skel-line w70"></div><div class="skel-line w90"></div><div class="skel-line w50"></div></section>` : html`
+      ${cardSlides.length
+        ? html`<${SlideCarousel} key="cards" slides=${cardSlides} seconds=${slideSeconds} />`
+        : (designSlides.length ? null : (ctx.loading
+          ? html`<section class="m-banner skel" aria-busy="true" aria-label="Loading"><div class="skel-line w70"></div><div class="skel-line w90"></div><div class="skel-line w50"></div></section>`
+          : html`
       <section class="m-banner">
         <div class="m-banner-copy">
           <h2 class="display">${linked ? "Your dashboard" : "Link your file"}</h2>
@@ -1716,7 +1737,7 @@ export function MobileView({ ctx }) {
             ? "Courses and results update when the academy publishes them."
             : "Ask admissions to match this email to your student record."}</p>
           <button type="button" class="pill-ink" onClick=${() => setSection(linked ? "courses" : "profile")}>
-            ${linked ? "Courses" : "Profile"}
+            ${linked ? "Courses" : "Profile"} <span aria-hidden="true">→</span>
           </button>
         </div>
         <img
@@ -1739,7 +1760,18 @@ export function MobileView({ ctx }) {
           }}
         />
       </section>
-      `}
+      `))}
+
+      <section class="home-quick" aria-label="Quick actions">
+        <div class="quick-row">
+          ${quick.map((x) => html`<button type="button" class="quick-tile" key=${x.id} onClick=${() => setSection(x.id)}>
+            <span class="quick-ico">${Icon({ name: x.icon, size: 18 })}</span>
+            <span class="quick-lbl">${x.label}</span>
+          </button>`)}
+        </div>
+      </section>
+
+      ${designSlides.length ? html`<${SlideCarousel} key="designs" slides=${designSlides} seconds=${slideSeconds} />` : null}
       ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
 
       <section class="home-continue" aria-label="Continue learning">
@@ -1755,16 +1787,6 @@ export function MobileView({ ctx }) {
                   ? html`<${Empty} title="You're up to date" body="All modules on your track are complete. Open Courses to review any of them." />`
                   : html`<${Empty} title="No modules yet" body="They will show here once your programme is on file." />`)
               : html`<${Empty} title="Link your file" body="Once admissions matches your email, your modules will appear here." />`}
-        </div>
-      </section>
-
-      <section class="home-quick" aria-label="Quick actions">
-        <div class="m-section-h"><h3 class="display">Quick actions</h3></div>
-        <div class="quick-row">
-          ${quick.map((x) => html`<button type="button" class="quick-tile" key=${x.id} onClick=${() => setSection(x.id)}>
-            <span class="quick-ico">${Icon({ name: x.icon, size: 18 })}</span>
-            <span class="quick-lbl">${x.label}</span>
-          </button>`)}
         </div>
       </section>
 
@@ -1786,7 +1808,7 @@ export function MobileView({ ctx }) {
         ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
       </section>
     `;
-  } else if (section === "courses") {
+  }  } else if (section === "courses") {
     body = html`
       <div class="page-head"><h1 class="display">Courses</h1><p>Your programme modules</p></div>
       <div class="m-list">
@@ -2110,30 +2132,47 @@ export function MobileView({ ctx }) {
     `;
   } else if (section === "certificates") {
     const certs = certificates || [];
-    const idStatus = student?.idCardStatus || (certs.find((c) => c.idCardStatus) || {}).idCardStatus || "";
+    const idOnFile = !!(student?.reg || student?.idCardStatus === "On file" || (certs.find((c) => c.idCardStatus) || {}).idCardStatus);
+    const idStatus = idOnFile ? "On file" : (student?.idCardStatus || "Not issued yet");
+    const issued = certs.filter((c) => /issued|ready|ok|complete/i.test(String(c.status || "")) || c.certificateCode || c.code);
+    const pending = certs.filter((c) => !issued.includes(c));
     body = html`
       <${PageHead} title="Certificates & ID" sub="Credentials on your academy file" onBack=${() => setSection("dashboard")} backLabel="Home" />
-      <div class="cred-grid">
-        <article class="cred-card">
+
+      <section class="cred-hero" aria-label="Student ID">
+        <div class="cred-hero-ico" aria-hidden="true">${Icon({ name: "card", size: 22 })}</div>
+        <div class="cred-hero-copy">
           <span class="cred-label">Student ID card</span>
-          <strong>${idStatus || (student?.reg ? "On file" : "Not issued yet")}</strong>
+          <strong>${idStatus}</strong>
           <p>${student?.reg ? "Reg " + student.reg : "Issued after profile and fees are complete."}</p>
-        </article>
-        <article class="cred-card">
-          <span class="cred-label">Programme certificate</span>
-          <strong>${student?.certificateCode || (certs[0] && (certs[0].code || certs[0].certificateCode)) || "Not issued yet"}</strong>
-          <p>${student?.program ? String(student.program) : "Appears when the academy publishes your certificate."}</p>
-        </article>
-      </div>
-      <div class="m-list" style=${{ marginTop: 12 }}>
-        ${certs.length
-          ? certs.map((c) => html`<${ListCard} key=${c.id}
-              badge=${(c.status || "OK").toString().slice(0, 3).toUpperCase()}
-              title=${c.title || c.type || "Credential"}
-              note=${[c.certificateCode || c.code || "", c.issuedAt || c.date || c.status || ""].filter(Boolean).join(" · ")}
-              tone="lime" />`)
-          : html`<${Empty} title="No certificate records yet" body="When ID cards or certificates are issued for you, the status will show above and in this list." />`}
-      </div>
+        </div>
+        <span class=${"cred-pill" + (idOnFile ? " is-ok" : "")}>${idOnFile ? "Ready" : "Pending"}</span>
+      </section>
+
+      <section class="cred-block" aria-label="Programme certificates">
+        <div class="m-section-h">
+          <h3 class="display">Programme certificates</h3>
+          <span class="cred-count">${issued.length} issued${certs.length ? " · " + certs.length + " total" : ""}</span>
+        </div>
+        <p class="cred-hint">Certificate programmes include up to 18 module certificates. Each one can be previewed and downloaded after the academy issues it.</p>
+        <div class="cred-list">
+          ${certs.length
+            ? certs.map((c) => {
+                const ready = !!(c.certificateCode || c.code || /issued|ready|ok|complete/i.test(String(c.status || "")));
+                return html`<article class=${"cred-row" + (ready ? " is-ready" : "")} key=${c.id}>
+                  <div class="cred-row-ico" aria-hidden="true">${Icon({ name: ready ? "check" : "book", size: 18 })}</div>
+                  <div class="cred-row-mid">
+                    <strong>${c.title || c.type || "Certificate"}</strong>
+                    <span>${[c.certificateCode || c.code || "", c.issuedAt || c.date || c.status || (ready ? "Issued" : "Not issued yet")].filter(Boolean).join(" · ")}</span>
+                  </div>
+                  ${ready
+                    ? html`<button type="button" class="cred-row-btn" onClick=${() => {/* preview hook */}}>Preview</button>`
+                    : html`<span class="cred-row-wait">Pending</span>`}
+                </article>`;
+              })
+            : html`<${Empty} title="No certificate records yet" body="When the academy issues module certificates for your programme, they will list here with preview and download." />`}
+        </div>
+      </section>
     `;
   } else if (section === "messages") {
     body = html`<${MyQueries} student=${student} /><${MessagesScreen} messages=${messages || []} student=${student} setSection=${setSection} />`;
@@ -2165,7 +2204,6 @@ export function MobileView({ ctx }) {
     <div class="m-scroll">
     ${body}
     </div>
-    {null}
     <footer class="careed-foot" aria-label="CareEd powered by CGTIA">
       <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="32" height="32" />
       <div class="careed-foot-text">
