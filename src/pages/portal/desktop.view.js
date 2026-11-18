@@ -4,7 +4,7 @@ import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, NavList, StatusChip, ImageSlot, formatPayDate, money } from "./shared.js";
 import { ASSETS } from "./assets.js";
-import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, attendanceCard, slideGroups, StoriesSection, AttendancePage } from "./mobile.view.js";
+import { MessagesScreen, SettingsScreen, AttendanceCalendar, TranscriptView, ProfileCard, MyQueries, ScheduleList, gradeTone, OffersCarousel, NoticeInbox, SlideCarousel, ModuleCard, attendanceStrip, attendanceCard, slideGroups, StoriesSection, AttendancePage, Tile, loadProgress as loadProgMobile } from "./mobile.view.js";
 import { loadProgress } from "./shared.js";
 
 const html = htm.bind(createElement);
@@ -52,6 +52,25 @@ export function DesktopView({ ctx, deepView }) {
 
   let main = null;
   if (section === "dashboard") {
+    const email = ctx.student && ctx.student.email;
+    const ranked = (courses || []).map((c, i) => {
+      const lessons = Array.isArray(c.lessons) ? c.lessons : [];
+      const prog = loadProgress(email, c.id);
+      const done = lessons.filter((l, k) => prog.completed.includes(String(l.id != null ? l.id : k))).length;
+      const total = lessons.length;
+      const finished = total > 0 && done >= total;
+      const started = done > 0 && !finished;
+      return { c, i, finished, started, score: started ? 2 : finished ? 0 : 1 };
+    }).sort((a, b) => b.score - a.score || a.i - b.i);
+    const continueList = ranked.filter((x) => !x.finished).slice(0, 3);
+    const quick = [
+      { id: "courses", label: "Courses", icon: "book" },
+      { id: "schedule", label: "Schedule", icon: "cal" },
+      { id: "attendance", label: "Attendance", icon: "check" },
+      { id: "fees", label: "Fees", icon: "card" },
+      { id: "messages", label: "Messages", icon: "mail" },
+      { id: "certificates", label: "Certificates", icon: "grid" }
+    ];
     main = html`
       ${(ctx.stories || []).length ? html`<${StoriesSection} stories=${ctx.stories} setSection=${setSection} />` : null}
       ${(slides || []).length ? slideGroups(slides, slideSeconds) : html`
@@ -68,34 +87,46 @@ export function DesktopView({ ctx, deepView }) {
         <${ImageSlot} asset=${ASSETS.bannerPerson} variant="desktop" className="d-banner-img" />
       </section>
       `}
-      <section class="stats">
-        ${stats.map((s) => html`<div key=${s.id} class="is-click" role="button" onClick=${() => {
-          if (s.id === "courses") setSection("courses");
-          else if (s.id === "grades" || s.id === "score") setSection("grades");
-          else if (s.id === "fees" || s.go === "fees") setSection("fees");
-          else if (s.go) setSection(s.go);
-        }}><${StatCard} s=${s} /></div>`)}
-      </section>
-      ${attendanceCard(ctx.attendance, () => setSection("attendance"))}
       ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
+
+      <section class="home-continue" aria-label="Continue learning">
+        <div class="m-section-h">
+          <h3 class="display">Continue learning</h3>
+          ${courses.length ? html`<button type="button" class="see" style=${{ border: 0, background: "none", cursor: "pointer" }} onClick=${() => setSection("courses")}>See all</button>` : null}
+        </div>
+        <div class="m-list" style=${{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "12px" }}>
+          ${continueList.length
+            ? continueList.map((x) => html`<${ModuleCard} key=${x.c.id} c=${x.c} i=${x.i} email=${email} onOpen=${() => setSection("course:" + x.c.id)} />`)
+            : html`<${Empty} title=${linked ? "You're up to date" : "Link your file"} body=${linked ? "All modules on your track are complete." : "Once admissions matches your email, modules appear here."} />`}
+        </div>
+      </section>
+
+      <section class="home-quick" aria-label="Quick actions">
+        <div class="m-section-h"><h3 class="display">Quick actions</h3></div>
+        <div class="quick-row">
+          ${quick.map((x) => html`<button type="button" class="quick-tile" key=${x.id} onClick=${() => setSection(x.id)}>
+            <span class="quick-ico">${Icon({ name: x.icon, size: 20 })}</span>
+            <span class="quick-lbl">${x.label}</span>
+          </button>`)}
+        </div>
+      </section>
+
+      <section class="home-stats" aria-label="Snapshot">
+        <div class="m-section-h"><h3 class="display">Snapshot</h3></div>
+        <div class="m-tiles" style=${{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }}>
+          ${stats.map((s, idx) => html`<${Tile} key=${s.id} s=${s} idx=${idx} onClick=${() => {
+            if (s.id === "courses" || s.go === "courses") setSection("courses");
+            else if (s.id === "grades" || s.id === "score" || s.go === "grades") setSection("grades");
+            else if (s.id === "fees" || s.go === "fees") setSection("fees");
+            else if (s.go) setSection(s.go);
+          }} />`)}
+        </div>
+      </section>
+
       ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${6} />` : null}
-      <section class="d-cols">
-        <div class="panel lessons" aria-label="Courses">
-          <h3 class="display" style=${{ fontSize: 16, margin: "4px 10px 8px" }}>Your modules</h3>
-          ${courses.length
-            ? courses.slice(0, 6).map((c, i) => html`<${CourseRow} key=${c.id} c=${c} i=${i} email=${ctx.student && ctx.student.email} onOpen=${() => setSection("course:" + c.id)} />`)
-            : html`<${Empty} title="No modules yet" body="When your programme is linked, the modules for your track will show up here." />`}
-          ${courses.length > 6
-            ? html`<button type="button" class="see" style=${{ alignSelf: "flex-end", border: 0, background: "none", cursor: "pointer" }} onClick=${() => setSection("courses")}>see all</button>`
-            : null}
-        </div>
-        <div class="stack">
-          <div class="panel is-click" role="button" tabindex="0" onClick=${() => setSection("fees")} onKeyDown=${(e) => { if (e.key === "Enter") setSection("fees"); }}>
-            <h3 class="display" style=${{ fontSize: 16, marginBottom: 10 }}>Fees snapshot</h3>
-            <div class="num" style=${{ fontSize: 28 }}>₦${paidTotal.toLocaleString()}</div>
-            <p style=${{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>Total recorded against your email</p>
-          </div>
-        </div>
+
+      <section class="home-att" aria-label="Attendance">
+        ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
       </section>
     `;
   } else if (section === "courses") {

@@ -3,7 +3,7 @@ import { createElement, useCallback, useState, useEffect, useRef } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed, formatLessonHtml } from "./shared.js";
-import { ASSETS } from "./assets.js";
+import { ASSETS, snapshotArt } from "./assets.js";
 import { MenuDrawer } from "./drawer.view.js";
 import { getFirebase } from "../../services/firebase.service.js";
 
@@ -400,15 +400,20 @@ function LessonView({ section, courses, student, setSection }) {
 
 
 
-function Tile({ s, onClick, idx = 0 }) {
+export function Tile({ s, onClick, idx = 0 }) {
   const brand = (idx % 2 === 0) ? "brand-navy" : "brand-blue";
+  const art = snapshotArt(s.id) || snapshotArt(s.go);
   return html`<div role=${onClick ? "button" : undefined}
-    class=${"m-tile " + brand + (onClick ? " is-click" : "")}
+    class=${"m-tile snap-tile " + brand + (onClick ? " is-click" : "")}
     onClick=${onClick}>
-    <span class="tile-icon">${Icon({ name: s.icon || "grid", size: 18 })}</span>
-    <div class="tile-body">
+    <div class="snap-copy">
       <div class="num">${s.value}${s.total != null ? html`<span>/${s.total}</span>` : null}</div>
       <div class="lbl">${s.label}</div>
+    </div>
+    <div class=${"snap-art" + (art ? " has-art" : " is-empty")} aria-hidden=${art ? "false" : "true"}>
+      ${art
+        ? html`<img src=${art.src} alt="" loading="lazy" decoding="async" onError=${(e) => { try { e.currentTarget.style.display = "none"; e.currentTarget.parentElement.classList.add("is-empty"); e.currentTarget.parentElement.classList.remove("has-art"); } catch (_) {} }} />`
+        : html`<span class="snap-ph">Add icon</span>`}
     </div>
   </div>`;
 }
@@ -727,21 +732,29 @@ export function ModuleCard({ c, i, email, onOpen }) {
   const total = lessons.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   const finished = total > 0 && done >= total;
-  const cta = finished ? "Completed" : done > 0 ? "Continue" : "Start";
-  return html`<article class=${"mod-card" + (finished ? " is-done" : "")} role="button" tabindex="0"
+  const started = done > 0 && !finished;
+  const cta = finished ? "Review" : started ? "Continue" : "Start";
+  const meta = [
+    total ? (total + " lesson" + (total === 1 ? "" : "s")) : null,
+    c.code || null,
+    prog.modulePassed ? "Passed" : null
+  ].filter(Boolean).join(" · ");
+  return html`<article class=${"mod-card mod-card-v2" + (finished ? " is-done" : "") + (started ? " is-live" : "")}
+      role="button" tabindex="0"
       onClick=${onOpen} onKeyDown=${(e) => { if (e.key === "Enter") onOpen(); }}>
-    <div class="mod-top">
-      <span class="mod-num">${String(i + 1).padStart(2, "0")}</span>
-      <div class="mod-title"><h4>${c.title || c.code || "Module"}</h4><p>${c.code || "Module"}${c.program ? " · " + c.program : ""}</p></div>
-    </div>
-    <div class="mod-chips">
-      <span class="mod-chip">${total} lesson${total === 1 ? "" : "s"}</span>
-      ${(c.moduleQuizQuestions || []).length ? html`<span class="mod-chip">Module quiz</span>` : null}
-      ${prog.modulePassed ? html`<span class="mod-chip is-ok">Passed</span>` : null}
-    </div>
-    <div class="mod-foot">
-      <div class="mod-prog"><div class="mod-bar"><i style=${{ width: pct + "%" }}></i></div><small>${done} of ${total} · ${pct}%</small></div>
-      <span class="mod-cta">${cta} →</span>
+    <div class="mod-v2-accent" aria-hidden="true"><span>${String(i + 1).padStart(2, "0")}</span></div>
+    <div class="mod-v2-body">
+      <div class="mod-v2-top">
+        <h4>${c.title || c.code || "Module"}</h4>
+        ${meta ? html`<p>${meta}</p>` : null}
+      </div>
+      <div class="mod-v2-foot">
+        <div class="mod-v2-prog" aria-label=${pct + " percent complete"}>
+          <div class="mod-v2-bar"><i style=${{ width: pct + "%" }}></i></div>
+          <small>${finished ? "Complete" : (done + " of " + total)}</small>
+        </div>
+        <span class=${"mod-v2-cta" + (finished ? " is-muted" : "")}>${cta}</span>
+      </div>
     </div>
   </article>`;
 }
@@ -2152,7 +2165,7 @@ export function MobileView({ ctx }) {
     <div class="m-scroll">
     ${body}
     </div>
-    null /* attendance strip lives inside the dashboard body */
+    {null}
     <footer class="careed-foot" aria-label="CareEd powered by CGTIA">
       <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="32" height="32" />
       <div class="careed-foot-text">
