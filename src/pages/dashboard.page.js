@@ -679,7 +679,8 @@ export function DashboardPage() {
             console.warn(e);
             await minSplash;
             if (cancelled) return;
-            setData({ _placeholder: true, student: { name: u.email, email: u.email, role: "Student" }, courses: [], grades: [], payments: [], portalSettings: {}, linked: false });
+            // A failed reload keeps the data already on screen; it never replaces it with an empty "Link your file" state
+            setData((prev) => prev || { _placeholder: true, student: { name: u.email, email: u.email, role: "Student" }, courses: [], grades: [], payments: [], portalSettings: {}, linked: false });
             setPhase("app");
           }
         });
@@ -836,7 +837,7 @@ export function DashboardPage() {
     paidTotal,
     onLogout: logout,
     linked: !!(data && data.linked),
-    loading: !data,
+    loading: !data || !!data._placeholder,
     announcements: (data && data.announcements) || [],
     promos: (data && data.promos) || [],
     slides: (data && data.slides) || [],

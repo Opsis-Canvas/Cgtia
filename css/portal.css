@@ -4200,3 +4200,12 @@ body [data-ts][data-ts] {
 .slides.is-card-now .slide-card-text { padding: 14px 16px 44px; }
 .slides.is-card-now .slide-card-text h3 { font-size: 17px; }
 @media (min-width: 860px) { .slides.is-card-now .slides-stage { height: 240px !important; aspect-ratio: auto !important; } }
+
+/* Design slides in a grid: each one is its own box, and the picture fills its box */
+.slides.is-grid .slide-design { position: relative; inset: auto; }
+.slides.is-grid .slide-design .img-frame { position: relative; inset: auto; width: 100%; height: auto; }
+.slides.is-grid .slide-design .img-frame img { position: relative; width: 100%; height: auto; aspect-ratio: 4 / 5; }
+/* Card slide: at least the height of the "Your dashboard" box, and tall enough for its text and button */
+.slides.is-card-now .slides-stage { height: auto !important; min-height: 140px; aspect-ratio: auto !important; }
+.slides.is-card-now .slide-card-text { padding: 14px 16px 64px; }
+@media (min-width: 860px) { .slides.is-card-now .slides-stage { min-height: 240px; } }
