@@ -3,6 +3,9 @@ import { createElement, useCallback, useState, useEffect, useRef } from "react";
 import htm from "htm";
 import { Icon } from "./icons.js";
 import { Avatar, Empty, StatusChip, ImageSlot, formatPayDate, money, loadProgress, markLessonDone, setModulePassed, formatLessonHtml } from "./shared.js";
+import { MenuDrawer } from "./drawer.view.js";
+import { getFirebase } from "../../services/firebase.service.js";
+
 function snapshotArt(id) {
   const map = {
     courses: "/assets/snapshot/modules.webp",
@@ -15,9 +18,6 @@ function snapshotArt(id) {
   if (!src) return null;
   return { src, alt: key || "Snapshot" };
 }
-
-import { MenuDrawer } from "./drawer.view.js";
-import { getFirebase } from "../../services/firebase.service.js";
 
 const html = htm.bind(createElement);
 const TILE_TONE = { courses: "sky", grades: "lilac", score: "sky-soft", fees: "mint" };
