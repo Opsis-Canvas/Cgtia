@@ -1661,6 +1661,34 @@ export function MobileView({ ctx }) {
 
   let body = null;
   if (section === "dashboard") {
+    /* Home hierarchy (edtech pattern):
+       1) Hello + stories
+       2) Banner / promos
+       3) Continue learning (primary action)
+       4) Quick actions
+       5) Snapshot stats
+       6) Notices (if any)
+       7) Attendance strip (full calendar lives on Attendance page)
+    */
+    const email = ctx.student && ctx.student.email;
+    const ranked = (courses || []).map((c, i) => {
+      const lessons = Array.isArray(c.lessons) ? c.lessons : [];
+      const prog = loadProgress(email, c.id);
+      const done = lessons.filter((l, k) => prog.completed.includes(String(l.id != null ? l.id : k))).length;
+      const total = lessons.length;
+      const finished = total > 0 && done >= total;
+      const started = done > 0 && !finished;
+      return { c, i, done, total, finished, started, score: started ? 2 : finished ? 0 : 1 };
+    }).sort((a, b) => b.score - a.score || a.i - b.i);
+    const continueList = ranked.filter((x) => !x.finished).slice(0, 2);
+    const quick = [
+      { id: "courses", label: "Courses", icon: "book" },
+      { id: "schedule", label: "Schedule", icon: "cal" },
+      { id: "attendance", label: "Attendance", icon: "check" },
+      { id: "fees", label: "Fees", icon: "card" },
+      { id: "messages", label: "Messages", icon: "mail" },
+      { id: "certificates", label: "Certificates", icon: "grid" }
+    ];
     body = html`
       <section class="m-hello">
         <p class="sm">Hello</p>
@@ -1700,41 +1728,49 @@ export function MobileView({ ctx }) {
       </section>
       `}
       ${(promos || []).length ? html`<${OffersCarousel} promos=${promos} />` : null}
-      ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${4} />` : null}
-      <section class="m-tiles">
-        ${stats.map((s, idx) => html`<${Tile} key=${s.id} s=${s} idx=${idx} onClick=${() => {
-          if (s.id === "courses" || s.go === "courses") setSection("courses");
-          else if (s.id === "grades" || s.id === "score" || s.go === "grades") setSection("grades");
-          else if (s.id === "fees" || s.go === "fees") setSection("fees");
-          else if (s.go) setSection(s.go);
-        }} />`)}
-      </section>
-      <section>
-        <div class="m-section-h"><h3 class="display">More</h3></div>
-        <div class="more-grid">
-          ${[
-            { id: "schedule", label: "Schedule", icon: "cal" },
-            { id: "attendance", label: "Attendance", icon: "check" },
-            { id: "certificates", label: "Certificates", icon: "card" },
-            { id: "messages", label: "Messages", icon: "mail" },
-            { id: "transcript", label: "Transcript", icon: "chart" },
-            { id: "settings", label: "Settings", icon: "gear" }
-          ].map((x) => html`<button type="button" class="more-tile" key=${x.id} onClick=${() => setSection(x.id)}>
-            <span class="tile-icon">${Icon({ name: x.icon, size: 18 })}</span>
-            <span>${x.label}</span>
-          </button>`)}
-        </div>
-      </section>
-      <section>
+
+      <section class="home-continue" aria-label="Continue learning">
         <div class="m-section-h">
-          <h3 class="display">Modules</h3>
+          <h3 class="display">Continue learning</h3>
           ${courses.length ? html`<button type="button" class="see" style=${{ border: 0, background: "none" }} onClick=${() => setSection("courses")}>See all</button>` : null}
         </div>
         <div class="m-list">
-          ${courses.length
-            ? courses.slice(0, 3).map((c, i) => html`<${ModuleCard} key=${c.id} c=${c} i=${i} email=${ctx.student && ctx.student.email} onOpen=${() => setSection("course:" + c.id)} />`)
-            : html`<${Empty} title="No modules yet" body="They will show here once your programme is on file." />`}
+          ${continueList.length
+            ? continueList.map((x) => html`<${ModuleCard} key=${x.c.id} c=${x.c} i=${x.i} email=${email} onOpen=${() => setSection("course:" + x.c.id)} />`)
+            : linked
+              ? (courses.length
+                  ? html`<${Empty} title="You're up to date" body="All modules on your track are complete. Open Courses to review any of them." />`
+                  : html`<${Empty} title="No modules yet" body="They will show here once your programme is on file." />`)
+              : html`<${Empty} title="Link your file" body="Once admissions matches your email, your modules will appear here." />`}
         </div>
+      </section>
+
+      <section class="home-quick" aria-label="Quick actions">
+        <div class="m-section-h"><h3 class="display">Quick actions</h3></div>
+        <div class="quick-row">
+          ${quick.map((x) => html`<button type="button" class="quick-tile" key=${x.id} onClick=${() => setSection(x.id)}>
+            <span class="quick-ico">${Icon({ name: x.icon, size: 18 })}</span>
+            <span class="quick-lbl">${x.label}</span>
+          </button>`)}
+        </div>
+      </section>
+
+      <section class="home-stats" aria-label="Your snapshot">
+        <div class="m-section-h"><h3 class="display">Snapshot</h3></div>
+        <section class="m-tiles">
+          ${stats.map((s, idx) => html`<${Tile} key=${s.id} s=${s} idx=${idx} onClick=${() => {
+            if (s.id === "courses" || s.go === "courses") setSection("courses");
+            else if (s.id === "grades" || s.id === "score" || s.go === "grades") setSection("grades");
+            else if (s.id === "fees" || s.go === "fees") setSection("fees");
+            else if (s.go) setSection(s.go);
+          }} />`)}
+        </section>
+      </section>
+
+      ${(announcements || []).length ? html`<${NoticeInbox} items=${announcements} setSection=${setSection} limit=${3} />` : null}
+
+      <section class="home-att" aria-label="Attendance">
+        ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
       </section>
     `;
   } else if (section === "courses") {
@@ -2116,7 +2152,7 @@ export function MobileView({ ctx }) {
     <div class="m-scroll">
     ${body}
     </div>
-    ${section === "dashboard" ? attendanceCard(ctx.attendance, () => setSection("attendance")) : null}
+    null /* attendance strip lives inside the dashboard body */
     <footer class="careed-foot" aria-label="CareEd powered by CGTIA">
       <img src="/assets/brand/cgtia-logo.webp" alt="CGTIA" width="32" height="32" />
       <div class="careed-foot-text">
