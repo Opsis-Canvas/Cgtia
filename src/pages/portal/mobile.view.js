@@ -1806,7 +1806,7 @@ export function MobileView({ ctx }) {
         ${attendanceStrip(ctx.attendance, () => setSection("attendance"))}
       </section>
     `;
-  }  } else if (section === "courses") {
+  } else if (section === "courses") {
     body = html`
       <div class="page-head"><h1 class="display">Courses</h1><p>Your programme modules</p></div>
       <div class="m-list">
