@@ -1621,44 +1621,61 @@ export function SettingsScreen({ student, user, onLogout, setSection }) {
     }
   }
 
-  return html`<div>
+  const displayName = (student && student.name) || (user && user.displayName) || "Student";
+  const email = (student && student.email) || (user && user.email) || "—";
+
+  return html`<div class="set-page">
     <${PageHead} title="Settings" sub="Account & preferences" onBack=${() => setSection("dashboard")} backLabel="Home" />
-    <div class="panel" style=${{ marginBottom: 12 }}>
-      <div class="cred-label">Signed in as</div>
-      <strong>${student?.email || "—"}</strong>
-    </div>
-    <div class="panel" style=${{ marginBottom: 12 }}>
-      <div style=${{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <strong style=${{ fontSize: 14 }}>Dashboard notices</strong>
-          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Offers & notices on home</p>
-        </div>
-        <button type="button" class=${"toggle-mini" + (notify ? " on" : "")} onClick=${toggleNotify} aria-label="Toggle notices">${notify ? "On" : "Off"}</button>
+
+    <section class="set-card set-account" aria-label="Account">
+      <div class="set-avatar" aria-hidden="true">${String(displayName).charAt(0).toUpperCase()}</div>
+      <div class="set-account-copy">
+        <strong>${displayName}</strong>
+        <span>${email}</span>
       </div>
-    </div>
-    <div class="panel" style=${{ marginBottom: 12 }}>
-      <div style=${{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <strong style=${{ fontSize: 14 }}>Night mode</strong>
-          <p style=${{ fontSize: 12, color: "var(--muted)", margin: "4px 0 0" }}>Darker colours for low light</p>
+    </section>
+
+    <section class="set-block" aria-label="Preferences">
+      <h3 class="set-h">Preferences</h3>
+      <div class="set-row">
+        <div class="set-row-copy">
+          <strong>Dashboard notices</strong>
+          <span>Offers and notices on home</span>
         </div>
-        <button type="button" class=${"toggle-mini" + (dark ? " on" : "")} onClick=${toggleDark} aria-label="Toggle night mode">
-          ${Icon({ name: dark ? "moon" : "sun", size: 16 })} ${dark ? "On" : "Off"}
+        <button type="button" class=${"set-toggle" + (notify ? " on" : "")} onClick=${toggleNotify} aria-pressed=${notify}>
+          ${notify ? "On" : "Off"}
         </button>
       </div>
-    </div>
-    <form class="panel" onSubmit=${changePassword}>
-      <strong style=${{ fontSize: 14, display: "block", marginBottom: 10 }}>Change password</strong>
-      <input type="password" autocomplete="new-password" placeholder="New password" value=${pw1} onInput=${(e) => setPw1(e.target.value)}
-        style=${{ width: "100%", marginBottom: 8, boxSizing: "border-box" }} />
-      <input type="password" autocomplete="new-password" placeholder="Confirm password" value=${pw2} onInput=${(e) => setPw2(e.target.value)}
-        style=${{ width: "100%", marginBottom: 10, boxSizing: "border-box" }} />
-      ${msg ? html`<p style=${{ fontSize: 13, marginBottom: 8, color: "var(--muted)" }}>${msg}</p>` : null}
-      <button type="submit" class="btn-block" disabled=${busy}>${busy ? "Saving…" : "Update password"}</button>
-    </form>
-    <div style=${{ marginTop: 16 }}>
-      <button type="button" class="btn-block secondary" onClick=${onLogout}>Sign out</button>
-    </div>
+      <div class="set-row">
+        <div class="set-row-copy">
+          <strong>Night mode</strong>
+          <span>Darker colours for low light</span>
+        </div>
+        <button type="button" class=${"set-toggle" + (dark ? " on" : "")} onClick=${toggleDark} aria-pressed=${dark}>
+          ${Icon({ name: dark ? "moon" : "sun", size: 14 })} ${dark ? "On" : "Off"}
+        </button>
+      </div>
+    </section>
+
+    <section class="set-block" aria-label="Security">
+      <h3 class="set-h">Security</h3>
+      <form class="set-card set-secure" onSubmit=${changePassword}>
+        <label class="set-field">
+          <span>New password</span>
+          <input type="password" autocomplete="new-password" placeholder="At least 6 characters" value=${pw1} onInput=${(e) => setPw1(e.target.value)} />
+        </label>
+        <label class="set-field">
+          <span>Confirm password</span>
+          <input type="password" autocomplete="new-password" placeholder="Repeat password" value=${pw2} onInput=${(e) => setPw2(e.target.value)} />
+        </label>
+        ${msg ? html`<p class="set-msg">${msg}</p>` : null}
+        <button type="submit" class="btn-block" disabled=${busy}>${busy ? "Saving…" : "Save new password"}</button>
+      </form>
+    </section>
+
+    <button type="button" class="set-signout" onClick=${onLogout}>
+      ${Icon({ name: "logout", size: 16 })} Sign out
+    </button>
   </div>`;
 }
 
