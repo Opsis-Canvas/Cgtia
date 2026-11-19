@@ -970,7 +970,6 @@ export function ProfileCard({ student, linked, name }) {
       <div class="pf-id">
         <h2>${name || "Student"}</h2>
         <p>${s.email || ""}</p>
-        <span class=${"pf-chip " + (linked ? "is-ok" : "is-warn")}>${linked ? "File linked" : "File not linked"}</span>
       </div>
     </section>
 

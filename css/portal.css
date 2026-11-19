@@ -5201,11 +5201,15 @@ body [data-ts][data-ts] {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 14px;
   align-items: center;
-  padding: 16px;
-  border-radius: 20px;
-  background: linear-gradient(145deg, #0f126c 0%, #0948e6 100%);
-  color: #fff;
+  padding: 4px 2px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
 }
+.pf-id h2 { color: inherit; }
+.pf-id p { color: var(--muted, #94a3b8); opacity: 1; }
 .pf-id h2 {
   margin: 0;
   font-size: 20px;
