@@ -950,32 +950,52 @@ function ScheduleSheet({ item, onClose }) {
 
 /* Profile: identity card, record grid, status notes */
 export function ProfileCard({ student, linked, name }) {
-  const rows = [
-    ["Reg number", student?.reg],
-    ["Programme", student?.program],
-    ["Cohort", student?.cohort],
-    ["Status", student?.status],
-    ["Start date", student?.startDate],
-    ["Phone", student?.phone],
-    ["Certificate code", student?.certificateCode],
-    ["Next of kin", student?.nextOfKin]
+  const s = student || {};
+  const identity = [
+    ["Reg number", s.reg || s.regNumber],
+    ["Programme", s.program || s.programme],
+    ["Cohort", s.cohort],
+    ["Status", s.status]
   ];
+  const contact = [
+    ["Start date", s.startDate],
+    ["Phone", s.phone || s.mobile],
+    ["Certificate code", s.certificateCode],
+    ["Next of kin", s.nextOfKin || s.nok]
+  ];
+  const formDone = !!(s.profileCompleted || s.profileFormDone);
   return html`<div class="pf">
     <section class="pf-hero">
-      <${Avatar} src=${student?.avatar} name=${name} size=${72} />
+      <${Avatar} src=${s.avatar} name=${name} size=${72} />
       <div class="pf-id">
-        <h2>${name}</h2>
-        <p>${student?.email || ""}</p>
+        <h2>${name || "Student"}</h2>
+        <p>${s.email || ""}</p>
         <span class=${"pf-chip " + (linked ? "is-ok" : "is-warn")}>${linked ? "File linked" : "File not linked"}</span>
       </div>
     </section>
-    <section class="pf-grid">
-      ${rows.map(([k, v]) => html`<div class="pf-cell" key=${k}><span>${k}</span><strong>${v || "—"}</strong></div>`)}
+
+    <section class="pf-block" aria-label="Identity">
+      <h3 class="pf-h">Identity</h3>
+      <div class="pf-grid">
+        ${identity.map(([k, v]) => html`<div class="pf-cell" key=${k}><span>${k}</span><strong>${v || "—"}</strong></div>`)}
+      </div>
     </section>
-    <section class="pf-note">
-      <span>Profile form</span>
-      <strong>${student?.profileCompleted ? "Completed" : "Not completed yet"}</strong>
+
+    <section class="pf-block" aria-label="Programme and contact">
+      <h3 class="pf-h">Programme & contact</h3>
+      <div class="pf-grid">
+        ${contact.map(([k, v]) => html`<div class="pf-cell" key=${k}><span>${k}</span><strong>${v || "—"}</strong></div>`)}
+      </div>
     </section>
+
+    <div class=${"pf-form-cta" + (formDone ? " is-done" : "")} role="status">
+      <span>
+        <strong>Profile form</strong>
+        <small>${formDone ? "Completed" : "Not completed yet"}</small>
+      </span>
+      ${Icon({ name: "arrow", size: 16 })}
+    </div>
+
     ${linked
       ? html`<p class="pf-foot">NIN and other legal details stay with the academy office. Contact them to update anything here.</p>`
       : html`<${Empty} title="Student file not linked" body="Ask admissions to put this exact email on your student record." />`}
