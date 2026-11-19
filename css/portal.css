@@ -5178,3 +5178,17 @@ body [data-ts][data-ts] {
     transform: scale(0.97);
   }
 }
+
+
+/* Settings soft polish (existing SettingsScreen structure) */
+.m-app .cred-label + input,
+.m-app .cred-label + textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.25);
+  padding: 12px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+}
